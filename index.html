@@ -158,6 +158,10 @@
 
   .para-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); margin: 18px 0 8px; font-size: 13px; font-weight: 600; }
   .para-card-head:first-child { margin-top: 0; }
+  .head-toggle-area { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; cursor: pointer; }
+  .head-toggle-area:hover .head-toggle-text { text-decoration: underline; }
+  .collapse-chevron { color: var(--text-muted); flex-shrink: 0; width: 12px; }
+  .head-toggle-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   .review-card { display: grid; grid-template-columns: 1fr 1fr 1fr; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; }
   .review-col { padding: 12px 14px; border-right: 1px solid var(--gridline); display: flex; flex-direction: column; gap: 8px; }
@@ -185,6 +189,9 @@
   .diff-block { white-space: pre-wrap; font-size: 13px; line-height: 1.5; background: var(--page-plane); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; margin: 6px 0; max-height: 200px; overflow-y: auto; }
   .diff-del { color: var(--status-critical); text-decoration: line-through; background: rgba(208,59,59,0.10); border-radius: 2px; }
   .diff-ins { color: var(--success-text); text-decoration: underline; background: rgba(12,163,12,0.10); border-radius: 2px; }
+  .diff-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .diff-col-label { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-bottom: 4px; }
+  @media (max-width: 760px) { .diff-columns { grid-template-columns: 1fr; } }
 
   .progress-track { height: 8px; background: var(--gridline); border-radius: 4px; overflow: hidden; margin: 10px 0 6px; }
   .progress-fill { height: 100%; background: var(--cat-1); transition: width .15s; }
@@ -287,6 +294,12 @@
         <div class="pill-row" id="coverage-methodology-pills"></div>
         <div class="empty-state" id="coverage-empty-no-meth" style="display:none;">No methodologies yet. Add one from the sidebar to begin reviewing coverage.</div>
         <div id="coverage-body">
+          <div id="coverage-collapse-controls" style="display:none; margin-bottom:8px; font-size:12px;">
+            <span id="coverage-collapse-summary" style="color:var(--text-muted); margin-right:10px;"></span>
+            <button class="linklike" id="expand-all-std-btn">Expand all</button>
+            <span style="color:var(--text-muted); margin:0 4px;">·</span>
+            <button class="linklike" id="collapse-all-std-btn">Collapse all</button>
+          </div>
           <div id="coverage-list"></div>
           <div class="empty-state" id="coverage-empty-filtered" style="display:none;">No paragraphs match the current filters.</div>
         </div>
@@ -312,14 +325,16 @@
         </div>
         <div class="family-panel">
           <h3>Import WP mapping (Excel)</h3>
-          <div class="fp-sub">Populates the Draftworx WP extract, WP reference and comments for each paragraph directly from your existing Excel mapping file &mdash; applied immediately so you can compare it against the standard text.</div>
+          <div class="fp-sub">Populates the Draftworx WP extract, WP reference and comments for each paragraph directly from your existing Excel mapping file &mdash; applied immediately so you can compare it against the standard text. Supports multi-level paragraph references split across separate columns (main number, letter, roman numeral, sub-letter, sub-sub level), combined into one reference like "25.d.iii.a". Not sure of the exact layout? Download the template below.</div>
           <button class="btn primary" id="import-excel-btn">Import WP Mapping (Excel)</button>
+          <button class="btn" id="download-excel-template-btn">Download Excel Template</button>
           <input type="file" id="import-excel-file" accept=".xlsx,.xls" hidden>
         </div>
         <h2 style="font-size:14px; margin: 22px 0 10px;">Flagged differences (from PDF comparison)</h2>
         <div class="pill-row" id="review-type-pills"></div>
-        <div style="margin-bottom:10px;">
+        <div style="margin-bottom:10px; display:flex; gap:8px;">
           <button class="btn" id="dismiss-all-missing-btn" style="display:none;">Dismiss all Missing flags</button>
+          <button class="btn" id="clear-all-flags-btn" style="display:none; color:var(--status-critical);">Clear All Flags</button>
         </div>
         <div class="empty-state" id="no-flags-msg">No pending differences. Import a handbook PDF to check for changes.</div>
         <div id="flags-container"></div>
@@ -341,6 +356,8 @@
             <option value="user">User</option>
           </select>
           <input type="text" id="audit-search" placeholder="Search audit trail...">
+          <div class="spacer"></div>
+          <button class="btn" id="clear-audit-btn" style="display:none; color:var(--status-critical);">Clear Audit Trail</button>
         </div>
         <div class="table-scroll">
           <table class="matrix">
@@ -351,14 +368,12 @@
       </section>
 
       <section class="view" id="view-settings">
-        <div class="page-head"><h2>Settings</h2><p>Manage the list of team members who can be selected at login.</p></div>
+        <div class="page-head"><h2>Settings</h2><p>Manage the list of team members who can be selected at login, and their access level.</p></div>
         <div class="family-panel">
           <h3>Team members</h3>
+          <div class="fp-sub">The first user added is automatically an Admin.</div>
           <div id="users-list"></div>
-          <div style="display:flex; gap:8px; margin-top:12px;">
-            <input type="text" id="new-user-name" placeholder="Full name" style="flex:1; border:1px solid var(--border); background:var(--page-plane); border-radius:var(--radius); padding:8px 10px;">
-            <button class="btn primary" id="add-user-btn">Add user</button>
-          </div>
+          <button class="btn primary" id="add-user-btn" style="margin-top:12px;">+ Add user</button>
         </div>
       </section>
     </main>
@@ -369,21 +384,53 @@
   <form method="dialog">
     <div class="modal-head"><h3>Welcome</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
     <div class="modal-body">
-      <p style="margin:0; font-size:13px; color:var(--text-secondary);">Select your name so changes you make can be attributed to you in the audit trail.</p>
+      <p style="margin:0; font-size:13px; color:var(--text-secondary);" id="identity-intro">Select your name so changes you make can be attributed to you in the audit trail.</p>
       <div class="field" id="identity-existing-wrap">
         <label>Your name</label>
         <select id="f-identity-user"></select>
+        <div class="readonly-note">Don't see your name? Ask an Admin to add you in Settings.</div>
       </div>
-      <div><button type="button" class="linklike" id="identity-add-toggle">+ Add someone new</button></div>
       <div class="field" id="identity-new-wrap" style="display:none;">
-        <label>Full name</label>
+        <label>Your name</label>
         <input type="text" id="f-identity-new-name" placeholder="Full name">
+        <label style="margin-top:8px;">Job title</label>
+        <select id="f-identity-new-jobtitle">
+          <option>Developer</option><option>Senior</option><option>Manager</option><option>Partner</option><option>Reviewer</option>
+        </select>
+        <div class="readonly-note">You're the first user, so you'll automatically be set up as Admin.</div>
       </div>
       <div class="field"><label>PC / device name</label><input type="text" id="f-identity-pc" placeholder="e.g. DESKTOP-JD01" required></div>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
       <button type="button" class="btn primary" id="save-identity-btn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-user">
+  <form method="dialog">
+    <div class="modal-head"><h3 id="dlg-user-title">Add user</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Name</label><input type="text" id="f-user-name" required></div>
+      <div class="field"><label>Job title</label>
+        <select id="f-user-jobtitle">
+          <option>Developer</option><option>Senior</option><option>Manager</option><option>Partner</option><option>Reviewer</option>
+        </select>
+      </div>
+      <div class="field" id="user-accesslevel-wrap"><label>Access level</label>
+        <select id="f-user-accesslevel">
+          <option value="viewer">Viewer — read only</option>
+          <option value="reviewer">Reviewer — can comment and update WP extracts</option>
+          <option value="senior">Senior — can also import Excel/PDF and manage standards</option>
+          <option value="admin">Admin — full access including user management and reset</option>
+        </select>
+      </div>
+      <div class="readonly-note" id="user-firstadmin-note" style="display:none;">This is the first user, so they'll automatically be set as Admin.</div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="button" class="btn primary" id="save-user-btn">Save</button>
     </div>
   </form>
 </dialog>
@@ -416,6 +463,14 @@
       </div>
       <div class="field"><label>Code</label><input type="text" id="f-standard-code" placeholder="e.g. ISA 315 (Revised 2019)" required></div>
       <div class="field"><label>Title</label><input type="text" id="f-standard-title" placeholder="e.g. Identifying and Assessing the Risks of Material Misstatement" required></div>
+      <div class="field">
+        <label style="display:flex; align-items:center; gap:6px; font-weight:600;"><input type="checkbox" id="f-standard-all-methodologies" style="width:auto;"> Applies to all methodologies</label>
+        <div class="readonly-note">Some standards only apply to specific methodologies (e.g. ISRE 2400 only applies to a Review methodology). Uncheck this to limit which methodologies see this standard.</div>
+      </div>
+      <div class="field" id="standard-methodology-checks-wrap">
+        <label>Applicable methodologies</label>
+        <div id="standard-methodology-checks" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+      </div>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
@@ -452,19 +507,15 @@
   </form>
 </dialog>
 
-<dialog id="dlg-excel-import" style="width:560px;">
+<dialog id="dlg-excel-import" style="width:520px;">
   <form method="dialog">
     <div class="modal-head"><h3>Import WP Mapping (Excel)</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
     <div class="modal-body">
       <div class="readonly-note" id="excel-import-summary"></div>
       <div class="field" id="excel-sheet-wrap" style="display:none;"><label>Sheet</label><select id="f-excel-sheet"></select></div>
       <div class="field"><label>Import into methodology</label><select id="f-excel-methodology"></select></div>
-      <div class="field"><label>Standard reference column</label><select id="f-excel-col-standard"></select></div>
-      <div class="field"><label>Paragraph number column</label><select id="f-excel-col-paragraph"></select></div>
-      <div class="field"><label>Official standard text column</label><select id="f-excel-col-official"></select></div>
-      <div class="field"><label>WP reference column (optional)</label><select id="f-excel-col-wpref"></select></div>
-      <div class="field"><label>WP extract column</label><select id="f-excel-col-wpextract"></select></div>
-      <div class="field"><label>Comment column (optional)</label><select id="f-excel-col-comment"></select></div>
+      <div class="readonly-note" id="excel-detected-columns" style="white-space:pre-wrap;"></div>
+      <div class="readonly-note" id="excel-missing-columns" style="display:none; color:var(--status-critical);"></div>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
@@ -490,6 +541,14 @@
     na:      { label: "N/A",     icon: "–", varName: "--status-na" }
   };
   var STATUS_ORDER = ["full", "partial", "none", "na"];
+
+  var JOB_TITLES = ["Developer", "Senior", "Manager", "Partner", "Reviewer"];
+  var ACCESS_LEVELS = ["viewer", "reviewer", "senior", "admin"];
+  var ACCESS_RANK = { viewer: 0, reviewer: 1, senior: 2, admin: 3 };
+  var ACCESS_LABEL = { viewer: "Viewer", reviewer: "Reviewer", senior: "Senior", admin: "Admin" };
+  function accessLevelLabel(level) { return ACCESS_LABEL[level] || "Viewer"; }
+  function currentAccessLevel() { var u = resolveIdentityUser(); return (u && u.accessLevel) || "viewer"; }
+  function can(minLevel) { return ACCESS_RANK[currentAccessLevel()] >= ACCESS_RANK[minLevel]; }
 
   if (window.pdfjsLib) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -546,6 +605,55 @@
       return '<span class="diff-ins">' + t + "</span>";
     }).join("");
   }
+  function renderSideBySideDiff(oldStr, newStr) {
+    var left = [], right = [];
+    wordDiff(oldStr, newStr).forEach(function (op) {
+      var t = escapeHtml(op.text);
+      if (op.type === "equal") { left.push(t); right.push(t); }
+      else if (op.type === "remove") left.push('<span class="diff-del">' + t + "</span>");
+      else right.push('<span class="diff-ins">' + t + "</span>");
+    });
+    return { left: left.join(""), right: right.join("") };
+  }
+
+  // ---------- Natural sort for hierarchical paragraph numbers (e.g. "25" < "25.a" < "25.d.i") ----------
+  function romanToInt(s) {
+    var map = { i: 1, v: 5, x: 10, l: 50, c: 100, d: 500, m: 1000 };
+    var total = 0, prev = 0;
+    for (var i = s.length - 1; i >= 0; i--) {
+      var cur = map[s[i]];
+      if (cur === undefined) return 0;
+      if (cur < prev) total -= cur; else { total += cur; prev = cur; }
+    }
+    return total;
+  }
+  function intToRoman(num) {
+    var vals = [[1000, "m"], [900, "cm"], [500, "d"], [400, "cd"], [100, "c"], [90, "xc"], [50, "l"], [40, "xl"], [10, "x"], [9, "ix"], [5, "v"], [4, "iv"], [1, "i"]];
+    var res = "";
+    for (var i = 0; i < vals.length; i++) { while (num >= vals[i][0]) { res += vals[i][1]; num -= vals[i][0]; } }
+    return res;
+  }
+  function parseNumberSegment(seg) {
+    if (/^\d+$/.test(seg)) return { type: "num", value: parseInt(seg, 10) };
+    var lower = seg.toLowerCase();
+    if (/^[mdclxvi]+$/.test(lower)) {
+      var val = romanToInt(lower);
+      if (val > 0 && intToRoman(val) === lower) return { type: "num", value: val };
+    }
+    return { type: "str", value: lower };
+  }
+  function compareParaNumbers(a, b) {
+    var segsA = String(a || "").split("."), segsB = String(b || "").split(".");
+    var len = Math.max(segsA.length, segsB.length);
+    for (var i = 0; i < len; i++) {
+      if (i >= segsA.length) return -1;
+      if (i >= segsB.length) return 1;
+      var pa = parseNumberSegment(segsA[i]), pb = parseNumberSegment(segsB[i]);
+      if (pa.type === "num" && pb.type === "num") { if (pa.value !== pb.value) return pa.value - pb.value; }
+      else { var sa = String(pa.value), sb = String(pb.value); if (sa !== sb) return sa < sb ? -1 : 1; }
+    }
+    return 0;
+  }
 
   // ---------- Seed data ----------
   function seedData() {
@@ -571,7 +679,7 @@
 
     var standards = [
       {
-        id: uid("std"), family: "ISA", code: "ISA 315 (Revised 2019)",
+        id: uid("std"), family: "ISA", code: "ISA 315 (Revised 2019)", applicableMethodologyIds: [m.rac.id, m.legal.id],
         title: "Identifying and Assessing the Risks of Material Misstatement",
         paragraphs: [
           { id: uid("para"), number: "315.11", text: "Understand the entity's relevant industry, regulatory and other external factors.", coverage: cov({ rac: { status: "full", wpReference: "2.1", wpExtract: "WP 2.1 Industry & Regulatory Understanding — documents relevant industry, legal and regulatory factors, updated via the annual planning checklist." }, legal: { status: "partial" } }) },
@@ -580,7 +688,7 @@
         ]
       },
       {
-        id: uid("std"), family: "ISA", code: "ISA 500",
+        id: uid("std"), family: "ISA", code: "ISA 500", applicableMethodologyIds: [m.rac.id, m.legal.id],
         title: "Audit Evidence",
         paragraphs: [
           { id: uid("para"), number: "500.6", text: "Design and perform audit procedures to obtain sufficient appropriate audit evidence.", coverage: cov({ rac: { status: "full", wpReference: "6.0", wpExtract: "WP 6.0 Evidence Gathering Program — audit procedures selected per financial statement area with cross-reference to the risk register." }, legal: { status: "full" } }) },
@@ -588,7 +696,7 @@
         ]
       },
       {
-        id: uid("std"), family: "ISA", code: "ISA 700 (Revised)",
+        id: uid("std"), family: "ISA", code: "ISA 700 (Revised)", applicableMethodologyIds: [m.rac.id],
         title: "Forming an Opinion and Reporting on Financial Statements",
         paragraphs: [
           { id: uid("para"), number: "700.10", text: "Form an opinion on whether the financial statements are prepared in accordance with the applicable framework.", coverage: cov({ rac: { status: "full" } }) },
@@ -596,7 +704,7 @@
         ]
       },
       {
-        id: uid("std"), family: "ISAE 3000", code: "ISAE 3000 (Revised)",
+        id: uid("std"), family: "ISAE 3000", code: "ISAE 3000 (Revised)", applicableMethodologyIds: [m.legal.id, m.property.id],
         title: "Assurance Engagements Other than Audits or Reviews of Historical Financial Information",
         paragraphs: [
           { id: uid("para"), number: "3000.34", text: "Plan the engagement so it will be performed effectively, including determining materiality.", coverage: cov({ legal: { status: "full", wpReference: "1.0", wpExtract: "Trust Account AUP Planning Memo — materiality and scope agreed with the Legal Practice Council requirements." } }) },
@@ -605,7 +713,7 @@
         ]
       },
       {
-        id: uid("std"), family: "ISRS 4400", code: "ISRS 4400 (Revised)",
+        id: uid("std"), family: "ISRS 4400", code: "ISRS 4400 (Revised)", applicableMethodologyIds: [m.aup.id],
         title: "Agreed-Upon Procedures Engagements",
         paragraphs: [
           { id: uid("para"), number: "4400.14", text: "Agree the terms of the engagement with the engaging party.", coverage: cov({ aup: { status: "full", wpReference: "AUP-1", wpExtract: "AUP Engagement Letter template — terms agreed and signed by the engaging party prior to commencement." } }) },
@@ -614,7 +722,7 @@
         ]
       },
       {
-        id: uid("std"), family: "ISRE 2400", code: "ISRE 2400 (Revised)",
+        id: uid("std"), family: "ISRE 2400", code: "ISRE 2400 (Revised)", applicableMethodologyIds: [m.reviewplus.id],
         title: "Engagements to Review Historical Financial Statements",
         paragraphs: [
           { id: uid("para"), number: "2400.30", text: "Understand the entity to identify areas where material misstatements are likely to arise.", coverage: cov({ reviewplus: { status: "full", wpReference: "R-1", wpExtract: "Review WP 1 — Entity Understanding Checklist covering nature of business, related parties and accounting policies." } }) },
@@ -641,8 +749,10 @@
     auditFilters: { user: "all", entityType: "all", search: "" },
     reviewFilter: { type: "all" },
     reviewRevealed: {},
+    standardCollapse: {},
     editing: { methodologyId: null, standardId: null, paragraphId: null }
   };
+  var STANDARD_COLLAPSE_THRESHOLD = 5;
 
   function migrateData(d) {
     var renameMap = {
@@ -662,7 +772,13 @@
     if (!Array.isArray(d.pendingFlags)) d.pendingFlags = [];
     if (typeof d.lastImport === "undefined") d.lastImport = null;
     if (!Array.isArray(d.users)) d.users = [];
+    d.users.forEach(function (u, idx) {
+      if (typeof u.jobTitle === "undefined") u.jobTitle = "Reviewer";
+      if (typeof u.accessLevel === "undefined") u.accessLevel = idx === 0 ? "admin" : "reviewer";
+    });
+    if (d.users.length && !d.users.some(function (u) { return u.accessLevel === "admin"; })) d.users[0].accessLevel = "admin";
     d.standards.forEach(function (std) {
+      if (!Array.isArray(std.applicableMethodologyIds)) std.applicableMethodologyIds = [];
       std.paragraphs.forEach(function (p) {
         Object.keys(p.coverage || {}).forEach(function (mid) {
           var c = p.coverage[mid];
@@ -673,6 +789,9 @@
       });
     });
     return methodologyRenamed;
+  }
+  function isStandardApplicable(std, methodologyId) {
+    return !std.applicableMethodologyIds || std.applicableMethodologyIds.length === 0 || std.applicableMethodologyIds.indexOf(methodologyId) !== -1;
   }
 
   function load() {
@@ -716,7 +835,11 @@
       }
       if (parsed && parsed.name) {
         var match = data.users.find(function (x) { return x.name.toLowerCase() === parsed.name.toLowerCase(); });
-        if (!match) { match = { id: uid("user"), name: parsed.name }; data.users.push(match); }
+        if (!match) {
+          var isFirst = data.users.length === 0;
+          match = { id: uid("user"), name: parsed.name, jobTitle: "Reviewer", accessLevel: isFirst ? "admin" : "reviewer" };
+          data.users.push(match);
+        }
         var newIdentity = { userId: match.id, pcName: parsed.pcName || "" };
         localStorage.setItem(IDENTITY_KEY, JSON.stringify(newIdentity));
         return newIdentity;
@@ -745,6 +868,7 @@
     return c ? c.status : "none";
   }
   function matchesFilters(std, para) {
+    if (!isStandardApplicable(std, state.activeMethodologyId)) return false;
     if (state.familyFilter !== "all" && std.family !== state.familyFilter) return false;
     if (state.statusFilter !== "all") {
       var s = getStatus(para, state.activeMethodologyId);
@@ -761,6 +885,7 @@
     var counts = { full: 0, partial: 0, none: 0, na: 0 };
     data.standards.forEach(function (std) {
       if (familyFilter && std.family !== familyFilter) return;
+      if (!isStandardApplicable(std, methodologyId)) return;
       std.paragraphs.forEach(function (p) { counts[getStatus(p, methodologyId)]++; });
     });
     return counts;
@@ -778,6 +903,9 @@
       }
     }
     return null;
+  }
+  function sortParagraphs(std) {
+    std.paragraphs.sort(function (a, b) { return compareParaNumbers(a.number, b.number); });
   }
   function withScrollPreserved(fn) {
     var el = document.querySelector("main.content");
@@ -813,7 +941,9 @@
     var el = document.getElementById("identity-badge");
     var u = resolveIdentityUser();
     if (!u || !identity) { el.innerHTML = ""; return; }
-    el.innerHTML = escapeHtml(u.name) + ' <span style="color:var(--text-muted);">· ' + escapeHtml(identity.pcName) + '</span> <button class="btn icon-only" id="switch-user-btn" title="Switch user" style="padding:2px 6px; font-size:11px;">Switch</button>';
+    el.innerHTML = '<span title="PC: ' + escapeAttr(identity.pcName) + '">' + escapeHtml(u.name) + "</span>" +
+      ' <span style="color:var(--text-muted);">· ' + escapeHtml(u.jobTitle || "") + " · " + accessLevelLabel(u.accessLevel) + "</span>" +
+      ' <button class="btn icon-only" id="switch-user-btn" title="Switch user" style="padding:2px 6px; font-size:11px;">Switch User</button>';
     document.getElementById("switch-user-btn").addEventListener("click", function () { openIdentityModal(false); });
   }
 
@@ -831,6 +961,7 @@
 
     var list = document.getElementById("methodology-list");
     list.innerHTML = "";
+    var canManage = can("senior");
     data.methodologies.forEach(function (meth) {
       var row = document.createElement("div");
       row.className = "methodology-row";
@@ -839,10 +970,10 @@
           '<span class="swatch" style="background:' + catColor(meth.colorIndex) + '"></span>' +
           '<span class="label" title="' + escapeAttr(meth.name) + '">' + escapeHtml(meth.name) + "</span>" +
         "</button>" +
-        '<span class="row-actions">' +
+        (canManage ? '<span class="row-actions">' +
           '<button class="icon-btn" data-edit-meth="' + meth.id + '" title="Edit">✎</button>' +
           '<button class="icon-btn" data-del-meth="' + meth.id + '" title="Delete">✕</button>' +
-        "</span>";
+        "</span>" : "");
       list.appendChild(row);
     });
     list.querySelectorAll("[data-select-meth]").forEach(function (b) {
@@ -850,6 +981,11 @@
     });
     list.querySelectorAll("[data-edit-meth]").forEach(function (b) { b.addEventListener("click", function () { openMethodologyModal(b.getAttribute("data-edit-meth")); }); });
     list.querySelectorAll("[data-del-meth]").forEach(function (b) { b.addEventListener("click", function () { deleteMethodology(b.getAttribute("data-del-meth")); }); });
+
+    var addMethBtn = document.getElementById("add-methodology-btn");
+    if (addMethBtn) addMethBtn.style.display = canManage ? "" : "none";
+    var resetBtn = document.getElementById("reset-demo-btn");
+    if (resetBtn) resetBtn.style.display = can("admin") ? "" : "none";
   }
 
   function renderDashboard() {
@@ -929,30 +1065,66 @@
 
     var container = document.getElementById("coverage-list");
     container.innerHTML = "";
-    var anyRendered = false;
+    var canManageStructure = can("senior");
 
+    var matchingStandards = [];
     data.standards.forEach(function (std) {
-      var visibleParas = std.paragraphs.filter(function (p) { return matchesFilters(std, p); });
-      if (visibleParas.length === 0) return;
-      anyRendered = true;
+      var visibleParas = std.paragraphs.filter(function (p) { return matchesFilters(std, p); }).sort(function (a, b) { return compareParaNumbers(a.number, b.number); });
+      if (visibleParas.length > 0) matchingStandards.push({ std: std, paras: visibleParas });
+    });
+
+    var defaultCollapsed = matchingStandards.length > STANDARD_COLLAPSE_THRESHOLD;
+    var collapseControls = document.getElementById("coverage-collapse-controls");
+    collapseControls.style.display = matchingStandards.length > 1 ? "" : "none";
+    document.getElementById("coverage-collapse-summary").textContent = matchingStandards.length + " standard" + (matchingStandards.length === 1 ? "" : "s") +
+      (defaultCollapsed ? " (collapsed by default — click a heading, or Expand all, to see paragraphs)" : "");
+
+    matchingStandards.forEach(function (entry) {
+      var std = entry.std, visibleParas = entry.paras;
+      var isCollapsed = state.standardCollapse.hasOwnProperty(std.id) ? state.standardCollapse[std.id] : defaultCollapsed;
       var head = document.createElement("div");
       head.className = "para-card-head";
-      head.innerHTML = "<span>" + escapeHtml(std.code) + " — " + escapeHtml(std.title) + '<span class="fam-badge">' + escapeHtml(std.family) + "</span></span>" +
-        '<span class="cell-actions">' +
+      var scopeBadge = "";
+      if (std.applicableMethodologyIds && std.applicableMethodologyIds.length) {
+        var scopeNames = std.applicableMethodologyIds.map(function (mid) { var mm = data.methodologies.find(function (x) { return x.id === mid; }); return mm ? mm.name : "?"; }).join(", ");
+        scopeBadge = '<span class="fam-badge" title="Only shown for these methodologies">Scoped: ' + escapeHtml(scopeNames) + "</span>";
+      }
+      head.innerHTML =
+        '<span class="head-toggle-area" data-toggle-std="' + std.id + '">' +
+          '<span class="collapse-chevron">' + (isCollapsed ? "▸" : "▾") + "</span>" +
+          '<span class="head-toggle-text">' + escapeHtml(std.code) + " — " + escapeHtml(std.title) +
+            '<span class="fam-badge">' + escapeHtml(std.family) + "</span>" + scopeBadge +
+            '<span class="fam-badge">' + visibleParas.length + " paragraph" + (visibleParas.length === 1 ? "" : "s") + "</span>" +
+          "</span>" +
+        "</span>" +
+        (canManageStructure ? '<span class="cell-actions">' +
           '<button class="btn icon-only" data-add-para-to="' + std.id + '">+ Paragraph</button>' +
           '<button class="icon-btn" data-edit-std="' + std.id + '" title="Edit standard">✎</button>' +
           '<button class="icon-btn" data-del-std="' + std.id + '" title="Delete standard">✕</button>' +
-        "</span>";
+        "</span>" : "");
       container.appendChild(head);
-      visibleParas.forEach(function (p) { container.appendChild(renderParagraphCard(std, p, activeMeth)); });
+      if (!isCollapsed) visibleParas.forEach(function (p) { container.appendChild(renderParagraphCard(std, p, activeMeth)); });
     });
 
-    document.getElementById("coverage-empty-filtered").style.display = anyRendered ? "none" : "block";
+    document.getElementById("coverage-empty-filtered").style.display = matchingStandards.length ? "none" : "block";
 
-    container.querySelectorAll("[data-add-para-to]").forEach(function (b) { b.addEventListener("click", function () { openParagraphModal(b.getAttribute("data-add-para-to"), null); }); });
-    container.querySelectorAll("[data-edit-std]").forEach(function (b) { b.addEventListener("click", function () { openStandardModal(b.getAttribute("data-edit-std")); }); });
-    container.querySelectorAll("[data-del-std]").forEach(function (b) { b.addEventListener("click", function () { deleteStandard(b.getAttribute("data-del-std")); }); });
+    container.querySelectorAll("[data-toggle-std]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var id = el.getAttribute("data-toggle-std");
+        var current = state.standardCollapse.hasOwnProperty(id) ? state.standardCollapse[id] : defaultCollapsed;
+        state.standardCollapse[id] = !current;
+        renderCoverageView();
+      });
+    });
+    container.querySelectorAll("[data-add-para-to]").forEach(function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); openParagraphModal(b.getAttribute("data-add-para-to"), null); }); });
+    container.querySelectorAll("[data-edit-std]").forEach(function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); openStandardModal(b.getAttribute("data-edit-std")); }); });
+    container.querySelectorAll("[data-del-std]").forEach(function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); deleteStandard(b.getAttribute("data-del-std")); }); });
     wireParagraphCardEvents(container);
+
+    var addStdBtn = document.getElementById("add-standard-btn");
+    if (addStdBtn) addStdBtn.style.display = canManageStructure ? "" : "none";
+    var addParaBtn = document.getElementById("add-paragraph-btn");
+    if (addParaBtn) addParaBtn.style.display = canManageStructure ? "" : "none";
   }
 
   function renderParagraphCard(std, p, meth) {
@@ -969,26 +1141,32 @@
       overlapHtml = '<div class="overlap-hint">No WP extract captured yet.</div>';
     }
 
-    var statusPillsHtml = STATUS_ORDER.map(function (key) {
-      var s = STATUS[key];
-      return '<button class="status-pill' + (cov.status === key ? " active-" + key : "") + '" data-set-status="' + key + '">' + s.icon + " " + s.label + "</button>";
-    }).join("");
+    var canEditCoverage = can("reviewer");
+    var canManageStructure = can("senior");
+
+    var statusPillsHtml = canEditCoverage
+      ? STATUS_ORDER.map(function (key) {
+          var s = STATUS[key];
+          return '<button class="status-pill' + (cov.status === key ? " active-" + key : "") + '" data-set-status="' + key + '">' + s.icon + " " + s.label + "</button>";
+        }).join("")
+      : '<span class="status-pill active-' + cov.status + '" style="cursor:default;">' + STATUS[cov.status].icon + " " + STATUS[cov.status].label + "</span>";
 
     var savedCaption = cov.updatedAt ? ("Last updated by " + escapeHtml(cov.updatedBy || "Unknown") + " · " + new Date(cov.updatedAt).toLocaleString()) : "Not yet reviewed for this methodology.";
+    var ro = canEditCoverage ? "" : " disabled";
 
     card.innerHTML =
       '<div class="review-col"><h4>Official standard text — ' + escapeHtml(p.number) + "</h4>" +
         '<div class="review-text">' + escapeHtml(p.text) + "</div>" +
-        '<div class="cell-actions"><button class="icon-btn" data-edit-para="' + p.id + '">✎ Edit</button><button class="icon-btn" data-del-para="' + p.id + '">✕ Delete</button></div>' +
+        (canManageStructure ? '<div class="cell-actions"><button class="icon-btn" data-edit-para="' + p.id + '">✎ Edit</button><button class="icon-btn" data-del-para="' + p.id + '">✕ Delete</button></div>' : "") +
       "</div>" +
       '<div class="review-col"><h4>Draftworx WP extract — ' + escapeHtml(meth.name) + "</h4>" +
-        '<input type="text" class="review-textarea" style="min-height:auto; padding:6px 8px;" data-wpref-field placeholder="WP reference (e.g. 10.02)" value="' + escapeAttr(cov.wpReference || "") + '">' +
-        '<textarea class="review-textarea" data-wp-field placeholder="Paste or type the working paper procedure/extract that addresses this paragraph...">' + escapeHtml(cov.wpExtract || "") + "</textarea>" +
+        '<input type="text" class="review-textarea" style="min-height:auto; padding:6px 8px;" data-wpref-field placeholder="WP reference (e.g. 10.02)" value="' + escapeAttr(cov.wpReference || "") + '"' + ro + ">" +
+        '<textarea class="review-textarea" data-wp-field placeholder="Paste or type the working paper procedure/extract that addresses this paragraph..."' + ro + ">" + escapeHtml(cov.wpExtract || "") + "</textarea>" +
         overlapHtml +
       "</div>" +
       '<div class="review-col"><h4>Status &amp; comparison</h4>' +
         '<div class="status-pills">' + statusPillsHtml + "</div>" +
-        '<textarea class="review-textarea" data-notes-field placeholder="Comparison notes, reviewer commentary, evidence reference...">' + escapeHtml(cov.notes || "") + "</textarea>" +
+        '<textarea class="review-textarea" data-notes-field placeholder="Comparison notes, reviewer commentary, evidence reference..."' + ro + ">" + escapeHtml(cov.notes || "") + "</textarea>" +
         '<div class="save-caption" data-caption>' + savedCaption + "</div>" +
       "</div>";
     return card;
@@ -1078,6 +1256,17 @@
   }
 
   // ---------- CRUD: Standards ----------
+  function renderStandardMethodologyChecks(selectedIds) {
+    var wrap = document.getElementById("standard-methodology-checks");
+    wrap.innerHTML = data.methodologies.map(function (m) {
+      var checked = selectedIds.indexOf(m.id) !== -1;
+      return '<label style="display:flex; align-items:center; gap:4px; font-size:12px;"><input type="checkbox" value="' + escapeAttr(m.id) + '" data-meth-check' + (checked ? " checked" : "") + '>' + escapeHtml(m.name) + "</label>";
+    }).join("");
+  }
+  function toggleStandardMethodologyChecksDisabled(disabled) {
+    document.querySelectorAll("#standard-methodology-checks input").forEach(function (cb) { cb.disabled = disabled; });
+    document.getElementById("standard-methodology-checks-wrap").style.opacity = disabled ? "0.5" : "1";
+  }
   function openStandardModal(id) {
     state.editing.standardId = id || null;
     var dlg = document.getElementById("dlg-standard");
@@ -1086,6 +1275,21 @@
     document.getElementById("f-standard-family").value = std ? std.family : (state.familyFilter !== "all" ? state.familyFilter : "ISA");
     document.getElementById("f-standard-code").value = std ? std.code : "";
     document.getElementById("f-standard-title").value = std ? std.title : "";
+
+    var scoped = std && Array.isArray(std.applicableMethodologyIds) && std.applicableMethodologyIds.length > 0;
+    var selectedIds;
+    var allChk = document.getElementById("f-standard-all-methodologies");
+    if (std) {
+      selectedIds = scoped ? std.applicableMethodologyIds : data.methodologies.map(function (m) { return m.id; });
+      allChk.checked = !scoped;
+    } else {
+      selectedIds = state.activeMethodologyId ? [state.activeMethodologyId] : [];
+      allChk.checked = false;
+    }
+    renderStandardMethodologyChecks(selectedIds);
+    toggleStandardMethodologyChecksDisabled(allChk.checked);
+    allChk.onchange = function () { toggleStandardMethodologyChecksDisabled(allChk.checked); };
+
     dlg.showModal();
   }
   function saveStandard() {
@@ -1093,12 +1297,18 @@
     var code = document.getElementById("f-standard-code").value.trim();
     var title = document.getElementById("f-standard-title").value.trim();
     if (!code || !title) return;
+    var allMethodologies = document.getElementById("f-standard-all-methodologies").checked;
+    var applicableMethodologyIds = allMethodologies ? [] : Array.from(document.querySelectorAll("#standard-methodology-checks input:checked")).map(function (cb) { return cb.value; });
+    if (!allMethodologies && applicableMethodologyIds.length === 0) {
+      alert('Select at least one methodology, or check "Applies to all methodologies".');
+      return;
+    }
     if (state.editing.standardId) {
       var std = data.standards.find(function (s) { return s.id === state.editing.standardId; });
-      std.family = family; std.code = code; std.title = title;
+      std.family = family; std.code = code; std.title = title; std.applicableMethodologyIds = applicableMethodologyIds;
       logChange("update", "standard", code, 'Updated standard "' + code + '"');
     } else {
-      data.standards.push({ id: uid("std"), family: family, code: code, title: title, paragraphs: [] });
+      data.standards.push({ id: uid("std"), family: family, code: code, title: title, paragraphs: [], applicableMethodologyIds: applicableMethodologyIds });
       logChange("create", "standard", code, 'Added standard "' + code + '"');
     }
     document.getElementById("dlg-standard").close();
@@ -1153,12 +1363,14 @@
           existing.std.paragraphs = existing.std.paragraphs.filter(function (p) { return p.id !== existing.para.id; });
           std.paragraphs.push(existing.para);
         }
+        sortParagraphs(std);
         logChange("update", "paragraph", std.code + " " + number, "Updated paragraph text/number");
       }
     } else {
       var coverage = {};
       data.methodologies.forEach(function (m) { coverage[m.id] = { status: "none", wpExtract: "", wpReference: "", notes: "", updatedAt: null, updatedBy: null }; });
       std.paragraphs.push({ id: uid("para"), number: number, text: text, coverage: coverage });
+      sortParagraphs(std);
       logChange("create", "paragraph", std.code + " " + number, "Added paragraph " + number);
     }
     document.getElementById("dlg-paragraph").close();
@@ -1175,6 +1387,8 @@
 
   // ---------- Audit trail ----------
   function renderAuditView() {
+    var clearAuditBtn = document.getElementById("clear-audit-btn");
+    if (clearAuditBtn) clearAuditBtn.style.display = ((data.auditLog || []).length > 0 && can("admin")) ? "" : "none";
     var userSelect = document.getElementById("audit-filter-user");
     var users = Array.from(new Set((data.auditLog || []).map(function (e) { return e.user; }))).sort();
     var currentVal = userSelect.value || "all";
@@ -1207,7 +1421,11 @@
 
   // ---------- Settings: users ----------
   function renderSettingsView() {
+    var isAdmin = can("admin");
     var list = document.getElementById("users-list");
+    var addBtn = document.getElementById("add-user-btn");
+    if (addBtn) addBtn.style.display = isAdmin ? "" : "none";
+    if (!isAdmin) { list.innerHTML = '<div class="empty-state" style="padding:20px 0;">Admin access required to manage team members.</div>'; return; }
     if (data.users.length === 0) { list.innerHTML = '<div class="empty-state" style="padding:20px 0;">No team members yet. Add the first one below.</div>'; return; }
     var countsByUser = {};
     (data.auditLog || []).forEach(function (e) { countsByUser[e.user] = (countsByUser[e.user] || 0) + 1; });
@@ -1215,33 +1433,65 @@
       var n = countsByUser[u.name] || 0;
       return '<div class="methodology-row" style="padding:6px 0;">' +
         '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(u.name) + '</span>' +
-        '<span class="count">' + n + " logged change" + (n === 1 ? "" : "s") + "</span></span>" +
+        '<span class="count">' + escapeHtml(u.jobTitle || "") + " · " + accessLevelLabel(u.accessLevel) + " · " + n + " change" + (n === 1 ? "" : "s") + "</span></span>" +
         '<span class="row-actions" style="display:flex;">' +
-          '<button class="icon-btn" data-rename-user="' + u.id + '" title="Rename">✎</button>' +
+          '<button class="icon-btn" data-edit-user="' + u.id + '" title="Edit">✎</button>' +
           '<button class="icon-btn" data-del-user="' + u.id + '" title="Remove">✕</button>' +
         "</span></div>";
     }).join("");
-    list.querySelectorAll("[data-rename-user]").forEach(function (b) { b.addEventListener("click", function () { renameUser(b.getAttribute("data-rename-user")); }); });
+    list.querySelectorAll("[data-edit-user]").forEach(function (b) { b.addEventListener("click", function () { openUserModal(b.getAttribute("data-edit-user")); }); });
     list.querySelectorAll("[data-del-user]").forEach(function (b) { b.addEventListener("click", function () { deleteUser(b.getAttribute("data-del-user")); }); });
   }
-  function renameUser(id) {
-    var u = data.users.find(function (x) { return x.id === id; });
-    if (!u) return;
-    var name = prompt("Rename team member", u.name);
+  function openUserModal(id) {
+    state.editing.userId = id || null;
+    var dlg = document.getElementById("dlg-user");
+    var u = id ? data.users.find(function (x) { return x.id === id; }) : null;
+    var isFirst = data.users.length === 0;
+    document.getElementById("dlg-user-title").textContent = u ? "Edit user" : "Add user";
+    document.getElementById("f-user-name").value = u ? u.name : "";
+    document.getElementById("f-user-jobtitle").value = u ? u.jobTitle : "Reviewer";
+    document.getElementById("f-user-accesslevel").value = u ? u.accessLevel : "viewer";
+    document.getElementById("user-accesslevel-wrap").style.display = isFirst ? "none" : "";
+    document.getElementById("user-firstadmin-note").style.display = isFirst ? "" : "none";
+    dlg.showModal();
+  }
+  function saveUser() {
+    var name = document.getElementById("f-user-name").value.trim();
     if (!name) return;
-    name = name.trim();
-    if (!name) return;
-    var old = u.name;
-    u.name = name;
-    logChange("update", "user", name, 'Renamed team member "' + old + '" to "' + name + '"');
+    var jobTitle = document.getElementById("f-user-jobtitle").value;
+    var accessLevel = document.getElementById("f-user-accesslevel").value;
+    if (state.editing.userId) {
+      var u = data.users.find(function (x) { return x.id === state.editing.userId; });
+      if (u.accessLevel === "admin" && accessLevel !== "admin" && data.users.filter(function (x) { return x.accessLevel === "admin"; }).length <= 1) {
+        alert("You can't change the access level of the last Admin — promote someone else to Admin first.");
+        return;
+      }
+      var oldName = u.name, oldJob = u.jobTitle, oldAccess = u.accessLevel;
+      u.name = name; u.jobTitle = jobTitle; u.accessLevel = accessLevel;
+      logChange("update", "user", name, "Updated team member" +
+        (oldName !== name ? (' name to "' + name + '"') : "") +
+        (oldJob !== jobTitle ? (", job title to " + jobTitle) : "") +
+        (oldAccess !== accessLevel ? (", access level to " + accessLevelLabel(accessLevel)) : ""));
+      if (identity && identity.userId === u.id) { renderIdentityBadge(); }
+    } else {
+      if (data.users.some(function (x) { return x.name.toLowerCase() === name.toLowerCase(); })) { alert("That name is already in the list."); return; }
+      var isFirst = data.users.length === 0;
+      var newUser = { id: uid("user"), name: name, jobTitle: jobTitle, accessLevel: isFirst ? "admin" : accessLevel };
+      data.users.push(newUser);
+      logChange("create", "user", name, 'Added team member "' + name + '" (' + newUser.jobTitle + ", " + accessLevelLabel(newUser.accessLevel) + (isFirst ? " — first user, auto-Admin" : "") + ")");
+    }
+    document.getElementById("dlg-user").close();
     persist();
     renderSettingsView();
-    renderIdentityBadge();
-    renderAuditView();
+    applyGlobalRolePermissions();
   }
   function deleteUser(id) {
     var u = data.users.find(function (x) { return x.id === id; });
     if (!u) return;
+    if (u.accessLevel === "admin" && data.users.filter(function (x) { return x.accessLevel === "admin"; }).length <= 1) {
+      alert("You can't remove the last Admin — promote someone else to Admin first.");
+      return;
+    }
     if (!confirm('Remove "' + u.name + '" from the team members list?')) return;
     data.users = data.users.filter(function (x) { return x.id !== id; });
     logChange("delete", "user", u.name, 'Removed team member "' + u.name + '"');
@@ -1334,6 +1584,7 @@
           var coverage = {};
           data.methodologies.forEach(function (m) { coverage[m.id] = { status: "none", wpExtract: "", wpReference: "", notes: "", updatedAt: null, updatedBy: null }; });
           std.paragraphs.push({ id: uid("para"), number: flag.number, text: flag.newText, coverage: coverage });
+          sortParagraphs(std);
           logChange("create", "paragraph", flag.standardCode + " " + flag.number, "Added paragraph from PDF import.");
         }
       }
@@ -1352,18 +1603,23 @@
   }
   function renderFlagRow(f) {
     var badge = f.type === "new" ? '<span class="flag-badge flag-new">● New</span>' : f.type === "changed" ? '<span class="flag-badge flag-changed">◐ Changed</span>' : '<span class="flag-badge flag-missing">– Missing</span>';
+    var canResolve = can("senior");
     var body = "";
     if (f.type === "changed") {
-      body = '<div class="diff-block">' + renderWordDiff(f.oldText, f.newText) + "</div>" +
+      var diff = renderSideBySideDiff(f.oldText, f.newText);
+      body = '<div class="diff-columns">' +
+          '<div><div class="diff-col-label">Currently stored</div><div class="diff-block">' + diff.left + "</div></div>" +
+          '<div><div class="diff-col-label">Found in PDF</div><div class="diff-block">' + diff.right + "</div></div>" +
+        "</div>" +
         '<div class="readonly-note"><span class="diff-del" style="padding:0 2px;">strikethrough</span> = removed, <span class="diff-ins" style="padding:0 2px;">underline</span> = added.</div>' +
-        '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Apply PDF text</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>';
+        (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Apply PDF text</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>' : "");
     } else if (f.type === "new") {
       body = '<div class="diff-block"><strong>Suggested new paragraph text (from PDF):</strong><br>' + escapeHtml(f.newText) + "</div>" +
-        '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Add as new paragraph</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>';
+        (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Add as new paragraph</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>' : "");
     } else {
       body = '<div class="diff-block"><strong>Currently stored (not found in PDF):</strong><br>' + escapeHtml(f.oldText) + "</div>" +
         '<div class="readonly-note">May have been renumbered, removed, or missed by extraction.</div>' +
-        '<div class="cell-actions" style="margin-top:8px;"><button class="btn" data-dismiss-flag="' + f.id + '">Acknowledge</button></div>';
+        (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn" data-dismiss-flag="' + f.id + '">Acknowledge</button></div>' : "");
     }
     return '<div class="flag-row"><div class="flag-number">' + escapeHtml(f.number) + " " + badge + "</div>" + body + "</div>";
   }
@@ -1384,7 +1640,14 @@
     }).join("");
     pillsEl.querySelectorAll("[data-set-type]").forEach(function (b) { b.addEventListener("click", function () { state.reviewFilter.type = b.getAttribute("data-set-type"); renderReviewView(); }); });
 
-    document.getElementById("dismiss-all-missing-btn").style.display = counts.missing > 0 ? "" : "none";
+    document.getElementById("dismiss-all-missing-btn").style.display = (counts.missing > 0 && can("senior")) ? "" : "none";
+    document.getElementById("clear-all-flags-btn").style.display = ((data.pendingFlags || []).length > 0 && can("admin")) ? "" : "none";
+    var importPdfBtn = document.getElementById("import-pdf-btn");
+    if (importPdfBtn) importPdfBtn.style.display = can("senior") ? "" : "none";
+    var importExcelBtn = document.getElementById("import-excel-btn");
+    if (importExcelBtn) importExcelBtn.style.display = can("senior") ? "" : "none";
+    var downloadTemplateBtn = document.getElementById("download-excel-template-btn");
+    if (downloadTemplateBtn) downloadTemplateBtn.style.display = can("senior") ? "" : "none";
 
     var filtered = state.reviewFilter.type === "all" ? openFlags : openFlags.filter(function (f) { return f.type === state.reviewFilter.type; });
 
@@ -1394,6 +1657,7 @@
 
     var byStandard = {};
     filtered.forEach(function (f) { (byStandard[f.standardCode] = byStandard[f.standardCode] || []).push(f); });
+    Object.keys(byStandard).forEach(function (code) { byStandard[code].sort(function (a, b) { return compareParaNumbers(a.number, b.number); }); });
 
     Object.keys(byStandard).forEach(function (code) {
       var group = document.createElement("div");
@@ -1460,6 +1724,48 @@
 
   // ---------- Excel WP mapping import ----------
   var pendingExcelRows = null;
+  var pendingExcelWorksheet = null;
+  var pendingExcelColMap = null;
+
+  var EXCEL_COLUMN_DEFS = [
+    { key: "standardRef", label: "Standard Reference", header: "Standard Reference", keywords: ["standard", "isa", "isre", "isae", "isrs", "reference"], required: true },
+    { key: "mainNumber", label: "Main Paragraph Number", header: "Main Paragraph Number", keywords: ["main para", "paragraph no", "paragraph number", "para no", "para #", "paragraph"], required: true },
+    { key: "letterCol", label: "Letter Subdivision", header: "Letter Subdivision", keywords: ["letter", "sub-para", "subpara"], required: false },
+    { key: "romanCol", label: "Roman Numeral", header: "Roman Numeral", keywords: ["roman"], required: false },
+    { key: "subletterCol", label: "Sub-Letter", header: "Sub-Letter", keywords: ["sub-letter", "subletter"], required: false },
+    { key: "subsubCol", label: "Sub-Sub Level", header: "Sub-Sub Level", keywords: ["sub-sub", "subsub"], required: false },
+    { key: "officialText", label: "Official Standard Text", header: "Official Standard Text", keywords: ["requirement", "official", "standard text", "wording"], required: true },
+    { key: "wpReference", label: "WP Reference", header: "WP Reference", keywords: ["wp ref", "wp no", "wp number", "reference no"], required: false },
+    { key: "wpExtract", label: "WP Extract", header: "WP Extract", keywords: ["extract", "procedure", "working paper", "wp text"], required: true },
+    { key: "comment", label: "Comment", header: "Comment", keywords: ["comment", "note"], required: false }
+  ];
+  function findColumnByExactHeader(headers, name) {
+    var target = String(name).trim().toLowerCase();
+    for (var i = 0; i < headers.length; i++) { if (String(headers[i] || "").trim().toLowerCase() === target) return i; }
+    return -1;
+  }
+  function autoDetectColumns(headers) {
+    var used = {}, colMap = {}, detected = [], missingRequired = [];
+    EXCEL_COLUMN_DEFS.forEach(function (def) {
+      var idx = findColumnByExactHeader(headers, def.header);
+      if (idx === -1) idx = guessColumn(headers, def.keywords, used);
+      if (idx !== -1) { used[idx] = true; colMap[def.key] = idx; detected.push(def.label + " → " + (headers[idx] || ("column " + (idx + 1)))); }
+      else { colMap[def.key] = null; if (def.required) missingRequired.push(def.label); }
+    });
+    return { colMap: colMap, detected: detected, missingRequired: missingRequired };
+  }
+
+  function classifyFillColor(hexRgb) {
+    if (!hexRgb || hexRgb.length < 6) return null;
+    var hex = hexRgb.slice(-6);
+    var r = parseInt(hex.substr(0, 2), 16), g = parseInt(hex.substr(2, 2), 16), b = parseInt(hex.substr(4, 2), 16);
+    if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
+    var lightness = (Math.max(r, g, b) + Math.min(r, g, b)) / 2 / 255;
+    var isGreenish = g > r + 10 && g > b + 10;
+    if (!isGreenish) return lightness > 0.9 ? "white" : null;
+    return lightness < 0.55 ? "dark-green" : "light-green";
+  }
+  function expectedColorTier(depth) { return depth <= 1 ? "dark-green" : depth === 2 ? "light-green" : "white"; }
 
   function parseStandardReference(ref) {
     var m = String(ref).match(/^\s*(ISA|ISAE|ISRS|ISRE)\s*([\d.]+)?/i);
@@ -1475,11 +1781,11 @@
     if (bare.toLowerCase().indexOf(core.toLowerCase() + ".") === 0) return bare;
     return core + "." + bare;
   }
-  function findOrCreateStandard(refInfo, rawCode) {
+  function findOrCreateStandard(refInfo, rawCode, methodologyId) {
     var target = (refInfo.prefix + " " + refInfo.num).trim().toLowerCase();
     var existing = data.standards.find(function (s) { return s.code.toLowerCase().indexOf(target) === 0; });
     if (existing) return existing;
-    var std = { id: uid("std"), family: refInfo.family, code: normalizeWs(rawCode), title: "Imported standard — click ✎ to edit the title", paragraphs: [] };
+    var std = { id: uid("std"), family: refInfo.family, code: normalizeWs(rawCode), title: "Imported standard — click ✎ to edit the title", paragraphs: [], applicableMethodologyIds: methodologyId ? [methodologyId] : [] };
     data.standards.push(std);
     return std;
   }
@@ -1493,6 +1799,7 @@
     data.methodologies.forEach(function (m) { coverage[m.id] = { status: "none", wpExtract: "", wpReference: "", notes: "", updatedAt: null, updatedBy: null }; });
     var p = { id: uid("para"), number: number, text: officialText || "", coverage: coverage };
     std.paragraphs.push(p);
+    sortParagraphs(std);
     return p;
   }
   function guessColumn(headers, keywords, exclude) {
@@ -1503,14 +1810,6 @@
     }
     return -1;
   }
-  function fillColumnSelect(id, headers, guessIdx, allowNone) {
-    var sel = document.getElementById(id);
-    var opts = allowNone ? '<option value="">— None —</option>' : '<option value="">— Select —</option>';
-    headers.forEach(function (h, i) { opts += '<option value="' + i + '">' + escapeHtml(h || ("Column " + (i + 1))) + "</option>"; });
-    sel.innerHTML = opts;
-    sel.value = guessIdx === -1 ? "" : String(guessIdx);
-  }
-
   function openExcelImportModal(workbook) {
     var sheetNames = workbook.SheetNames;
     var sheetWrap = document.getElementById("excel-sheet-wrap");
@@ -1522,65 +1821,158 @@
     methSel.innerHTML = data.methodologies.map(function (m) { return '<option value="' + escapeAttr(m.id) + '">' + escapeHtml(m.name) + "</option>"; }).join("");
     if (state.activeMethodologyId) methSel.value = state.activeMethodologyId;
 
+    var importBtn = document.getElementById("confirm-excel-import-btn");
+    var missingEl = document.getElementById("excel-missing-columns");
+    var detectedEl = document.getElementById("excel-detected-columns");
+
     function loadSheetPreview() {
       var ws = workbook.Sheets[sheetSel.value || sheetNames[0]];
       var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
       pendingExcelRows = rows;
+      pendingExcelWorksheet = ws;
       var headers = rows[0] || [];
-      document.getElementById("excel-import-summary").textContent = Math.max(rows.length - 1, 0) + ' data row(s) found in "' + (sheetSel.value || sheetNames[0]) + '".';
-      var used = {};
-      function pickGuess(keywords) { var idx = guessColumn(headers, keywords, used); if (idx !== -1) used[idx] = true; return idx; }
-      var gStandard = pickGuess(["standard", "isa", "isre", "isae", "isrs", "reference"]);
-      var gPara = pickGuess(["paragraph", "para", "clause"]);
-      var gOfficial = pickGuess(["requirement", "official", "standard text", "wording"]);
-      var gWpRef = pickGuess(["wp ref", "wp no", "wp number", "reference no"]);
-      var gWpExtract = pickGuess(["extract", "procedure", "working paper", "wp text"]);
-      var gComment = pickGuess(["comment", "note"]);
-      fillColumnSelect("f-excel-col-standard", headers, gStandard, false);
-      fillColumnSelect("f-excel-col-paragraph", headers, gPara, false);
-      fillColumnSelect("f-excel-col-official", headers, gOfficial, false);
-      fillColumnSelect("f-excel-col-wpref", headers, gWpRef, true);
-      fillColumnSelect("f-excel-col-wpextract", headers, gWpExtract, false);
-      fillColumnSelect("f-excel-col-comment", headers, gComment, true);
+      document.getElementById("excel-import-summary").textContent = Math.max(rows.length - 1, 0) + ' data row(s) found in "' + (sheetSel.value || sheetNames[0]) + '". Columns are matched automatically by header name — no manual column selection needed.';
+
+      var result = autoDetectColumns(headers);
+      pendingExcelColMap = result.colMap;
+      detectedEl.textContent = "Detected: " + result.detected.join(", ");
+      if (result.missingRequired.length) {
+        missingEl.style.display = "";
+        missingEl.textContent = "Could not find a column for: " + result.missingRequired.join(", ") + ". Use the header names from the downloaded template, or rename your columns to match, then try again.";
+        importBtn.disabled = true;
+      } else {
+        missingEl.style.display = "none";
+        importBtn.disabled = false;
+      }
     }
     sheetSel.onchange = loadSheetPreview;
     loadSheetPreview();
     document.getElementById("dlg-excel-import").showModal();
   }
 
-  function applyExcelImport(rows, colMap, methodologyId) {
+  function applyExcelImport(allRows, colMap, methodologyId, worksheet) {
     var createdStandards = 0, createdParagraphs = 0, updated = 0, skipped = 0;
-    rows.forEach(function (row) {
-      var stdRefRaw = colMap.standardRef != null ? row[colMap.standardRef] : "";
-      var paraNumRaw = colMap.paragraphNumber != null ? row[colMap.paragraphNumber] : "";
-      if (!normalizeWs(stdRefRaw) || !normalizeWs(paraNumRaw)) { skipped++; return; }
-      var refInfo = parseStandardReference(stdRefRaw);
-      if (!refInfo) { skipped++; return; }
+    var colorChecked = 0, colorMismatch = 0;
+    var state = { standard: null, main: null, letter: null, roman: null, subletter: null, subsub: null };
+    function cellVal(row, idx) { return idx != null ? normalizeWs(row[idx]) : ""; }
+
+    for (var i = 1; i < allRows.length; i++) {
+      var row = allRows[i];
+      var standardCell = cellVal(row, colMap.standardRef);
+      var mainCell = cellVal(row, colMap.mainNumber);
+      var letterCell = cellVal(row, colMap.letterCol);
+      var romanCell = cellVal(row, colMap.romanCol);
+      var subletterCell = cellVal(row, colMap.subletterCol);
+      var subsubCell = cellVal(row, colMap.subsubCol);
+      var officialTextCell = cellVal(row, colMap.officialText);
+      var wpExtractCell = cellVal(row, colMap.wpExtract);
+      var wpReferenceCell = cellVal(row, colMap.wpReference);
+      var commentCell = cellVal(row, colMap.comment);
+
+      var rowIsBlank = !standardCell && !mainCell && !letterCell && !romanCell && !subletterCell && !subsubCell && !officialTextCell && !wpExtractCell && !wpReferenceCell && !commentCell;
+      if (rowIsBlank) continue;
+
+      if (standardCell) { state.standard = standardCell; state.main = state.letter = state.roman = state.subletter = state.subsub = null; }
+      if (mainCell) { state.main = mainCell; state.letter = state.roman = state.subletter = state.subsub = null; }
+      if (letterCell) { state.letter = letterCell; state.roman = state.subletter = state.subsub = null; }
+      if (romanCell) { state.roman = romanCell; state.subletter = state.subsub = null; }
+      if (subletterCell) { state.subletter = subletterCell; state.subsub = null; }
+      if (subsubCell) { state.subsub = subsubCell; }
+
+      if (!state.standard || !state.main) { skipped++; continue; }
+      var refInfo = parseStandardReference(state.standard);
+      if (!refInfo) { skipped++; continue; }
+
+      var hierParts = [state.main, state.letter, state.roman, state.subletter, state.subsub].filter(Boolean);
+      var bareNumber = hierParts.join(".");
+
+      if (worksheet && colMap.standardRef != null) {
+        var addr = XLSX.utils.encode_cell({ r: i, c: colMap.standardRef });
+        var cell = worksheet[addr];
+        if (cell && cell.s && cell.s.fgColor && cell.s.fgColor.rgb) {
+          var tier = classifyFillColor(cell.s.fgColor.rgb);
+          if (tier) {
+            colorChecked++;
+            if (tier !== expectedColorTier(hierParts.length)) colorMismatch++;
+          }
+        }
+      }
+
       var stdCountBefore = data.standards.length;
-      var std = findOrCreateStandard(refInfo, stdRefRaw);
+      var std = findOrCreateStandard(refInfo, state.standard, methodologyId);
       if (data.standards.length > stdCountBefore) createdStandards++;
-      var number = composeParaNumber(refInfo.num, paraNumRaw);
+      var number = composeParaNumber(refInfo.num, bareNumber);
       var paraCountBefore = std.paragraphs.length;
-      var officialText = colMap.officialText != null ? normalizeWs(row[colMap.officialText]) : "";
-      var para = findOrCreateParagraph(std, number, officialText);
+      var para = findOrCreateParagraph(std, number, officialTextCell);
       if (std.paragraphs.length > paraCountBefore) createdParagraphs++;
       var cov = ensureCoverageEntry(para, methodologyId);
-      var wpExtract = colMap.wpExtract != null ? normalizeWs(row[colMap.wpExtract]) : "";
-      var wpReference = colMap.wpReference != null ? normalizeWs(row[colMap.wpReference]) : "";
-      var comment = colMap.comment != null ? normalizeWs(row[colMap.comment]) : "";
-      if (wpExtract) cov.wpExtract = wpExtract;
-      if (wpReference) cov.wpReference = wpReference;
-      if (comment) cov.notes = cov.notes ? cov.notes + "\n" + comment : comment;
+      if (wpExtractCell) cov.wpExtract = wpExtractCell;
+      if (wpReferenceCell) cov.wpReference = wpReferenceCell;
+      if (commentCell) cov.notes = cov.notes ? cov.notes + "\n" + commentCell : commentCell;
       cov.updatedAt = new Date().toISOString();
       cov.updatedBy = identityName();
       updated++;
-    });
+    }
+
     var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
     logChange("import", "coverage", meth ? meth.name : "", "Imported WP mapping from Excel — " + updated + " row(s) applied" +
-      (createdStandards ? ", " + createdStandards + " new standard(s)" : "") + (createdParagraphs ? ", " + createdParagraphs + " new paragraph(s)" : "") +
-      (skipped ? ", " + skipped + " row(s) skipped" : "") + ".");
+      (createdStandards ? ", " + createdStandards + " new standard(s) (scoped to " + (meth ? meth.name : "this methodology") + " only)" : "") +
+      (createdParagraphs ? ", " + createdParagraphs + " new paragraph(s)" : "") +
+      (skipped ? ", " + skipped + " row(s) skipped" : "") +
+      (colorChecked ? "; colour check: " + (colorChecked - colorMismatch) + "/" + colorChecked + " row(s) matched their expected hierarchy colour" : "") + ".");
     persist();
-    return { updated: updated, createdStandards: createdStandards, createdParagraphs: createdParagraphs, skipped: skipped };
+    return { updated: updated, createdStandards: createdStandards, createdParagraphs: createdParagraphs, skipped: skipped, colorChecked: colorChecked, colorMismatch: colorMismatch };
+  }
+
+  function exportExcelTemplate() {
+    if (typeof XLSX === "undefined") { alert("The Excel engine failed to load (this feature needs an internet connection to fetch the parser from its CDN). Please check your connection and try again."); return; }
+    var instructions = [
+      ["Draftworx Standards Compliance Tracker — WP Mapping Import Template"],
+      [],
+      ["This file has two sheets:"],
+      ["1. Instructions (this sheet)"],
+      ["2. WP Mapping — fill this in with your data, one row per paragraph, then import it via Standards Review > Import WP Mapping (Excel)"],
+      [],
+      ["Column", "Required?", "Format / notes"],
+      ["Standard Reference", "Required", 'Starts with ISA, ISAE, ISRS or ISRE plus the standard number, e.g. "ISA 315", "ISAE 3000", "ISRS 4400", "ISRE 2400".'],
+      ["Main Paragraph Number", "Required", 'The top-level paragraph number, e.g. "25".'],
+      ["Letter Subdivision", "Optional", 'e.g. "a", "b", "c" — a first-level subdivision of the main paragraph, e.g. paragraph 25(a).'],
+      ["Roman Numeral", "Optional", 'e.g. "i", "ii", "iii" — a subdivision under the letter, e.g. paragraph 25(d)(i).'],
+      ["Sub-Letter", "Optional", 'e.g. "a", "b" — a further subdivision under the roman numeral, e.g. 25(d)(iii)(a).'],
+      ["Sub-Sub Level", "Optional", "A deeper subdivision still, if your standard goes that far."],
+      ["Official Standard Text", "Required", "The standard's requirement wording. Only used the first time a paragraph is created — existing paragraph text already in the tracker is never overwritten by this import."],
+      ["WP Reference", "Optional", 'Your internal WP/section reference, e.g. "10.02" or "15.05".'],
+      ["WP Extract", "Required", "The extract/procedure from your working paper methodology that addresses this paragraph — this is what gets imported into the tracker."],
+      ["Comment", "Optional", "Any reviewer note — added to the paragraph's comparison notes."],
+      [],
+      ["HOW THE 5 REFERENCE COLUMNS COMBINE"],
+      ['The Main / Letter / Roman / Sub-Letter / Sub-Sub columns are combined into one reference, e.g. "25", "25.a", "25.d.i", "25.d.iii.a".'],
+      ["Leave a cell BLANK to carry forward the value directly above it — only fill in a column on the row where that level actually changes. See the example rows below: row 1 sets Main=25 (giving \"25\"); row 2 only fills Letter=a (Main is still 25, giving \"25.a\"); row 4 fills Roman=i while Letter is still carried forward as d (giving \"25.d.i\"), and so on."],
+      ["Filling in a SHALLOWER column (e.g. a new Main Paragraph Number, or a new Letter) starts a fresh sub-hierarchy — any deeper values carried forward from earlier rows no longer apply from that row onward."],
+      [],
+      ["OPTIONAL COLOUR CHECK"],
+      ["If you colour-code rows by hierarchy level (dark green = main paragraph, light green = sub-paragraph, white = sub-sub paragraph and deeper), the importer will use it as a rough best-effort cross-check against the columns above and tell you how many rows matched, so you can double-check any that didn't. This is optional — it works fine without any colour at all."],
+      [],
+      ["When you import, you'll choose which methodology (e.g. RAC, AUP) this file represents — every row is imported into that one methodology."],
+      ["Column order doesn't matter and extra columns are ignored — when you import, you'll match each of the columns above to whichever column in your file contains it."]
+    ];
+    var mapping = [
+      ["Standard Reference", "Main Paragraph Number", "Letter Subdivision", "Roman Numeral", "Sub-Letter", "Sub-Sub Level", "Official Standard Text", "WP Reference", "WP Extract", "Comment"],
+      ["ISRE 2400", "25", "", "", "", "", "Main paragraph 25 requirement text.", "R-25", "WP extract addressing paragraph 25.", "Example row — replace with your own data"],
+      ["", "", "a", "", "", "", "Sub-paragraph 25(a) requirement text.", "R-25a", "WP extract addressing 25(a).", ""],
+      ["", "", "d", "", "", "", "Sub-paragraph 25(d) requirement text.", "R-25d", "WP extract addressing 25(d).", ""],
+      ["", "", "", "i", "", "", "Sub-sub paragraph 25(d)(i) requirement text.", "R-25di", "WP extract addressing 25(d)(i).", ""],
+      ["", "", "", "iii", "", "", "Sub-sub paragraph 25(d)(iii) requirement text.", "R-25diii", "WP extract addressing 25(d)(iii).", ""],
+      ["", "", "", "", "a", "", "Deepest paragraph 25(d)(iii)(a) requirement text.", "R-25diiia", "WP extract addressing 25(d)(iii)(a).", "Example row — replace with your own data"]
+    ];
+    var wb = XLSX.utils.book_new();
+    var wsInstructions = XLSX.utils.aoa_to_sheet(instructions);
+    wsInstructions["!cols"] = [{ wch: 26 }, { wch: 12 }, { wch: 90 }];
+    var wsMapping = XLSX.utils.aoa_to_sheet(mapping);
+    wsMapping["!cols"] = [{ wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 46 }, { wch: 12 }, { wch: 46 }, { wch: 32 }];
+    XLSX.utils.book_append_sheet(wb, wsInstructions, "Instructions");
+    XLSX.utils.book_append_sheet(wb, wsMapping, "WP Mapping");
+    XLSX.writeFile(wb, "draftworx-wp-mapping-template.xlsx");
   }
 
   // ---------- Import / Export (JSON) ----------
@@ -1612,17 +2004,20 @@
     var dlg = document.getElementById("dlg-identity");
     var hasUsers = data.users.length > 0;
     var existingWrap = document.getElementById("identity-existing-wrap");
-    var toggleBtn = document.getElementById("identity-add-toggle");
     var newWrap = document.getElementById("identity-new-wrap");
+    var intro = document.getElementById("identity-intro");
     if (hasUsers) {
-      existingWrap.style.display = ""; toggleBtn.style.display = ""; newWrap.style.display = "none";
+      existingWrap.style.display = ""; newWrap.style.display = "none";
+      intro.textContent = "Select your name so changes you make can be attributed to you in the audit trail.";
       var sel = document.getElementById("f-identity-user");
-      sel.innerHTML = '<option value="">Choose your name…</option>' + data.users.map(function (u) { return '<option value="' + escapeAttr(u.id) + '">' + escapeHtml(u.name) + "</option>"; }).join("");
+      sel.innerHTML = '<option value="">Choose your name…</option>' + data.users.map(function (u) { return '<option value="' + escapeAttr(u.id) + '">' + escapeHtml(u.name) + " — " + escapeHtml(u.jobTitle || "") + "</option>"; }).join("");
       if (identity && identity.userId) sel.value = identity.userId;
     } else {
-      existingWrap.style.display = "none"; toggleBtn.style.display = "none"; newWrap.style.display = "";
+      existingWrap.style.display = "none"; newWrap.style.display = "";
+      intro.textContent = "You're the first person to open this tracker — let's set you up.";
+      document.getElementById("f-identity-new-name").value = "";
+      document.getElementById("f-identity-new-jobtitle").value = "Manager";
     }
-    document.getElementById("f-identity-new-name").value = "";
     document.getElementById("f-identity-pc").value = identity ? identity.pcName : "";
     dlg.querySelectorAll("[data-close]").forEach(function (b) { b.style.display = mandatory ? "none" : ""; });
     dlg.dataset.mandatory = mandatory ? "1" : "0";
@@ -1631,14 +2026,15 @@
   function saveIdentityHandler() {
     var pcInput = document.getElementById("f-identity-pc").value.trim();
     if (!pcInput) { alert("Please enter a PC/device name."); return; }
-    var addWrapVisible = document.getElementById("identity-new-wrap").style.display !== "none";
+    var hasUsers = data.users.length > 0;
     var userObj, isNewUser = false;
-    if (data.users.length === 0 || addWrapVisible) {
+    if (!hasUsers) {
       var newName = document.getElementById("f-identity-new-name").value.trim();
       if (!newName) { alert("Please enter your name."); return; }
-      var existing = data.users.find(function (u) { return u.name.toLowerCase() === newName.toLowerCase(); });
-      if (existing) userObj = existing;
-      else { userObj = { id: uid("user"), name: newName }; data.users.push(userObj); isNewUser = true; }
+      var jobTitle = document.getElementById("f-identity-new-jobtitle").value;
+      userObj = { id: uid("user"), name: newName, jobTitle: jobTitle, accessLevel: "admin" };
+      data.users.push(userObj);
+      isNewUser = true;
     } else {
       var selVal = document.getElementById("f-identity-user").value;
       userObj = data.users.find(function (u) { return u.id === selVal; });
@@ -1649,26 +2045,35 @@
     var previousUser = resolveIdentityUser();
     identity = { userId: userObj.id, pcName: pcInput };
     localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
-    if (isNewUser) logChange("create", "user", userObj.name, 'Added team member "' + userObj.name + '"');
+    if (isNewUser) logChange("create", "user", userObj.name, 'Added team member "' + userObj.name + '" (' + userObj.jobTitle + ", Admin — first user)");
     if (!wasMandatory && previousUser && previousUser.id !== userObj.id) logChange("update", "user", "Switched user", 'User changed from "' + previousUser.name + '" to "' + userObj.name + '" on this device');
     persist();
     dlg.close();
     renderIdentityBadge();
+    applyGlobalRolePermissions();
     if (wasMandatory) finishInit();
     else { renderAuditView(); renderSettingsView(); }
   }
   function wireIdentityDialog() {
     var dlg = document.getElementById("dlg-identity");
     document.getElementById("save-identity-btn").addEventListener("click", saveIdentityHandler);
-    document.getElementById("identity-add-toggle").addEventListener("click", function () {
-      var w = document.getElementById("identity-new-wrap");
-      w.style.display = w.style.display === "none" ? "" : "none";
-    });
     dlg.addEventListener("cancel", function (e) { if (dlg.dataset.mandatory === "1") e.preventDefault(); });
     dlg.addEventListener("click", function (e) { if (e.target === dlg && dlg.dataset.mandatory !== "1") dlg.close(); });
   }
 
+  function applyGlobalRolePermissions() {
+    var isAdmin = can("admin");
+    var settingsTab = document.querySelector('.tab-btn[data-view="settings"]');
+    if (settingsTab) settingsTab.style.display = isAdmin ? "" : "none";
+    var importJsonBtn = document.getElementById("import-btn");
+    if (importJsonBtn) importJsonBtn.style.display = isAdmin ? "" : "none";
+    if (!isAdmin && state.view === "settings") switchToView("dashboard");
+  }
+
+  var appInitialized = false;
   function finishInit() {
+    if (appInitialized) { renderAll(); applyGlobalRolePermissions(); return; }
+    appInitialized = true;
     if (data._justMigrated) {
       logChange("update", "methodology", "Methodology names updated", "Renamed default methodologies to RAC / Review+ / Compilation / AUP / Legal Practitioner and added Property Practitioner");
       delete data._justMigrated;
@@ -1686,6 +2091,14 @@
     document.getElementById("filter-family").addEventListener("change", function (e) { state.familyFilter = e.target.value; renderSidebar(); renderCoverageView(); });
     document.getElementById("filter-status").addEventListener("change", function (e) { state.statusFilter = e.target.value; renderCoverageView(); });
     document.getElementById("search-input").addEventListener("input", function (e) { state.search = e.target.value.trim(); renderCoverageView(); });
+    document.getElementById("expand-all-std-btn").addEventListener("click", function () {
+      data.standards.forEach(function (std) { state.standardCollapse[std.id] = false; });
+      renderCoverageView();
+    });
+    document.getElementById("collapse-all-std-btn").addEventListener("click", function () {
+      data.standards.forEach(function (std) { state.standardCollapse[std.id] = true; });
+      renderCoverageView();
+    });
 
     document.getElementById("add-methodology-btn").addEventListener("click", function () { openMethodologyModal(null); });
     document.getElementById("save-methodology-btn").addEventListener("click", saveMethodology);
@@ -1726,6 +2139,7 @@
     document.getElementById("import-pdf-file").addEventListener("change", function (e) { if (e.target.files[0]) importPdfFile(e.target.files[0]); e.target.value = ""; });
 
     document.getElementById("import-excel-btn").addEventListener("click", function () { document.getElementById("import-excel-file").click(); });
+    document.getElementById("download-excel-template-btn").addEventListener("click", exportExcelTemplate);
     document.getElementById("import-excel-file").addEventListener("change", async function (e) {
       var file = e.target.files[0];
       e.target.value = "";
@@ -1734,30 +2148,19 @@
       if (data.methodologies.length === 0) { alert("Add a methodology first — the Excel mapping is imported into a specific methodology."); return; }
       try {
         var buf = await file.arrayBuffer();
-        var wb = XLSX.read(buf, { type: "array" });
+        var wb = XLSX.read(buf, { type: "array", cellStyles: true });
         openExcelImportModal(wb);
       } catch (err) { alert("Could not read that Excel file: " + err.message); }
     });
     document.getElementById("confirm-excel-import-btn").addEventListener("click", function () {
-      function valOrNull(id) { var v = document.getElementById(id).value; return v === "" ? null : parseInt(v, 10); }
-      var colMap = {
-        standardRef: valOrNull("f-excel-col-standard"),
-        paragraphNumber: valOrNull("f-excel-col-paragraph"),
-        officialText: valOrNull("f-excel-col-official"),
-        wpReference: valOrNull("f-excel-col-wpref"),
-        wpExtract: valOrNull("f-excel-col-wpextract"),
-        comment: valOrNull("f-excel-col-comment")
-      };
-      if (colMap.standardRef === null || colMap.paragraphNumber === null || colMap.officialText === null || colMap.wpExtract === null) {
-        alert("Please select a column for standard reference, paragraph number, official standard text, and WP extract.");
-        return;
-      }
+      if (!pendingExcelColMap || !pendingExcelRows) return;
       var methodologyId = document.getElementById("f-excel-methodology").value;
-      if (!methodologyId || !pendingExcelRows) { alert("Please choose which methodology this Excel represents."); return; }
-      var rows = pendingExcelRows.slice(1);
-      var result = applyExcelImport(rows, colMap, methodologyId);
+      if (!methodologyId) { alert("Please choose which methodology this Excel represents."); return; }
+      var result = applyExcelImport(pendingExcelRows, pendingExcelColMap, methodologyId, pendingExcelWorksheet);
       document.getElementById("dlg-excel-import").close();
       pendingExcelRows = null;
+      pendingExcelWorksheet = null;
+      pendingExcelColMap = null;
       state.activeMethodologyId = methodologyId;
       state.familyFilter = "all"; state.statusFilter = "all"; state.search = "";
       document.getElementById("filter-family").value = "all";
@@ -1766,9 +2169,10 @@
       renderAll();
       switchToView("coverage");
       alert("Import complete: " + result.updated + " row(s) applied" +
-        (result.createdStandards ? ", " + result.createdStandards + " new standard(s) created" : "") +
+        (result.createdStandards ? ", " + result.createdStandards + " new standard(s) created (scoped to this methodology only — edit a standard to change which methodologies see it)" : "") +
         (result.createdParagraphs ? ", " + result.createdParagraphs + " new paragraph(s) created" : "") +
-        (result.skipped ? ", " + result.skipped + " row(s) skipped (missing standard reference or paragraph number)" : "") + ".");
+        (result.skipped ? ", " + result.skipped + " row(s) skipped (missing standard reference or main paragraph number)" : "") +
+        (result.colorChecked ? ". Colour check: " + (result.colorChecked - result.colorMismatch) + " of " + result.colorChecked + " coloured row(s) matched their expected hierarchy tier" + (result.colorMismatch ? " — " + result.colorMismatch + " row(s) didn't match, worth double-checking" : "") : "") + ".");
     });
 
     document.getElementById("dismiss-all-missing-btn").addEventListener("click", function () {
@@ -1780,22 +2184,32 @@
       renderReviewView(); renderNotifyBanner();
     });
 
+    document.getElementById("clear-all-flags-btn").addEventListener("click", function () {
+      var count = (data.pendingFlags || []).length;
+      if (!confirm("Clear all " + count + " flag(s) and the last import record completely? This cannot be undone.")) return;
+      data.pendingFlags = [];
+      data.lastImport = null;
+      state.bannerDismissed = false;
+      logChange("update", "flag", "Cleared all flags", "Cleared " + count + " flag(s) and the last import record.");
+      persist();
+      renderReviewView(); renderNotifyBanner();
+    });
+
+    document.getElementById("clear-audit-btn").addEventListener("click", function () {
+      var count = (data.auditLog || []).length;
+      if (!confirm("Clear all " + count + " audit trail entries completely? This cannot be undone.")) return;
+      data.auditLog = [];
+      logChange("delete", "data", "Audit trail cleared", "Cleared " + count + " audit trail entries.");
+      persist();
+      renderAuditView();
+    });
+
     document.getElementById("audit-filter-user").addEventListener("change", function (e) { state.auditFilters.user = e.target.value; renderAuditView(); });
     document.getElementById("audit-filter-type").addEventListener("change", function (e) { state.auditFilters.entityType = e.target.value; renderAuditView(); });
     document.getElementById("audit-search").addEventListener("input", function (e) { state.auditFilters.search = e.target.value.trim(); renderAuditView(); });
 
-    document.getElementById("add-user-btn").addEventListener("click", function () {
-      var input = document.getElementById("new-user-name");
-      var name = input.value.trim();
-      if (!name) return;
-      if (data.users.some(function (u) { return u.name.toLowerCase() === name.toLowerCase(); })) { alert("That name is already in the list."); return; }
-      var u = { id: uid("user"), name: name };
-      data.users.push(u);
-      logChange("create", "user", name, 'Added team member "' + name + '"');
-      persist();
-      input.value = "";
-      renderSettingsView();
-    });
+    document.getElementById("add-user-btn").addEventListener("click", function () { openUserModal(null); });
+    document.getElementById("save-user-btn").addEventListener("click", saveUser);
 
     var themeBtn = document.getElementById("theme-toggle");
     function applyTheme(theme) {
@@ -1813,6 +2227,7 @@
     });
 
     renderAll();
+    applyGlobalRolePermissions();
   }
 
   document.addEventListener("DOMContentLoaded", function () {
