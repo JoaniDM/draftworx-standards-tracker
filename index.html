@@ -1,0 +1,1828 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Draftworx Standards Compliance Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --page-plane:      #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --success-text:   #006300;
+
+    --cat-1: #2a78d6; --cat-2: #eb6834; --cat-3: #1baf7a; --cat-4: #eda100;
+    --cat-5: #e87ba4; --cat-6: #008300; --cat-7: #4a3aa7; --cat-8: #e34948;
+
+    --status-good:     #0ca30c;
+    --status-warning:  #fab219;
+    --status-critical: #d03b3b;
+    --status-na:       #898781;
+
+    --radius: 8px;
+    --shadow: 0 1px 2px rgba(11,11,11,0.06), 0 1px 8px rgba(11,11,11,0.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page-plane: #0d0d0d; --text-primary: #ffffff;
+      --text-secondary: #c3c2b7; --text-muted: #898781; --gridline: #2c2c2a;
+      --baseline: #383835; --border: rgba(255,255,255,0.10); --success-text: #0ca30c;
+      --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70; --cat-4: #c98500;
+      --cat-5: #d55181; --cat-6: #008300; --cat-7: #9085e9; --cat-8: #e66767;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page-plane: #0d0d0d; --text-primary: #ffffff;
+    --text-secondary: #c3c2b7; --text-muted: #898781; --gridline: #2c2c2a;
+    --baseline: #383835; --border: rgba(255,255,255,0.10); --success-text: #0ca30c;
+    --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70; --cat-4: #c98500;
+    --cat-5: #d55181; --cat-6: #008300; --cat-7: #9085e9; --cat-8: #e66767;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--page-plane); color: var(--text-primary); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  table { font-variant-numeric: tabular-nums; }
+
+  #app { display: flex; flex-direction: column; height: 100vh; }
+
+  .topbar { display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 56px; flex-shrink: 0; background: var(--surface-1); border-bottom: 1px solid var(--border); }
+  .topbar h1 { font-size: 15px; font-weight: 600; margin: 0; white-space: nowrap; }
+  .tabs { display: flex; gap: 4px; margin-left: 16px; flex-wrap: wrap; }
+  .tab-btn { border: none; background: transparent; padding: 8px 12px; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+  .tab-btn:hover { background: var(--gridline); }
+  .tab-btn.active { background: var(--cat-1); color: #fff; }
+
+  .spacer { flex: 1; }
+
+  .search-box { display: flex; align-items: center; gap: 6px; background: var(--page-plane); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 10px; min-width: 180px; }
+  .search-box input { border: none; background: transparent; outline: none; width: 100%; font-size: 13px; color: var(--text-primary); }
+  .search-box svg { flex-shrink: 0; color: var(--text-muted); }
+
+  .identity-badge { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); padding: 7px 12px; border-radius: var(--radius); cursor: pointer; font-size: 13px; white-space: nowrap; }
+  .btn:hover { background: var(--gridline); }
+  .btn.primary { background: var(--cat-1); border-color: var(--cat-1); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.icon-only { padding: 6px 10px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .linklike { border: none; background: none; color: var(--cat-1); cursor: pointer; padding: 0; font-size: 12px; text-decoration: underline; }
+
+  .layout { display: flex; flex: 1; min-height: 0; }
+
+  .sidebar { width: 260px; flex-shrink: 0; background: var(--surface-1); border-right: 1px solid var(--border); padding: 16px 12px; overflow-y: auto; }
+  .sidebar h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin: 18px 6px 8px; }
+  .sidebar h2:first-child { margin-top: 0; }
+  .side-item { display: flex; align-items: center; gap: 8px; width: 100%; border: none; background: transparent; text-align: left; padding: 7px 8px; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text-primary); }
+  .side-item:hover { background: var(--gridline); }
+  .side-item.active { background: var(--cat-1); color: #fff; }
+  .side-item.active .count { color: #fff; opacity: .85; }
+  .side-item .swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .side-item .label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .side-item .count { font-size: 11px; color: var(--text-muted); }
+
+  .methodology-row { display: flex; align-items: center; gap: 4px; }
+  .methodology-row .side-item { flex: 1; }
+  .row-actions { display: none; gap: 2px; }
+  .methodology-row:hover .row-actions { display: flex; }
+  .icon-btn { border: none; background: transparent; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; gap: 4px; font-size: 12px; }
+  .icon-btn:hover { background: var(--gridline); color: var(--text-primary); }
+
+  .sidebar-footer { margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--gridline); font-size: 11px; color: var(--text-muted); }
+  .sidebar-footer button { border: none; background: none; color: var(--cat-1); cursor: pointer; font-size: 11px; padding: 0; margin-top: 6px; }
+
+  main.content { flex: 1; overflow-y: auto; padding: 20px 24px 60px; min-width: 0; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .page-head { margin-bottom: 18px; }
+  .page-head h2 { margin: 0 0 4px; font-size: 18px; }
+  .page-head p { margin: 0; font-size: 13px; color: var(--text-secondary); }
+
+  .notify-banner { display: none; align-items: center; gap: 12px; background: rgba(250,178,25,0.12); border: 1px solid var(--status-warning); color: var(--text-primary); padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
+
+  .tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; }
+  .tile .tile-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tile .tile-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+  .tile .hero { font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 10px; }
+  .stack-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--gridline); margin-bottom: 10px; }
+  .stack-bar span { height: 100%; }
+  .stack-bar span + span { margin-left: 2px; }
+  .tile-legend { display: flex; flex-wrap: wrap; gap: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  .family-panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 12px; }
+  .family-panel h3 { margin: 0 0 2px; font-size: 14px; }
+  .family-panel .fp-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 12px; }
+  .hbar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .hbar-row:last-child { margin-bottom: 0; }
+  .hbar-label { width: 170px; flex-shrink: 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hbar-track { flex: 1; height: 10px; background: var(--gridline); border-radius: 4px; overflow: hidden; }
+  .hbar-fill { height: 100%; border-radius: 4px; }
+  .hbar-pct { width: 40px; text-align: right; font-size: 12px; color: var(--text-secondary); flex-shrink: 0; }
+
+  .filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .filter-bar select, .filter-bar input[type=text] { border: 1px solid var(--border); background: var(--surface-1); border-radius: var(--radius); padding: 6px 10px; font-size: 13px; }
+
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .pill-btn { border: 1px solid var(--border); background: var(--surface-1); border-radius: 999px; padding: 6px 14px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .pill-btn:hover { background: var(--gridline); }
+  .pill-btn.active { background: var(--cat-1); border-color: var(--cat-1); color: #fff; }
+  .pill-swatch { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; display: inline-block; }
+
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); }
+  table.matrix { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 560px; }
+  table.matrix thead th { position: sticky; top: 0; background: var(--surface-1); border-bottom: 1px solid var(--gridline); text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); white-space: nowrap; z-index: 1; }
+  table.matrix tr.para-row td { padding: 8px 12px; border-bottom: 1px solid var(--gridline); vertical-align: top; }
+  table.matrix tr.para-row:hover td { background: var(--page-plane); }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 13px; }
+  .empty-state .btn { margin-top: 12px; }
+
+  .fam-badge { font-weight: 500; font-size: 10px; text-transform: uppercase; color: var(--text-muted); margin-left: 8px; }
+  .cell-actions { display: flex; gap: 6px; flex-wrap: wrap; white-space: nowrap; }
+
+  .para-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); margin: 18px 0 8px; font-size: 13px; font-weight: 600; }
+  .para-card-head:first-child { margin-top: 0; }
+
+  .review-card { display: grid; grid-template-columns: 1fr 1fr 1fr; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; }
+  .review-col { padding: 12px 14px; border-right: 1px solid var(--gridline); display: flex; flex-direction: column; gap: 8px; }
+  .review-col:last-child { border-right: none; }
+  .review-col h4 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); }
+  .review-text { font-size: 13px; color: var(--text-primary); white-space: pre-wrap; flex: 1; }
+  .review-textarea { width: 100%; min-height: 84px; border: 1px solid var(--border); background: var(--page-plane); border-radius: 6px; padding: 8px; font-size: 13px; resize: vertical; }
+  .status-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .status-pill { border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; font-size: 12px; cursor: pointer; background: var(--page-plane); }
+  .status-pill.active-full { background: rgba(12,163,12,0.15); border-color: var(--status-good); color: var(--success-text); }
+  .status-pill.active-partial { background: rgba(250,178,25,0.18); border-color: var(--status-warning); color: #a5690f; }
+  .status-pill.active-none { background: rgba(208,59,59,0.15); border-color: var(--status-critical); color: var(--status-critical); }
+  .status-pill.active-na { background: var(--gridline); border-color: var(--baseline); color: var(--text-muted); }
+  .overlap-hint { font-size: 11px; color: var(--text-muted); }
+  .save-caption { font-size: 11px; color: var(--text-muted); margin-top: auto; }
+  @media (max-width: 980px) { .review-card { grid-template-columns: 1fr; } .review-col { border-right: none; border-bottom: 1px solid var(--gridline); } .review-col:last-child { border-bottom: none; } }
+
+  .flag-row { padding: 12px 0; border-top: 1px solid var(--gridline); }
+  .flag-row:first-of-type { border-top: none; }
+  .flag-number { font-weight: 600; margin-bottom: 4px; }
+  .flag-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 8px; border: 1px solid var(--border); }
+  .flag-new { color: var(--cat-1); }
+  .flag-changed { color: #a5690f; }
+  .flag-missing { color: var(--text-muted); }
+  .diff-block { white-space: pre-wrap; font-size: 13px; line-height: 1.5; background: var(--page-plane); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; margin: 6px 0; max-height: 200px; overflow-y: auto; }
+  .diff-del { color: var(--status-critical); text-decoration: line-through; background: rgba(208,59,59,0.10); border-radius: 2px; }
+  .diff-ins { color: var(--success-text); text-decoration: underline; background: rgba(12,163,12,0.10); border-radius: 2px; }
+
+  .progress-track { height: 8px; background: var(--gridline); border-radius: 4px; overflow: hidden; margin: 10px 0 6px; }
+  .progress-fill { height: 100%; background: var(--cat-1); transition: width .15s; }
+
+  dialog { border: none; border-radius: 10px; padding: 0; background: var(--surface-1); color: var(--text-primary); box-shadow: 0 8px 30px rgba(0,0,0,0.25); width: 440px; max-width: calc(100vw - 32px); }
+  dialog::backdrop { background: rgba(0,0,0,0.4); }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--gridline); }
+  .modal-head h3 { margin: 0; font-size: 15px; }
+  .modal-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow-y: auto; }
+  .modal-foot { padding: 14px 18px; border-top: 1px solid var(--gridline); display: flex; justify-content: flex-end; gap: 8px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
+  .field input, .field select, .field textarea { border: 1px solid var(--border); background: var(--page-plane); border-radius: var(--radius); padding: 8px 10px; font-size: 13px; }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .readonly-note { font-size: 12px; color: var(--text-muted); background: var(--page-plane); padding: 8px 10px; border-radius: var(--radius); }
+
+  @media (max-width: 760px) {
+    .sidebar { display: none; }
+    .hbar-label { width: 110px; }
+    .search-box { min-width: 120px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <h1>Draftworx Standards Compliance Tracker</h1>
+    <div class="tabs">
+      <button class="tab-btn active" data-view="dashboard">Dashboard</button>
+      <button class="tab-btn" data-view="coverage">Coverage Review</button>
+      <button class="tab-btn" data-view="review">Standards Review</button>
+      <button class="tab-btn" data-view="audit">Audit Trail</button>
+      <button class="tab-btn" data-view="settings">Settings</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="search-box">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" id="search-input" placeholder="Search paragraphs, standards...">
+    </div>
+    <span class="identity-badge" id="identity-badge"></span>
+    <button class="btn icon-only" id="theme-toggle" title="Toggle theme"></button>
+    <button class="btn" id="export-btn">Export JSON</button>
+    <button class="btn" id="import-btn">Import JSON</button>
+    <input type="file" id="import-file" accept="application/json" hidden>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Standards</h2>
+      <button class="side-item" data-family="all"><span class="label">All families</span><span class="count" id="count-all"></span></button>
+      <button class="side-item" data-family="ISA"><span class="label">ISA</span><span class="count" id="count-ISA"></span></button>
+      <button class="side-item" data-family="ISAE 3000"><span class="label">ISAE 3000</span><span class="count" id="count-ISAE 3000"></span></button>
+      <button class="side-item" data-family="ISRS 4400"><span class="label">ISRS 4400</span><span class="count" id="count-ISRS 4400"></span></button>
+      <button class="side-item" data-family="ISRE 2400"><span class="label">ISRE 2400</span><span class="count" id="count-ISRE 2400"></span></button>
+
+      <h2>Methodologies</h2>
+      <div id="methodology-list"></div>
+      <button class="btn" id="add-methodology-btn" style="width:100%; margin-top:8px; justify-content:center;">+ Add methodology</button>
+
+      <div class="sidebar-footer">
+        <div id="last-saved"></div>
+        <button id="reset-demo-btn">Reset to demo data</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="notify-banner" id="notify-banner"></div>
+
+      <section class="view active" id="view-dashboard">
+        <div class="page-head"><h2>Overview</h2><p id="overview-sub"></p></div>
+        <div class="tile-grid" id="tile-grid"></div>
+        <h2 style="font-size:14px; margin: 0 0 10px;">Coverage by standard family</h2>
+        <div id="family-panels"></div>
+      </section>
+
+      <section class="view" id="view-coverage">
+        <div class="page-head">
+          <h2>Coverage Review</h2>
+          <p>Compare the official standard text against the Draftworx WP extract for <strong id="coverage-active-meth-name"></strong>, and record the compliance status.</p>
+        </div>
+        <div class="filter-bar">
+          <select id="filter-family">
+            <option value="all">All families</option>
+            <option value="ISA">ISA</option>
+            <option value="ISAE 3000">ISAE 3000</option>
+            <option value="ISRS 4400">ISRS 4400</option>
+            <option value="ISRE 2400">ISRE 2400</option>
+          </select>
+          <select id="filter-status">
+            <option value="all">All statuses</option>
+            <option value="full">Full</option>
+            <option value="partial">Partial</option>
+            <option value="none">None</option>
+            <option value="na">N/A</option>
+          </select>
+          <div class="spacer"></div>
+          <button class="btn" id="add-standard-btn">+ Add standard</button>
+          <button class="btn" id="add-paragraph-btn">+ Add paragraph</button>
+        </div>
+        <div class="pill-row" id="coverage-methodology-pills"></div>
+        <div class="empty-state" id="coverage-empty-no-meth" style="display:none;">No methodologies yet. Add one from the sidebar to begin reviewing coverage.</div>
+        <div id="coverage-body">
+          <div id="coverage-list"></div>
+          <div class="empty-state" id="coverage-empty-filtered" style="display:none;">No paragraphs match the current filters.</div>
+        </div>
+      </section>
+
+      <section class="view" id="view-review">
+        <div class="page-head">
+          <h2>Standards Review</h2>
+          <p>Import a text-based IRBA/IAASB handbook PDF to compare it against your stored paragraphs. Extraction is best-effort text matching &mdash; always review before applying a change.</p>
+        </div>
+        <div class="family-panel">
+          <h3>Compare against the IRBA/IAASB handbook (PDF)</h3>
+          <div class="fp-sub">Flags New / Changed / Missing paragraphs for your review &mdash; nothing is applied automatically.</div>
+          <div class="readonly-note" id="last-import-info" style="margin-bottom:14px;">No standards PDF has been imported yet.</div>
+          <div>
+            <button class="btn primary" id="import-pdf-btn">Import Standards PDF</button>
+            <input type="file" id="import-pdf-file" accept="application/pdf" hidden>
+          </div>
+          <div id="import-progress" style="display:none;">
+            <div class="progress-track"><div class="progress-fill" id="import-progress-fill" style="width:0%"></div></div>
+            <div id="import-progress-text" style="font-size:12px; color:var(--text-muted);"></div>
+          </div>
+        </div>
+        <div class="family-panel">
+          <h3>Import WP mapping (Excel)</h3>
+          <div class="fp-sub">Populates the Draftworx WP extract, WP reference and comments for each paragraph directly from your existing Excel mapping file &mdash; applied immediately so you can compare it against the standard text.</div>
+          <button class="btn primary" id="import-excel-btn">Import WP Mapping (Excel)</button>
+          <input type="file" id="import-excel-file" accept=".xlsx,.xls" hidden>
+        </div>
+        <h2 style="font-size:14px; margin: 22px 0 10px;">Flagged differences (from PDF comparison)</h2>
+        <div class="pill-row" id="review-type-pills"></div>
+        <div style="margin-bottom:10px;">
+          <button class="btn" id="dismiss-all-missing-btn" style="display:none;">Dismiss all Missing flags</button>
+        </div>
+        <div class="empty-state" id="no-flags-msg">No pending differences. Import a handbook PDF to check for changes.</div>
+        <div id="flags-container"></div>
+      </section>
+
+      <section class="view" id="view-audit">
+        <div class="page-head"><h2>Audit Trail</h2><p>A full history of who changed what, and when.</p></div>
+        <div class="filter-bar">
+          <select id="audit-filter-user"><option value="all">All users</option></select>
+          <select id="audit-filter-type">
+            <option value="all">All types</option>
+            <option value="methodology">Methodology</option>
+            <option value="standard">Standard</option>
+            <option value="paragraph">Paragraph</option>
+            <option value="coverage">Coverage</option>
+            <option value="standards">Standards import</option>
+            <option value="flag">Flag review</option>
+            <option value="data">Data</option>
+            <option value="user">User</option>
+          </select>
+          <input type="text" id="audit-search" placeholder="Search audit trail...">
+        </div>
+        <div class="table-scroll">
+          <table class="matrix">
+            <thead><tr><th>Timestamp</th><th>User</th><th>Type</th><th>Item</th><th>Change</th></tr></thead>
+            <tbody id="audit-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view" id="view-settings">
+        <div class="page-head"><h2>Settings</h2><p>Manage the list of team members who can be selected at login.</p></div>
+        <div class="family-panel">
+          <h3>Team members</h3>
+          <div id="users-list"></div>
+          <div style="display:flex; gap:8px; margin-top:12px;">
+            <input type="text" id="new-user-name" placeholder="Full name" style="flex:1; border:1px solid var(--border); background:var(--page-plane); border-radius:var(--radius); padding:8px 10px;">
+            <button class="btn primary" id="add-user-btn">Add user</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<dialog id="dlg-identity">
+  <form method="dialog">
+    <div class="modal-head"><h3>Welcome</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-body">
+      <p style="margin:0; font-size:13px; color:var(--text-secondary);">Select your name so changes you make can be attributed to you in the audit trail.</p>
+      <div class="field" id="identity-existing-wrap">
+        <label>Your name</label>
+        <select id="f-identity-user"></select>
+      </div>
+      <div><button type="button" class="linklike" id="identity-add-toggle">+ Add someone new</button></div>
+      <div class="field" id="identity-new-wrap" style="display:none;">
+        <label>Full name</label>
+        <input type="text" id="f-identity-new-name" placeholder="Full name">
+      </div>
+      <div class="field"><label>PC / device name</label><input type="text" id="f-identity-pc" placeholder="e.g. DESKTOP-JD01" required></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="button" class="btn primary" id="save-identity-btn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-methodology">
+  <form method="dialog">
+    <div class="modal-head"><h3 id="dlg-methodology-title">Add methodology</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Name</label><input type="text" id="f-methodology-name" required></div>
+      <div class="field"><label>Description</label><textarea id="f-methodology-desc" placeholder="Optional notes about this methodology"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="button" class="btn primary" id="save-methodology-btn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-standard">
+  <form method="dialog">
+    <div class="modal-head"><h3 id="dlg-standard-title">Add standard</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Family</label>
+        <select id="f-standard-family">
+          <option value="ISA">ISA</option>
+          <option value="ISAE 3000">ISAE 3000</option>
+          <option value="ISRS 4400">ISRS 4400</option>
+          <option value="ISRE 2400">ISRE 2400</option>
+        </select>
+      </div>
+      <div class="field"><label>Code</label><input type="text" id="f-standard-code" placeholder="e.g. ISA 315 (Revised 2019)" required></div>
+      <div class="field"><label>Title</label><input type="text" id="f-standard-title" placeholder="e.g. Identifying and Assessing the Risks of Material Misstatement" required></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="button" class="btn primary" id="save-standard-btn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-paragraph">
+  <form method="dialog">
+    <div class="modal-head"><h3 id="dlg-paragraph-title">Add paragraph</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Standard</label><select id="f-paragraph-standard"></select></div>
+      <div class="field"><label>Paragraph number</label><input type="text" id="f-paragraph-number" placeholder="e.g. 315.11" required></div>
+      <div class="field"><label>Official standard text</label><textarea id="f-paragraph-text" placeholder="Official wording or paraphrased summary of the requirement" required></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="button" class="btn primary" id="save-paragraph-btn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-import-confirm">
+  <form method="dialog">
+    <div class="modal-head"><h3>Import data</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-body">
+      <p style="margin:0; font-size:13px;">This will replace all current data in this browser with the contents of the selected file. This cannot be undone. Continue?</p>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="button" class="btn primary" id="confirm-import-btn">Replace data</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-excel-import" style="width:560px;">
+  <form method="dialog">
+    <div class="modal-head"><h3>Import WP Mapping (Excel)</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-body">
+      <div class="readonly-note" id="excel-import-summary"></div>
+      <div class="field" id="excel-sheet-wrap" style="display:none;"><label>Sheet</label><select id="f-excel-sheet"></select></div>
+      <div class="field"><label>Import into methodology</label><select id="f-excel-methodology"></select></div>
+      <div class="field"><label>Standard reference column</label><select id="f-excel-col-standard"></select></div>
+      <div class="field"><label>Paragraph number column</label><select id="f-excel-col-paragraph"></select></div>
+      <div class="field"><label>Official standard text column</label><select id="f-excel-col-official"></select></div>
+      <div class="field"><label>WP reference column (optional)</label><select id="f-excel-col-wpref"></select></div>
+      <div class="field"><label>WP extract column</label><select id="f-excel-col-wpextract"></select></div>
+      <div class="field"><label>Comment column (optional)</label><select id="f-excel-col-comment"></select></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="button" class="btn primary" id="confirm-excel-import-btn">Import</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "dwx-standards-tracker-v1";
+  var THEME_KEY = "dwx-standards-tracker-theme";
+  var IDENTITY_KEY = "dwx-standards-tracker-identity";
+  var CATS = ["--cat-1","--cat-2","--cat-3","--cat-4","--cat-5","--cat-6","--cat-7","--cat-8"];
+  var FAMILIES = ["ISA", "ISAE 3000", "ISRS 4400", "ISRE 2400"];
+
+  var STATUS = {
+    full:    { label: "Full",    icon: "✓", varName: "--status-good" },
+    partial: { label: "Partial", icon: "◐", varName: "--status-warning" },
+    none:    { label: "None",    icon: "✕", varName: "--status-critical" },
+    na:      { label: "N/A",     icon: "–", varName: "--status-na" }
+  };
+  var STATUS_ORDER = ["full", "partial", "none", "na"];
+
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  }
+
+  function uid(prefix) { return prefix + "_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4); }
+  function catColor(colorIndex) { return "var(" + CATS[colorIndex % CATS.length] + ")"; }
+  function normalizeWs(s) { return String(s || "").replace(/\s+/g, " ").trim(); }
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
+  }
+  function escapeAttr(str) { return escapeHtml(str); }
+
+  function textOverlapPct(a, b) {
+    var wa = normalizeWs(a).toLowerCase().split(/\W+/).filter(Boolean);
+    var wb = normalizeWs(b).toLowerCase().split(/\W+/).filter(Boolean);
+    if (!wa.length || !wb.length) return null;
+    var setA = {}, setB = {};
+    wa.forEach(function (w) { setA[w] = true; });
+    wb.forEach(function (w) { setB[w] = true; });
+    var intersection = 0, unionSet = {};
+    Object.keys(setA).forEach(function (w) { unionSet[w] = true; if (setB[w]) intersection++; });
+    Object.keys(setB).forEach(function (w) { unionSet[w] = true; });
+    var union = Object.keys(unionSet).length;
+    return union ? Math.round((intersection / union) * 100) : null;
+  }
+
+  function wordDiff(oldStr, newStr) {
+    var a = normalizeWs(oldStr).split(/(\s+)/).filter(function (t) { return t.length; });
+    var b = normalizeWs(newStr).split(/(\s+)/).filter(function (t) { return t.length; });
+    var n = a.length, m = b.length;
+    var dp = new Array(n + 1);
+    for (var i = 0; i <= n; i++) dp[i] = new Array(m + 1).fill(0);
+    for (i = n - 1; i >= 0; i--) {
+      for (var j = m - 1; j >= 0; j--) {
+        dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+    var i2 = 0, j2 = 0, ops = [];
+    while (i2 < n && j2 < m) {
+      if (a[i2] === b[j2]) { ops.push({ type: "equal", text: a[i2] }); i2++; j2++; }
+      else if (dp[i2 + 1][j2] >= dp[i2][j2 + 1]) { ops.push({ type: "remove", text: a[i2] }); i2++; }
+      else { ops.push({ type: "add", text: b[j2] }); j2++; }
+    }
+    while (i2 < n) { ops.push({ type: "remove", text: a[i2] }); i2++; }
+    while (j2 < m) { ops.push({ type: "add", text: b[j2] }); j2++; }
+    return ops;
+  }
+  function renderWordDiff(oldStr, newStr) {
+    return wordDiff(oldStr, newStr).map(function (op) {
+      var t = escapeHtml(op.text);
+      if (op.type === "equal") return t;
+      if (op.type === "remove") return '<span class="diff-del">' + t + "</span>";
+      return '<span class="diff-ins">' + t + "</span>";
+    }).join("");
+  }
+
+  // ---------- Seed data ----------
+  function seedData() {
+    var m = {
+      rac:      { id: uid("meth"), name: "RAC", description: "Draftworx methodology pack — RAC.", colorIndex: 0 },
+      reviewplus: { id: uid("meth"), name: "Review+", description: "Draftworx methodology pack for independent review engagements.", colorIndex: 1 },
+      compilation: { id: uid("meth"), name: "Compilation", description: "Draftworx methodology pack for compilation engagements.", colorIndex: 2 },
+      aup:      { id: uid("meth"), name: "AUP", description: "Draftworx methodology pack for agreed-upon procedures engagements.", colorIndex: 3 },
+      legal:    { id: uid("meth"), name: "Legal Practitioner", description: "Draftworx methodology pack for legal practitioner trust account engagements.", colorIndex: 4 },
+      property: { id: uid("meth"), name: "Property Practitioner", description: "Draftworx methodology pack for property practitioner trust account engagements.", colorIndex: 5 }
+    };
+    var methodologies = [m.rac, m.reviewplus, m.compilation, m.aup, m.legal, m.property];
+
+    function cov(spec) {
+      var out = {};
+      Object.keys(spec).forEach(function (key) {
+        var meth = m[key];
+        var v = spec[key];
+        out[meth.id] = { status: v.status, wpExtract: v.wpExtract || "", wpReference: v.wpReference || "", notes: v.notes || "", updatedAt: v.wpExtract ? "2026-06-15T09:30:00.000Z" : null, updatedBy: v.wpExtract ? "Demo Reviewer" : null };
+      });
+      return out;
+    }
+
+    var standards = [
+      {
+        id: uid("std"), family: "ISA", code: "ISA 315 (Revised 2019)",
+        title: "Identifying and Assessing the Risks of Material Misstatement",
+        paragraphs: [
+          { id: uid("para"), number: "315.11", text: "Understand the entity's relevant industry, regulatory and other external factors.", coverage: cov({ rac: { status: "full", wpReference: "2.1", wpExtract: "WP 2.1 Industry & Regulatory Understanding — documents relevant industry, legal and regulatory factors, updated via the annual planning checklist." }, legal: { status: "partial" } }) },
+          { id: uid("para"), number: "315.19", text: "Identify and assess risks of material misstatement at the financial statement and assertion levels.", coverage: cov({ rac: { status: "full", wpExtract: "WP 4.3 Risk Assessment Summary — assertion-level risk register completed for each significant class of transaction." }, legal: { status: "none" } }) },
+          { id: uid("para"), number: "315.25", text: "Evaluate the design of identified controls and determine implementation.", coverage: cov({ rac: { status: "partial" } }) }
+        ]
+      },
+      {
+        id: uid("std"), family: "ISA", code: "ISA 500",
+        title: "Audit Evidence",
+        paragraphs: [
+          { id: uid("para"), number: "500.6", text: "Design and perform audit procedures to obtain sufficient appropriate audit evidence.", coverage: cov({ rac: { status: "full", wpReference: "6.0", wpExtract: "WP 6.0 Evidence Gathering Program — audit procedures selected per financial statement area with cross-reference to the risk register." }, legal: { status: "full" } }) },
+          { id: uid("para"), number: "500.9", text: "Consider the relevance and reliability of information used as audit evidence.", coverage: cov({ rac: { status: "full" }, legal: { status: "partial" } }) }
+        ]
+      },
+      {
+        id: uid("std"), family: "ISA", code: "ISA 700 (Revised)",
+        title: "Forming an Opinion and Reporting on Financial Statements",
+        paragraphs: [
+          { id: uid("para"), number: "700.10", text: "Form an opinion on whether the financial statements are prepared in accordance with the applicable framework.", coverage: cov({ rac: { status: "full" } }) },
+          { id: uid("para"), number: "700.24", text: "Describe the auditor's responsibilities for the audit of the financial statements.", coverage: cov({ rac: { status: "partial" } }) }
+        ]
+      },
+      {
+        id: uid("std"), family: "ISAE 3000", code: "ISAE 3000 (Revised)",
+        title: "Assurance Engagements Other than Audits or Reviews of Historical Financial Information",
+        paragraphs: [
+          { id: uid("para"), number: "3000.34", text: "Plan the engagement so it will be performed effectively, including determining materiality.", coverage: cov({ legal: { status: "full", wpReference: "1.0", wpExtract: "Trust Account AUP Planning Memo — materiality and scope agreed with the Legal Practice Council requirements." } }) },
+          { id: uid("para"), number: "3000.44", text: "Obtain sufficient appropriate evidence to support the conclusion.", coverage: cov({ legal: { status: "partial" } }) },
+          { id: uid("para"), number: "3000.60", text: "Prepare an assurance report containing all required elements.", coverage: cov({ legal: { status: "none" } }) }
+        ]
+      },
+      {
+        id: uid("std"), family: "ISRS 4400", code: "ISRS 4400 (Revised)",
+        title: "Agreed-Upon Procedures Engagements",
+        paragraphs: [
+          { id: uid("para"), number: "4400.14", text: "Agree the terms of the engagement with the engaging party.", coverage: cov({ aup: { status: "full", wpReference: "AUP-1", wpExtract: "AUP Engagement Letter template — terms agreed and signed by the engaging party prior to commencement." } }) },
+          { id: uid("para"), number: "4400.25", text: "Perform the agreed-upon procedures and use the evidence obtained as the basis for the findings.", coverage: cov({ aup: { status: "full" } }) },
+          { id: uid("para"), number: "4400.40", text: "Report factual findings in accordance with the terms of engagement.", coverage: cov({ aup: { status: "partial" } }) }
+        ]
+      },
+      {
+        id: uid("std"), family: "ISRE 2400", code: "ISRE 2400 (Revised)",
+        title: "Engagements to Review Historical Financial Statements",
+        paragraphs: [
+          { id: uid("para"), number: "2400.30", text: "Understand the entity to identify areas where material misstatements are likely to arise.", coverage: cov({ reviewplus: { status: "full", wpReference: "R-1", wpExtract: "Review WP 1 — Entity Understanding Checklist covering nature of business, related parties and accounting policies." } }) },
+          { id: uid("para"), number: "2400.50", text: "Design and perform inquiry and analytical procedures to address identified risk areas.", coverage: cov({ reviewplus: { status: "partial" } }) },
+          { id: uid("para"), number: "2400.71", text: "Form a conclusion on whether anything has come to attention indicating the financial statements are materially misstated.", coverage: cov({ reviewplus: { status: "none" } }) }
+        ]
+      }
+    ];
+
+    return { methodologies: methodologies, standards: standards, nextColorIndex: methodologies.length, users: [], auditLog: [], pendingFlags: [], lastImport: null };
+  }
+
+  // ---------- State ----------
+  var data = null;
+  var identity = null;
+  var pendingJsonImport = null;
+  var state = {
+    view: "dashboard",
+    familyFilter: "all",
+    statusFilter: "all",
+    search: "",
+    activeMethodologyId: null,
+    bannerDismissed: false,
+    auditFilters: { user: "all", entityType: "all", search: "" },
+    reviewFilter: { type: "all" },
+    reviewRevealed: {},
+    editing: { methodologyId: null, standardId: null, paragraphId: null }
+  };
+
+  function migrateData(d) {
+    var renameMap = {
+      "Audit Methodology": "RAC", "Review Methodology": "Review+", "Compilation Methodology": "Compilation",
+      "Agreed-Upon Procedures Methodology": "AUP", "Other Assurance Methodology": "Legal Practitioner"
+    };
+    var methodologyRenamed = false;
+    d.methodologies.forEach(function (m) { if (renameMap[m.name]) { m.name = renameMap[m.name]; methodologyRenamed = true; } });
+    var hasProperty = d.methodologies.some(function (m) { return m.name === "Property Practitioner"; });
+    if (!hasProperty) {
+      var nextIdx = typeof d.nextColorIndex === "number" ? d.nextColorIndex : d.methodologies.length;
+      d.methodologies.push({ id: uid("meth"), name: "Property Practitioner", description: "Draftworx methodology pack for property practitioner trust account engagements.", colorIndex: nextIdx });
+      d.nextColorIndex = nextIdx + 1;
+      methodologyRenamed = true;
+    }
+    if (!Array.isArray(d.auditLog)) d.auditLog = [];
+    if (!Array.isArray(d.pendingFlags)) d.pendingFlags = [];
+    if (typeof d.lastImport === "undefined") d.lastImport = null;
+    if (!Array.isArray(d.users)) d.users = [];
+    d.standards.forEach(function (std) {
+      std.paragraphs.forEach(function (p) {
+        Object.keys(p.coverage || {}).forEach(function (mid) {
+          var c = p.coverage[mid];
+          if (typeof c.wpExtract === "undefined") c.wpExtract = "";
+          if (typeof c.wpReference === "undefined") c.wpReference = "";
+          if (typeof c.updatedBy === "undefined") c.updatedBy = null;
+        });
+      });
+    });
+    return methodologyRenamed;
+  }
+
+  function load() {
+    var result, fromStorage = false;
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.methodologies) && Array.isArray(parsed.standards)) { result = parsed; fromStorage = true; }
+      }
+    } catch (e) { /* fall through to seed */ }
+    if (!result) result = seedData();
+    var migrated = migrateData(result);
+    if (typeof result.nextColorIndex !== "number") result.nextColorIndex = result.methodologies.length;
+    if (fromStorage && migrated) result._justMigrated = true;
+    return result;
+  }
+
+  function persist() {
+    var toSave = {};
+    Object.keys(data).forEach(function (k) { if (k !== "_justMigrated") toSave[k] = data[k]; });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    var el = document.getElementById("last-saved");
+    if (el) el.textContent = "Saved " + new Date().toLocaleTimeString();
+  }
+
+  function resolveIdentityUser() {
+    if (!identity) return null;
+    return data.users.find(function (u) { return u.id === identity.userId; }) || null;
+  }
+  function identityName() { var u = resolveIdentityUser(); return u ? u.name : "Unknown"; }
+
+  function resolveSessionIdentity() {
+    var raw = localStorage.getItem(IDENTITY_KEY);
+    if (!raw) return null;
+    try {
+      var parsed = JSON.parse(raw);
+      if (parsed && parsed.userId) {
+        var u = data.users.find(function (x) { return x.id === parsed.userId; });
+        return u ? { userId: parsed.userId, pcName: parsed.pcName || "" } : null;
+      }
+      if (parsed && parsed.name) {
+        var match = data.users.find(function (x) { return x.name.toLowerCase() === parsed.name.toLowerCase(); });
+        if (!match) { match = { id: uid("user"), name: parsed.name }; data.users.push(match); }
+        var newIdentity = { userId: match.id, pcName: parsed.pcName || "" };
+        localStorage.setItem(IDENTITY_KEY, JSON.stringify(newIdentity));
+        return newIdentity;
+      }
+    } catch (e) { /* ignore */ }
+    return null;
+  }
+
+  function logChange(action, entityType, label, summary) {
+    if (!data) return;
+    if (!Array.isArray(data.auditLog)) data.auditLog = [];
+    data.auditLog.unshift({
+      id: uid("log"), timestamp: new Date().toISOString(), user: identityName(),
+      pcName: identity ? identity.pcName : "Unknown", action: action, entityType: entityType, label: label, summary: summary
+    });
+  }
+
+  // ---------- Derived helpers ----------
+  function allParagraphs() {
+    var out = [];
+    data.standards.forEach(function (std) { std.paragraphs.forEach(function (p) { out.push({ std: std, para: p }); }); });
+    return out;
+  }
+  function getStatus(para, methodologyId) {
+    var c = para.coverage[methodologyId];
+    return c ? c.status : "none";
+  }
+  function matchesFilters(std, para) {
+    if (state.familyFilter !== "all" && std.family !== state.familyFilter) return false;
+    if (state.statusFilter !== "all") {
+      var s = getStatus(para, state.activeMethodologyId);
+      if (s !== state.statusFilter) return false;
+    }
+    if (state.search) {
+      var q = state.search.toLowerCase();
+      var hay = (std.code + " " + std.title + " " + para.number + " " + para.text).toLowerCase();
+      if (hay.indexOf(q) === -1) return false;
+    }
+    return true;
+  }
+  function computeCounts(methodologyId, familyFilter) {
+    var counts = { full: 0, partial: 0, none: 0, na: 0 };
+    data.standards.forEach(function (std) {
+      if (familyFilter && std.family !== familyFilter) return;
+      std.paragraphs.forEach(function (p) { counts[getStatus(p, methodologyId)]++; });
+    });
+    return counts;
+  }
+  function coveragePercent(counts) {
+    var applicable = counts.full + counts.partial + counts.none;
+    if (applicable === 0) return null;
+    return Math.round(((counts.full + counts.partial * 0.5) / applicable) * 100);
+  }
+  function findParagraph(id) {
+    for (var i = 0; i < data.standards.length; i++) {
+      var std = data.standards[i];
+      for (var j = 0; j < std.paragraphs.length; j++) {
+        if (std.paragraphs[j].id === id) return { std: std, para: std.paragraphs[j] };
+      }
+    }
+    return null;
+  }
+  function withScrollPreserved(fn) {
+    var el = document.querySelector("main.content");
+    var top = el ? el.scrollTop : 0;
+    fn();
+    if (el) el.scrollTop = top;
+  }
+
+  // ---------- Rendering ----------
+  function renderAll() {
+    renderSidebar();
+    renderDashboard();
+    renderCoverageView();
+    renderReviewView();
+    renderNotifyBanner();
+    renderAuditView();
+    renderSettingsView();
+    persist();
+  }
+
+  function switchToView(name) {
+    state.view = name;
+    document.querySelectorAll(".tab-btn").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-view") === name); });
+    document.querySelectorAll(".view").forEach(function (sec) { sec.classList.toggle("active", sec.id === "view-" + name); });
+    if (name === "dashboard") renderDashboard();
+    else if (name === "coverage") renderCoverageView();
+    else if (name === "review") renderReviewView();
+    else if (name === "audit") renderAuditView();
+    else if (name === "settings") renderSettingsView();
+  }
+
+  function renderIdentityBadge() {
+    var el = document.getElementById("identity-badge");
+    var u = resolveIdentityUser();
+    if (!u || !identity) { el.innerHTML = ""; return; }
+    el.innerHTML = escapeHtml(u.name) + ' <span style="color:var(--text-muted);">· ' + escapeHtml(identity.pcName) + '</span> <button class="btn icon-only" id="switch-user-btn" title="Switch user" style="padding:2px 6px; font-size:11px;">Switch</button>';
+    document.getElementById("switch-user-btn").addEventListener("click", function () { openIdentityModal(false); });
+  }
+
+  function renderSidebar() {
+    var totalParas = allParagraphs().length;
+    document.getElementById("count-all").textContent = totalParas;
+    FAMILIES.forEach(function (fam) {
+      var n = data.standards.filter(function (s) { return s.family === fam; }).reduce(function (sum, s) { return sum + s.paragraphs.length; }, 0);
+      var el = document.getElementById("count-" + fam);
+      if (el) el.textContent = n;
+    });
+    document.querySelectorAll(".sidebar [data-family]").forEach(function (btn) {
+      btn.classList.toggle("active", btn.getAttribute("data-family") === state.familyFilter);
+    });
+
+    var list = document.getElementById("methodology-list");
+    list.innerHTML = "";
+    data.methodologies.forEach(function (meth) {
+      var row = document.createElement("div");
+      row.className = "methodology-row";
+      row.innerHTML =
+        '<button class="side-item" data-select-meth="' + meth.id + '">' +
+          '<span class="swatch" style="background:' + catColor(meth.colorIndex) + '"></span>' +
+          '<span class="label" title="' + escapeAttr(meth.name) + '">' + escapeHtml(meth.name) + "</span>" +
+        "</button>" +
+        '<span class="row-actions">' +
+          '<button class="icon-btn" data-edit-meth="' + meth.id + '" title="Edit">✎</button>' +
+          '<button class="icon-btn" data-del-meth="' + meth.id + '" title="Delete">✕</button>' +
+        "</span>";
+      list.appendChild(row);
+    });
+    list.querySelectorAll("[data-select-meth]").forEach(function (b) {
+      b.addEventListener("click", function () { state.activeMethodologyId = b.getAttribute("data-select-meth"); switchToView("coverage"); });
+    });
+    list.querySelectorAll("[data-edit-meth]").forEach(function (b) { b.addEventListener("click", function () { openMethodologyModal(b.getAttribute("data-edit-meth")); }); });
+    list.querySelectorAll("[data-del-meth]").forEach(function (b) { b.addEventListener("click", function () { deleteMethodology(b.getAttribute("data-del-meth")); }); });
+  }
+
+  function renderDashboard() {
+    var totalParas = allParagraphs().length;
+    document.getElementById("overview-sub").textContent =
+      data.methodologies.length + " methodologies tracked across " + data.standards.length + " standards and " + totalParas + " paragraphs.";
+
+    var grid = document.getElementById("tile-grid");
+    grid.innerHTML = "";
+    if (data.methodologies.length === 0) grid.innerHTML = '<div class="empty-state">No methodologies yet. Add one from the sidebar to start tracking coverage.</div>';
+    function seg(n, total, varName) { if (n <= 0) return ""; return '<span style="width:' + (n / total) * 100 + '%; background:var(' + varName + ')"></span>'; }
+    function legendItem(varName, label, n) { return '<span class="legend-item"><span class="legend-dot" style="background:var(' + varName + ')"></span>' + label + " (" + n + ")</span>"; }
+    data.methodologies.forEach(function (meth) {
+      var counts = computeCounts(meth.id, null);
+      var pct = coveragePercent(counts);
+      var applicable = counts.full + counts.partial + counts.none;
+      var tile = document.createElement("div");
+      tile.className = "tile";
+      var barSegs = applicable > 0 ? (seg(counts.full, applicable, "--status-good") + seg(counts.partial, applicable, "--status-warning") + seg(counts.none, applicable, "--status-critical")) : "";
+      tile.innerHTML =
+        '<div class="tile-title" title="' + escapeAttr(meth.name) + '">' + escapeHtml(meth.name) + "</div>" +
+        '<div class="tile-sub">' + applicable + " applicable paragraph" + (applicable === 1 ? "" : "s") + (counts.na ? ", " + counts.na + " n/a" : "") + "</div>" +
+        '<div class="hero">' + (pct === null ? "–" : pct + "%") + "</div>" +
+        '<div class="stack-bar">' + barSegs + "</div>" +
+        '<div class="tile-legend">' + legendItem("--status-good", "Full", counts.full) + legendItem("--status-warning", "Partial", counts.partial) + legendItem("--status-critical", "None", counts.none) + legendItem("--status-na", "N/A", counts.na) + "</div>";
+      grid.appendChild(tile);
+    });
+
+    var panels = document.getElementById("family-panels");
+    panels.innerHTML = "";
+    FAMILIES.forEach(function (fam) {
+      var famStandards = data.standards.filter(function (s) { return s.family === fam; });
+      var famParaCount = famStandards.reduce(function (sum, s) { return sum + s.paragraphs.length; }, 0);
+      var panel = document.createElement("div");
+      panel.className = "family-panel";
+      var rows = "";
+      if (data.methodologies.length === 0 || famParaCount === 0) rows = '<div class="fp-sub">No data yet for this family.</div>';
+      else {
+        data.methodologies.forEach(function (meth) {
+          var counts = computeCounts(meth.id, fam);
+          var pct = coveragePercent(counts);
+          rows += '<div class="hbar-row"><div class="hbar-label" title="' + escapeAttr(meth.name) + '">' + escapeHtml(meth.name) + '</div>' +
+            '<div class="hbar-track"><div class="hbar-fill" style="width:' + (pct || 0) + "%; background:" + catColor(meth.colorIndex) + ';"></div></div>' +
+            '<div class="hbar-pct">' + (pct === null ? "–" : pct + "%") + "</div></div>";
+        });
+      }
+      panel.innerHTML = "<h3>" + escapeHtml(fam) + "</h3>" + '<div class="fp-sub">' + famStandards.length + " standard" + (famStandards.length === 1 ? "" : "s") + ", " + famParaCount + " paragraph" + (famParaCount === 1 ? "" : "s") + "</div>" + rows;
+      panels.appendChild(panel);
+    });
+  }
+
+  // ---------- Coverage Review ----------
+  function renderCoverageView() {
+    var noMeth = document.getElementById("coverage-empty-no-meth");
+    var body = document.getElementById("coverage-body");
+    if (data.methodologies.length === 0) { noMeth.style.display = "block"; body.style.display = "none"; return; }
+    noMeth.style.display = "none"; body.style.display = "block";
+
+    if (!state.activeMethodologyId || !data.methodologies.some(function (m) { return m.id === state.activeMethodologyId; })) {
+      state.activeMethodologyId = data.methodologies[0].id;
+    }
+
+    var toolbar = document.getElementById("coverage-methodology-pills");
+    toolbar.innerHTML = "";
+    data.methodologies.forEach(function (m) {
+      var isActive = m.id === state.activeMethodologyId;
+      var pill = document.createElement("button");
+      pill.className = "pill-btn" + (isActive ? " active" : "");
+      if (isActive) { pill.style.background = catColor(m.colorIndex); pill.style.borderColor = catColor(m.colorIndex); }
+      pill.innerHTML = '<span class="pill-swatch" style="background:' + (isActive ? "#fff" : catColor(m.colorIndex)) + '"></span>' + escapeHtml(m.name);
+      pill.addEventListener("click", function () { state.activeMethodologyId = m.id; renderCoverageView(); });
+      toolbar.appendChild(pill);
+    });
+
+    var activeMeth = data.methodologies.find(function (m) { return m.id === state.activeMethodologyId; });
+    document.getElementById("coverage-active-meth-name").textContent = activeMeth.name;
+
+    var container = document.getElementById("coverage-list");
+    container.innerHTML = "";
+    var anyRendered = false;
+
+    data.standards.forEach(function (std) {
+      var visibleParas = std.paragraphs.filter(function (p) { return matchesFilters(std, p); });
+      if (visibleParas.length === 0) return;
+      anyRendered = true;
+      var head = document.createElement("div");
+      head.className = "para-card-head";
+      head.innerHTML = "<span>" + escapeHtml(std.code) + " — " + escapeHtml(std.title) + '<span class="fam-badge">' + escapeHtml(std.family) + "</span></span>" +
+        '<span class="cell-actions">' +
+          '<button class="btn icon-only" data-add-para-to="' + std.id + '">+ Paragraph</button>' +
+          '<button class="icon-btn" data-edit-std="' + std.id + '" title="Edit standard">✎</button>' +
+          '<button class="icon-btn" data-del-std="' + std.id + '" title="Delete standard">✕</button>' +
+        "</span>";
+      container.appendChild(head);
+      visibleParas.forEach(function (p) { container.appendChild(renderParagraphCard(std, p, activeMeth)); });
+    });
+
+    document.getElementById("coverage-empty-filtered").style.display = anyRendered ? "none" : "block";
+
+    container.querySelectorAll("[data-add-para-to]").forEach(function (b) { b.addEventListener("click", function () { openParagraphModal(b.getAttribute("data-add-para-to"), null); }); });
+    container.querySelectorAll("[data-edit-std]").forEach(function (b) { b.addEventListener("click", function () { openStandardModal(b.getAttribute("data-edit-std")); }); });
+    container.querySelectorAll("[data-del-std]").forEach(function (b) { b.addEventListener("click", function () { deleteStandard(b.getAttribute("data-del-std")); }); });
+    wireParagraphCardEvents(container);
+  }
+
+  function renderParagraphCard(std, p, meth) {
+    var cov = p.coverage[meth.id] || { status: "none", wpExtract: "", wpReference: "", notes: "", updatedAt: null, updatedBy: null };
+    var card = document.createElement("div");
+    card.className = "review-card";
+    card.setAttribute("data-para-id", p.id);
+
+    var overlapHtml;
+    if (cov.wpExtract) {
+      var overlap = textOverlapPct(p.text, cov.wpExtract);
+      overlapHtml = overlap === null ? "" : '<div class="overlap-hint">~' + overlap + "% word overlap with standard text (rough guide only)</div>";
+    } else {
+      overlapHtml = '<div class="overlap-hint">No WP extract captured yet.</div>';
+    }
+
+    var statusPillsHtml = STATUS_ORDER.map(function (key) {
+      var s = STATUS[key];
+      return '<button class="status-pill' + (cov.status === key ? " active-" + key : "") + '" data-set-status="' + key + '">' + s.icon + " " + s.label + "</button>";
+    }).join("");
+
+    var savedCaption = cov.updatedAt ? ("Last updated by " + escapeHtml(cov.updatedBy || "Unknown") + " · " + new Date(cov.updatedAt).toLocaleString()) : "Not yet reviewed for this methodology.";
+
+    card.innerHTML =
+      '<div class="review-col"><h4>Official standard text — ' + escapeHtml(p.number) + "</h4>" +
+        '<div class="review-text">' + escapeHtml(p.text) + "</div>" +
+        '<div class="cell-actions"><button class="icon-btn" data-edit-para="' + p.id + '">✎ Edit</button><button class="icon-btn" data-del-para="' + p.id + '">✕ Delete</button></div>' +
+      "</div>" +
+      '<div class="review-col"><h4>Draftworx WP extract — ' + escapeHtml(meth.name) + "</h4>" +
+        '<input type="text" class="review-textarea" style="min-height:auto; padding:6px 8px;" data-wpref-field placeholder="WP reference (e.g. 10.02)" value="' + escapeAttr(cov.wpReference || "") + '">' +
+        '<textarea class="review-textarea" data-wp-field placeholder="Paste or type the working paper procedure/extract that addresses this paragraph...">' + escapeHtml(cov.wpExtract || "") + "</textarea>" +
+        overlapHtml +
+      "</div>" +
+      '<div class="review-col"><h4>Status &amp; comparison</h4>' +
+        '<div class="status-pills">' + statusPillsHtml + "</div>" +
+        '<textarea class="review-textarea" data-notes-field placeholder="Comparison notes, reviewer commentary, evidence reference...">' + escapeHtml(cov.notes || "") + "</textarea>" +
+        '<div class="save-caption" data-caption>' + savedCaption + "</div>" +
+      "</div>";
+    return card;
+  }
+
+  function wireParagraphCardEvents(container) {
+    container.querySelectorAll(".review-card").forEach(function (card) {
+      var paraId = card.getAttribute("data-para-id");
+      card.querySelectorAll("[data-set-status]").forEach(function (btn) {
+        btn.addEventListener("click", function () { setCoverageStatus(paraId, state.activeMethodologyId, btn.getAttribute("data-set-status")); });
+      });
+      var wp = card.querySelector("[data-wp-field]");
+      if (wp) wp.addEventListener("blur", function () { saveCoverageField(paraId, state.activeMethodologyId, "wpExtract", wp.value, "Updated Draftworx WP extract text"); });
+      var wpref = card.querySelector("[data-wpref-field]");
+      if (wpref) wpref.addEventListener("blur", function () { saveCoverageField(paraId, state.activeMethodologyId, "wpReference", wpref.value, "Updated WP reference"); });
+      var notes = card.querySelector("[data-notes-field]");
+      if (notes) notes.addEventListener("blur", function () { saveCoverageField(paraId, state.activeMethodologyId, "notes", notes.value, "Updated comparison notes"); });
+    });
+    container.querySelectorAll("[data-edit-para]").forEach(function (b) { b.addEventListener("click", function () { openParagraphModal(null, b.getAttribute("data-edit-para")); }); });
+    container.querySelectorAll("[data-del-para]").forEach(function (b) { b.addEventListener("click", function () { deleteParagraph(b.getAttribute("data-del-para")); }); });
+  }
+
+  function ensureCoverageEntry(para, methodologyId) {
+    if (!para.coverage[methodologyId]) para.coverage[methodologyId] = { status: "none", wpExtract: "", wpReference: "", notes: "", updatedAt: null, updatedBy: null };
+    return para.coverage[methodologyId];
+  }
+
+  function setCoverageStatus(paragraphId, methodologyId, status) {
+    var found = findParagraph(paragraphId);
+    if (!found) return;
+    var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
+    var cov = ensureCoverageEntry(found.para, methodologyId);
+    if (cov.status === status) return;
+    var prevLabel = STATUS[cov.status].label;
+    cov.status = status; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
+    logChange("update", "coverage", found.std.code + " " + found.para.number + " — " + (meth ? meth.name : ""), "Status: " + prevLabel + " → " + STATUS[status].label);
+    persist();
+    withScrollPreserved(renderCoverageView);
+  }
+  function saveCoverageField(paragraphId, methodologyId, field, value, summaryLabel) {
+    var found = findParagraph(paragraphId);
+    if (!found) return;
+    var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
+    var cov = ensureCoverageEntry(found.para, methodologyId);
+    if ((cov[field] || "") === value) return;
+    cov[field] = value; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
+    logChange("update", "coverage", found.std.code + " " + found.para.number + " — " + (meth ? meth.name : ""), summaryLabel);
+    persist();
+    withScrollPreserved(renderCoverageView);
+  }
+
+  // ---------- CRUD: Methodologies ----------
+  function openMethodologyModal(id) {
+    state.editing.methodologyId = id || null;
+    var dlg = document.getElementById("dlg-methodology");
+    var meth = id ? data.methodologies.find(function (m) { return m.id === id; }) : null;
+    document.getElementById("dlg-methodology-title").textContent = meth ? "Edit methodology" : "Add methodology";
+    document.getElementById("f-methodology-name").value = meth ? meth.name : "";
+    document.getElementById("f-methodology-desc").value = meth ? meth.description : "";
+    dlg.showModal();
+  }
+  function saveMethodology() {
+    var name = document.getElementById("f-methodology-name").value.trim();
+    if (!name) return;
+    var desc = document.getElementById("f-methodology-desc").value.trim();
+    if (state.editing.methodologyId) {
+      var meth = data.methodologies.find(function (m) { return m.id === state.editing.methodologyId; });
+      var oldName = meth.name;
+      meth.name = name; meth.description = desc;
+      logChange("update", "methodology", name, oldName !== name ? 'Renamed "' + oldName + '" to "' + name + '"' : "Updated description");
+    } else {
+      data.methodologies.push({ id: uid("meth"), name: name, description: desc, colorIndex: data.nextColorIndex });
+      data.nextColorIndex++;
+      logChange("create", "methodology", name, 'Added methodology "' + name + '"');
+    }
+    document.getElementById("dlg-methodology").close();
+    renderAll();
+  }
+  function deleteMethodology(id) {
+    var meth = data.methodologies.find(function (m) { return m.id === id; });
+    if (!meth) return;
+    if (!confirm('Delete methodology "' + meth.name + '"? Coverage recorded against it will also be removed.')) return;
+    data.methodologies = data.methodologies.filter(function (m) { return m.id !== id; });
+    data.standards.forEach(function (std) { std.paragraphs.forEach(function (p) { delete p.coverage[id]; }); });
+    logChange("delete", "methodology", meth.name, 'Deleted methodology "' + meth.name + '"');
+    renderAll();
+  }
+
+  // ---------- CRUD: Standards ----------
+  function openStandardModal(id) {
+    state.editing.standardId = id || null;
+    var dlg = document.getElementById("dlg-standard");
+    var std = id ? data.standards.find(function (s) { return s.id === id; }) : null;
+    document.getElementById("dlg-standard-title").textContent = std ? "Edit standard" : "Add standard";
+    document.getElementById("f-standard-family").value = std ? std.family : (state.familyFilter !== "all" ? state.familyFilter : "ISA");
+    document.getElementById("f-standard-code").value = std ? std.code : "";
+    document.getElementById("f-standard-title").value = std ? std.title : "";
+    dlg.showModal();
+  }
+  function saveStandard() {
+    var family = document.getElementById("f-standard-family").value;
+    var code = document.getElementById("f-standard-code").value.trim();
+    var title = document.getElementById("f-standard-title").value.trim();
+    if (!code || !title) return;
+    if (state.editing.standardId) {
+      var std = data.standards.find(function (s) { return s.id === state.editing.standardId; });
+      std.family = family; std.code = code; std.title = title;
+      logChange("update", "standard", code, 'Updated standard "' + code + '"');
+    } else {
+      data.standards.push({ id: uid("std"), family: family, code: code, title: title, paragraphs: [] });
+      logChange("create", "standard", code, 'Added standard "' + code + '"');
+    }
+    document.getElementById("dlg-standard").close();
+    renderAll();
+  }
+  function deleteStandard(id) {
+    var std = data.standards.find(function (s) { return s.id === id; });
+    if (!std) return;
+    if (!confirm('Delete "' + std.code + '" and all ' + std.paragraphs.length + " of its paragraphs?")) return;
+    data.standards = data.standards.filter(function (s) { return s.id !== id; });
+    logChange("delete", "standard", std.code, 'Deleted standard "' + std.code + '" and ' + std.paragraphs.length + " paragraph(s)");
+    renderAll();
+  }
+
+  // ---------- CRUD: Paragraphs ----------
+  function openParagraphModal(standardId, paragraphId) {
+    if (data.standards.length === 0) { alert("Add a standard first before adding paragraphs."); return; }
+    state.editing.paragraphId = paragraphId || null;
+    var dlg = document.getElementById("dlg-paragraph");
+    var select = document.getElementById("f-paragraph-standard");
+    select.innerHTML = "";
+    data.standards.forEach(function (s) {
+      var opt = document.createElement("option");
+      opt.value = s.id; opt.textContent = s.code;
+      select.appendChild(opt);
+    });
+    var existing = paragraphId ? findParagraph(paragraphId) : null;
+    document.getElementById("dlg-paragraph-title").textContent = existing ? "Edit paragraph" : "Add paragraph";
+    if (existing) {
+      select.value = existing.std.id;
+      document.getElementById("f-paragraph-number").value = existing.para.number;
+      document.getElementById("f-paragraph-text").value = existing.para.text;
+    } else {
+      if (standardId) select.value = standardId;
+      document.getElementById("f-paragraph-number").value = "";
+      document.getElementById("f-paragraph-text").value = "";
+    }
+    dlg.showModal();
+  }
+  function saveParagraph() {
+    var standardId = document.getElementById("f-paragraph-standard").value;
+    var number = document.getElementById("f-paragraph-number").value.trim();
+    var text = document.getElementById("f-paragraph-text").value.trim();
+    if (!number || !text) return;
+    var std = data.standards.find(function (s) { return s.id === standardId; });
+    if (!std) return;
+    if (state.editing.paragraphId) {
+      var existing = findParagraph(state.editing.paragraphId);
+      if (existing) {
+        existing.para.number = number; existing.para.text = text;
+        if (existing.std.id !== standardId) {
+          existing.std.paragraphs = existing.std.paragraphs.filter(function (p) { return p.id !== existing.para.id; });
+          std.paragraphs.push(existing.para);
+        }
+        logChange("update", "paragraph", std.code + " " + number, "Updated paragraph text/number");
+      }
+    } else {
+      var coverage = {};
+      data.methodologies.forEach(function (m) { coverage[m.id] = { status: "none", wpExtract: "", wpReference: "", notes: "", updatedAt: null, updatedBy: null }; });
+      std.paragraphs.push({ id: uid("para"), number: number, text: text, coverage: coverage });
+      logChange("create", "paragraph", std.code + " " + number, "Added paragraph " + number);
+    }
+    document.getElementById("dlg-paragraph").close();
+    renderAll();
+  }
+  function deleteParagraph(id) {
+    var found = findParagraph(id);
+    if (!found) return;
+    if (!confirm("Delete paragraph " + found.para.number + "?")) return;
+    found.std.paragraphs = found.std.paragraphs.filter(function (p) { return p.id !== id; });
+    logChange("delete", "paragraph", found.std.code + " " + found.para.number, "Deleted paragraph " + found.para.number);
+    renderAll();
+  }
+
+  // ---------- Audit trail ----------
+  function renderAuditView() {
+    var userSelect = document.getElementById("audit-filter-user");
+    var users = Array.from(new Set((data.auditLog || []).map(function (e) { return e.user; }))).sort();
+    var currentVal = userSelect.value || "all";
+    userSelect.innerHTML = '<option value="all">All users</option>' + users.map(function (u) { return '<option value="' + escapeAttr(u) + '">' + escapeHtml(u) + "</option>"; }).join("");
+    userSelect.value = users.indexOf(currentVal) !== -1 ? currentVal : "all";
+
+    var entries = (data.auditLog || []).filter(function (e) {
+      if (state.auditFilters.user !== "all" && e.user !== state.auditFilters.user) return false;
+      if (state.auditFilters.entityType !== "all" && e.entityType !== state.auditFilters.entityType) return false;
+      if (state.auditFilters.search) {
+        var q = state.auditFilters.search.toLowerCase();
+        var hay = (e.label + " " + e.summary + " " + e.user).toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+
+    var body = document.getElementById("audit-body");
+    body.innerHTML = "";
+    if (entries.length === 0) { body.innerHTML = '<tr><td colspan="5" style="padding:20px; text-align:center; color:var(--text-muted);">No audit entries match the current filters.</td></tr>'; return; }
+    entries.forEach(function (e) {
+      var tr = document.createElement("tr");
+      tr.className = "para-row";
+      tr.innerHTML = "<td>" + new Date(e.timestamp).toLocaleString() + "</td>" +
+        "<td>" + escapeHtml(e.user) + '<br><span style="color:var(--text-muted); font-size:11px;">' + escapeHtml(e.pcName || "") + "</span></td>" +
+        "<td>" + escapeHtml(e.entityType) + "</td>" + "<td>" + escapeHtml(e.label) + "</td>" + "<td>" + escapeHtml(e.summary) + "</td>";
+      body.appendChild(tr);
+    });
+  }
+
+  // ---------- Settings: users ----------
+  function renderSettingsView() {
+    var list = document.getElementById("users-list");
+    if (data.users.length === 0) { list.innerHTML = '<div class="empty-state" style="padding:20px 0;">No team members yet. Add the first one below.</div>'; return; }
+    var countsByUser = {};
+    (data.auditLog || []).forEach(function (e) { countsByUser[e.user] = (countsByUser[e.user] || 0) + 1; });
+    list.innerHTML = data.users.map(function (u) {
+      var n = countsByUser[u.name] || 0;
+      return '<div class="methodology-row" style="padding:6px 0;">' +
+        '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(u.name) + '</span>' +
+        '<span class="count">' + n + " logged change" + (n === 1 ? "" : "s") + "</span></span>" +
+        '<span class="row-actions" style="display:flex;">' +
+          '<button class="icon-btn" data-rename-user="' + u.id + '" title="Rename">✎</button>' +
+          '<button class="icon-btn" data-del-user="' + u.id + '" title="Remove">✕</button>' +
+        "</span></div>";
+    }).join("");
+    list.querySelectorAll("[data-rename-user]").forEach(function (b) { b.addEventListener("click", function () { renameUser(b.getAttribute("data-rename-user")); }); });
+    list.querySelectorAll("[data-del-user]").forEach(function (b) { b.addEventListener("click", function () { deleteUser(b.getAttribute("data-del-user")); }); });
+  }
+  function renameUser(id) {
+    var u = data.users.find(function (x) { return x.id === id; });
+    if (!u) return;
+    var name = prompt("Rename team member", u.name);
+    if (!name) return;
+    name = name.trim();
+    if (!name) return;
+    var old = u.name;
+    u.name = name;
+    logChange("update", "user", name, 'Renamed team member "' + old + '" to "' + name + '"');
+    persist();
+    renderSettingsView();
+    renderIdentityBadge();
+    renderAuditView();
+  }
+  function deleteUser(id) {
+    var u = data.users.find(function (x) { return x.id === id; });
+    if (!u) return;
+    if (!confirm('Remove "' + u.name + '" from the team members list?')) return;
+    data.users = data.users.filter(function (x) { return x.id !== id; });
+    logChange("delete", "user", u.name, 'Removed team member "' + u.name + '"');
+    var wasSelf = identity && identity.userId === id;
+    if (wasSelf) { localStorage.removeItem(IDENTITY_KEY); identity = null; }
+    persist();
+    renderSettingsView();
+    renderAuditView();
+    if (wasSelf) { renderIdentityBadge(); openIdentityModal(true); }
+  }
+
+  // ---------- PDF import & diff ----------
+  function pageItemsToText(items) {
+    var lines = [], lastY = null, currentLine = "";
+    items.forEach(function (it) {
+      var y = it.transform ? it.transform[5] : 0;
+      if (lastY !== null && Math.abs(y - lastY) > 2) { lines.push(currentLine); currentLine = ""; }
+      currentLine += (currentLine && !/\s$/.test(currentLine) ? " " : "") + it.str;
+      lastY = y;
+    });
+    if (currentLine) lines.push(currentLine);
+    return lines.join("\n");
+  }
+  function buildExtractionSections(fullText) {
+    var lowerText = fullText.toLowerCase();
+    var sections = [];
+    data.standards.forEach(function (std) {
+      var header = std.code.replace(/\s*\(.*?\)\s*$/, "").trim();
+      var idx = lowerText.indexOf(header.toLowerCase());
+      if (idx !== -1) sections.push({ std: std, index: idx, header: header });
+    });
+    sections.sort(function (a, b) { return a.index - b.index; });
+    sections.forEach(function (sec, i) {
+      var end = (i + 1 < sections.length) ? sections[i + 1].index : fullText.length;
+      sec.text = fullText.substring(sec.index, end);
+    });
+    return sections;
+  }
+  function extractParagraphsFromSection(sec) {
+    var numCoreMatch = sec.std.code.match(/\d+/);
+    var numCore = numCoreMatch ? numCoreMatch[0] : "";
+    var text = sec.text;
+    var markerRe = /(?:\n|^)\s*(A?\d{1,3})\.\s+/g;
+    var matches = [], m;
+    while ((m = markerRe.exec(text))) matches.push({ marker: m[1], start: m.index + m[0].length, headerStart: m.index });
+    var found = [];
+    for (var i = 0; i < matches.length; i++) {
+      var startIdx = matches[i].start;
+      var endIdx = (i + 1 < matches.length) ? matches[i + 1].headerStart : Math.min(text.length, startIdx + 600);
+      var chunk = normalizeWs(text.substring(startIdx, endIdx)).slice(0, 600);
+      if (chunk) found.push({ number: numCore + "." + matches[i].marker, text: chunk });
+    }
+    return found;
+  }
+  function computeFlags(fullText) {
+    var sections = buildExtractionSections(fullText);
+    var notFoundStandards = data.standards.filter(function (std) { return !sections.some(function (s) { return s.std.id === std.id; }); });
+    var flags = [];
+    sections.forEach(function (sec) {
+      var extracted = extractParagraphsFromSection(sec);
+      var extractedByNumber = {};
+      extracted.forEach(function (e) { extractedByNumber[e.number] = e; });
+      sec.std.paragraphs.forEach(function (p) {
+        var match = extractedByNumber[p.number];
+        if (!match) flags.push({ id: uid("flag"), type: "missing", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: p.id, number: p.number, oldText: p.text, newText: null, status: "open" });
+        else {
+          var a = normalizeWs(p.text).toLowerCase(), b = normalizeWs(match.text).toLowerCase();
+          if (a !== b && b.indexOf(a) === -1 && a.indexOf(b) === -1) {
+            flags.push({ id: uid("flag"), type: "changed", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: p.id, number: p.number, oldText: p.text, newText: match.text, status: "open" });
+          }
+        }
+      });
+      extracted.forEach(function (e) {
+        var exists = sec.std.paragraphs.some(function (p) { return p.number === e.number; });
+        if (!exists) flags.push({ id: uid("flag"), type: "new", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: null, number: e.number, oldText: null, newText: e.text, status: "open" });
+      });
+    });
+    return { flags: flags, notFoundStandards: notFoundStandards };
+  }
+  function applyFlag(flagId, action) {
+    var flag = data.pendingFlags.find(function (f) { return f.id === flagId; });
+    if (!flag) return;
+    if (action === "apply") {
+      if (flag.type === "changed") {
+        var found = findParagraph(flag.paragraphId);
+        if (found) { found.para.text = flag.newText; logChange("update", "paragraph", flag.standardCode + " " + flag.number, "Updated paragraph text from PDF import to match handbook wording."); }
+      } else if (flag.type === "new") {
+        var std = data.standards.find(function (s) { return s.id === flag.standardId; });
+        if (std) {
+          var coverage = {};
+          data.methodologies.forEach(function (m) { coverage[m.id] = { status: "none", wpExtract: "", wpReference: "", notes: "", updatedAt: null, updatedBy: null }; });
+          std.paragraphs.push({ id: uid("para"), number: flag.number, text: flag.newText, coverage: coverage });
+          logChange("create", "paragraph", flag.standardCode + " " + flag.number, "Added paragraph from PDF import.");
+        }
+      }
+      flag.status = "resolved";
+    } else {
+      flag.status = "dismissed";
+      logChange("update", "flag", flag.standardCode + " " + flag.number, "Dismissed a " + flag.type + " flag from PDF import review.");
+    }
+    persist();
+    renderReviewView(); renderNotifyBanner(); renderCoverageView(); renderDashboard();
+  }
+  function flagCounts(openFlags) {
+    var c = { all: openFlags.length, "new": 0, changed: 0, missing: 0 };
+    openFlags.forEach(function (f) { c[f.type] = (c[f.type] || 0) + 1; });
+    return c;
+  }
+  function renderFlagRow(f) {
+    var badge = f.type === "new" ? '<span class="flag-badge flag-new">● New</span>' : f.type === "changed" ? '<span class="flag-badge flag-changed">◐ Changed</span>' : '<span class="flag-badge flag-missing">– Missing</span>';
+    var body = "";
+    if (f.type === "changed") {
+      body = '<div class="diff-block">' + renderWordDiff(f.oldText, f.newText) + "</div>" +
+        '<div class="readonly-note"><span class="diff-del" style="padding:0 2px;">strikethrough</span> = removed, <span class="diff-ins" style="padding:0 2px;">underline</span> = added.</div>' +
+        '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Apply PDF text</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>';
+    } else if (f.type === "new") {
+      body = '<div class="diff-block"><strong>Suggested new paragraph text (from PDF):</strong><br>' + escapeHtml(f.newText) + "</div>" +
+        '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Add as new paragraph</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>';
+    } else {
+      body = '<div class="diff-block"><strong>Currently stored (not found in PDF):</strong><br>' + escapeHtml(f.oldText) + "</div>" +
+        '<div class="readonly-note">May have been renumbered, removed, or missed by extraction.</div>' +
+        '<div class="cell-actions" style="margin-top:8px;"><button class="btn" data-dismiss-flag="' + f.id + '">Acknowledge</button></div>';
+    }
+    return '<div class="flag-row"><div class="flag-number">' + escapeHtml(f.number) + " " + badge + "</div>" + body + "</div>";
+  }
+  function renderReviewView() {
+    var infoEl = document.getElementById("last-import-info");
+    if (data.lastImport) {
+      infoEl.innerHTML = "Last imported <strong>" + escapeHtml(data.lastImport.fileName) + "</strong> on " + new Date(data.lastImport.importedAt).toLocaleString() +
+        " by " + escapeHtml(data.lastImport.importedBy) + " (" + data.lastImport.pageCount + " pages)." +
+        (data.lastImport.notFoundStandards && data.lastImport.notFoundStandards.length ? "<br>Not found in this PDF: " + escapeHtml(data.lastImport.notFoundStandards.join(", ")) : "");
+    } else infoEl.textContent = "No standards PDF has been imported yet.";
+
+    var openFlags = (data.pendingFlags || []).filter(function (f) { return f.status === "open"; });
+    var counts = flagCounts(openFlags);
+    var pillsEl = document.getElementById("review-type-pills");
+    var types = [["all", "All"], ["new", "New"], ["changed", "Changed"], ["missing", "Missing"]];
+    pillsEl.innerHTML = types.map(function (t) {
+      return '<button class="pill-btn' + (state.reviewFilter.type === t[0] ? " active" : "") + '" data-set-type="' + t[0] + '">' + t[1] + " (" + (counts[t[0]] || 0) + ")</button>";
+    }).join("");
+    pillsEl.querySelectorAll("[data-set-type]").forEach(function (b) { b.addEventListener("click", function () { state.reviewFilter.type = b.getAttribute("data-set-type"); renderReviewView(); }); });
+
+    document.getElementById("dismiss-all-missing-btn").style.display = counts.missing > 0 ? "" : "none";
+
+    var filtered = state.reviewFilter.type === "all" ? openFlags : openFlags.filter(function (f) { return f.type === state.reviewFilter.type; });
+
+    var container = document.getElementById("flags-container");
+    container.innerHTML = "";
+    document.getElementById("no-flags-msg").style.display = openFlags.length ? "none" : "block";
+
+    var byStandard = {};
+    filtered.forEach(function (f) { (byStandard[f.standardCode] = byStandard[f.standardCode] || []).push(f); });
+
+    Object.keys(byStandard).forEach(function (code) {
+      var group = document.createElement("div");
+      group.className = "family-panel";
+      var list = byStandard[code];
+      var revealed = state.reviewRevealed[code] || 20;
+      var shown = list.slice(0, revealed);
+      var moreCount = list.length - shown.length;
+      group.innerHTML = "<h3>" + escapeHtml(code) + "</h3><div class=\"fp-sub\">" + list.length + " flagged difference(s)" + (moreCount > 0 ? (" — showing " + shown.length + " of " + list.length) : "") + "</div>" +
+        shown.map(renderFlagRow).join("") +
+        (moreCount > 0 ? '<button class="btn" data-reveal-more="' + escapeAttr(code) + '" style="margin-top:8px;">Show ' + Math.min(20, moreCount) + " more (of " + moreCount + " remaining)</button>" : "");
+      container.appendChild(group);
+    });
+
+    container.querySelectorAll("[data-apply-flag]").forEach(function (b) { b.addEventListener("click", function () { applyFlag(b.getAttribute("data-apply-flag"), "apply"); }); });
+    container.querySelectorAll("[data-dismiss-flag]").forEach(function (b) { b.addEventListener("click", function () { applyFlag(b.getAttribute("data-dismiss-flag"), "dismiss"); }); });
+    container.querySelectorAll("[data-reveal-more]").forEach(function (b) { b.addEventListener("click", function () { var code = b.getAttribute("data-reveal-more"); state.reviewRevealed[code] = (state.reviewRevealed[code] || 20) + 20; renderReviewView(); }); });
+  }
+  function renderNotifyBanner() {
+    var banner = document.getElementById("notify-banner");
+    var openCount = (data.pendingFlags || []).filter(function (f) { return f.status === "open"; }).length;
+    if (openCount > 0 && !state.bannerDismissed) {
+      var li = data.lastImport;
+      banner.style.display = "flex";
+      banner.innerHTML = "<span>⚠ " + openCount + " difference(s) flagged from your last standards import" +
+        (li ? ' ("' + escapeHtml(li.fileName) + '", ' + new Date(li.importedAt).toLocaleDateString() + ")" : "") +
+        ' are still unresolved.</span><span class="spacer"></span>' +
+        '<button class="btn primary" id="banner-review-btn">Review now</button>' +
+        '<button class="icon-btn" id="banner-dismiss-btn" title="Dismiss">&times;</button>';
+      document.getElementById("banner-review-btn").addEventListener("click", function () { switchToView("review"); });
+      document.getElementById("banner-dismiss-btn").addEventListener("click", function () { state.bannerDismissed = true; banner.style.display = "none"; });
+    } else banner.style.display = "none";
+  }
+  async function importPdfFile(file) {
+    if (typeof pdfjsLib === "undefined") { alert("The PDF engine failed to load (this feature needs an internet connection to fetch pdf.js from its CDN). Please check your connection and try again."); return; }
+    var progressWrap = document.getElementById("import-progress");
+    var progressFill = document.getElementById("import-progress-fill");
+    var progressText = document.getElementById("import-progress-text");
+    var btn = document.getElementById("import-pdf-btn");
+    btn.disabled = true; progressWrap.style.display = "block"; progressFill.style.width = "0%"; progressText.textContent = "Reading file...";
+    try {
+      var buf = await file.arrayBuffer();
+      var pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      var fullText = "";
+      for (var i = 1; i <= pdf.numPages; i++) {
+        progressText.textContent = "Parsing page " + i + " of " + pdf.numPages + "...";
+        progressFill.style.width = Math.round((i / pdf.numPages) * 100) + "%";
+        var page = await pdf.getPage(i);
+        var content = await page.getTextContent();
+        fullText += pageItemsToText(content.items) + "\n";
+      }
+      progressText.textContent = "Comparing against stored standards...";
+      var result = computeFlags(fullText);
+      data.pendingFlags = result.flags;
+      data.lastImport = { fileName: file.name, importedAt: new Date().toISOString(), importedBy: identityName(), pageCount: pdf.numPages, notFoundStandards: result.notFoundStandards.map(function (s) { return s.code; }) };
+      state.bannerDismissed = false;
+      state.reviewRevealed = {};
+      logChange("import", "standards", file.name, 'Imported standards PDF "' + file.name + '" (' + pdf.numPages + " pages) — " + result.flags.length + " difference(s) flagged.");
+      persist();
+      renderReviewView(); renderNotifyBanner(); renderAuditView();
+    } catch (err) { alert("Could not process that PDF: " + err.message); }
+    finally { btn.disabled = false; progressWrap.style.display = "none"; }
+  }
+
+  // ---------- Excel WP mapping import ----------
+  var pendingExcelRows = null;
+
+  function parseStandardReference(ref) {
+    var m = String(ref).match(/^\s*(ISA|ISAE|ISRS|ISRE)\s*([\d.]+)?/i);
+    if (!m) return null;
+    var prefix = m[1].toUpperCase();
+    var num = m[2] || "";
+    var family = prefix === "ISA" ? "ISA" : prefix === "ISAE" ? "ISAE 3000" : prefix === "ISRS" ? "ISRS 4400" : "ISRE 2400";
+    return { prefix: prefix, num: num, family: family };
+  }
+  function composeParaNumber(core, bare) {
+    bare = normalizeWs(bare);
+    if (!core) return bare;
+    if (bare.toLowerCase().indexOf(core.toLowerCase() + ".") === 0) return bare;
+    return core + "." + bare;
+  }
+  function findOrCreateStandard(refInfo, rawCode) {
+    var target = (refInfo.prefix + " " + refInfo.num).trim().toLowerCase();
+    var existing = data.standards.find(function (s) { return s.code.toLowerCase().indexOf(target) === 0; });
+    if (existing) return existing;
+    var std = { id: uid("std"), family: refInfo.family, code: normalizeWs(rawCode), title: "Imported standard — click ✎ to edit the title", paragraphs: [] };
+    data.standards.push(std);
+    return std;
+  }
+  function findOrCreateParagraph(std, number, officialText) {
+    var existing = std.paragraphs.find(function (p) { return p.number === number; });
+    if (existing) {
+      if (officialText && !existing.text) existing.text = officialText;
+      return existing;
+    }
+    var coverage = {};
+    data.methodologies.forEach(function (m) { coverage[m.id] = { status: "none", wpExtract: "", wpReference: "", notes: "", updatedAt: null, updatedBy: null }; });
+    var p = { id: uid("para"), number: number, text: officialText || "", coverage: coverage };
+    std.paragraphs.push(p);
+    return p;
+  }
+  function guessColumn(headers, keywords, exclude) {
+    for (var i = 0; i < headers.length; i++) {
+      if (exclude && exclude[i]) continue;
+      var h = String(headers[i] || "").toLowerCase();
+      if (keywords.some(function (k) { return h.indexOf(k) !== -1; })) return i;
+    }
+    return -1;
+  }
+  function fillColumnSelect(id, headers, guessIdx, allowNone) {
+    var sel = document.getElementById(id);
+    var opts = allowNone ? '<option value="">— None —</option>' : '<option value="">— Select —</option>';
+    headers.forEach(function (h, i) { opts += '<option value="' + i + '">' + escapeHtml(h || ("Column " + (i + 1))) + "</option>"; });
+    sel.innerHTML = opts;
+    sel.value = guessIdx === -1 ? "" : String(guessIdx);
+  }
+
+  function openExcelImportModal(workbook) {
+    var sheetNames = workbook.SheetNames;
+    var sheetWrap = document.getElementById("excel-sheet-wrap");
+    var sheetSel = document.getElementById("f-excel-sheet");
+    sheetSel.innerHTML = sheetNames.map(function (n) { return '<option value="' + escapeAttr(n) + '">' + escapeHtml(n) + "</option>"; }).join("");
+    sheetWrap.style.display = sheetNames.length > 1 ? "" : "none";
+
+    var methSel = document.getElementById("f-excel-methodology");
+    methSel.innerHTML = data.methodologies.map(function (m) { return '<option value="' + escapeAttr(m.id) + '">' + escapeHtml(m.name) + "</option>"; }).join("");
+    if (state.activeMethodologyId) methSel.value = state.activeMethodologyId;
+
+    function loadSheetPreview() {
+      var ws = workbook.Sheets[sheetSel.value || sheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+      pendingExcelRows = rows;
+      var headers = rows[0] || [];
+      document.getElementById("excel-import-summary").textContent = Math.max(rows.length - 1, 0) + ' data row(s) found in "' + (sheetSel.value || sheetNames[0]) + '".';
+      var used = {};
+      function pickGuess(keywords) { var idx = guessColumn(headers, keywords, used); if (idx !== -1) used[idx] = true; return idx; }
+      var gStandard = pickGuess(["standard", "isa", "isre", "isae", "isrs", "reference"]);
+      var gPara = pickGuess(["paragraph", "para", "clause"]);
+      var gOfficial = pickGuess(["requirement", "official", "standard text", "wording"]);
+      var gWpRef = pickGuess(["wp ref", "wp no", "wp number", "reference no"]);
+      var gWpExtract = pickGuess(["extract", "procedure", "working paper", "wp text"]);
+      var gComment = pickGuess(["comment", "note"]);
+      fillColumnSelect("f-excel-col-standard", headers, gStandard, false);
+      fillColumnSelect("f-excel-col-paragraph", headers, gPara, false);
+      fillColumnSelect("f-excel-col-official", headers, gOfficial, false);
+      fillColumnSelect("f-excel-col-wpref", headers, gWpRef, true);
+      fillColumnSelect("f-excel-col-wpextract", headers, gWpExtract, false);
+      fillColumnSelect("f-excel-col-comment", headers, gComment, true);
+    }
+    sheetSel.onchange = loadSheetPreview;
+    loadSheetPreview();
+    document.getElementById("dlg-excel-import").showModal();
+  }
+
+  function applyExcelImport(rows, colMap, methodologyId) {
+    var createdStandards = 0, createdParagraphs = 0, updated = 0, skipped = 0;
+    rows.forEach(function (row) {
+      var stdRefRaw = colMap.standardRef != null ? row[colMap.standardRef] : "";
+      var paraNumRaw = colMap.paragraphNumber != null ? row[colMap.paragraphNumber] : "";
+      if (!normalizeWs(stdRefRaw) || !normalizeWs(paraNumRaw)) { skipped++; return; }
+      var refInfo = parseStandardReference(stdRefRaw);
+      if (!refInfo) { skipped++; return; }
+      var stdCountBefore = data.standards.length;
+      var std = findOrCreateStandard(refInfo, stdRefRaw);
+      if (data.standards.length > stdCountBefore) createdStandards++;
+      var number = composeParaNumber(refInfo.num, paraNumRaw);
+      var paraCountBefore = std.paragraphs.length;
+      var officialText = colMap.officialText != null ? normalizeWs(row[colMap.officialText]) : "";
+      var para = findOrCreateParagraph(std, number, officialText);
+      if (std.paragraphs.length > paraCountBefore) createdParagraphs++;
+      var cov = ensureCoverageEntry(para, methodologyId);
+      var wpExtract = colMap.wpExtract != null ? normalizeWs(row[colMap.wpExtract]) : "";
+      var wpReference = colMap.wpReference != null ? normalizeWs(row[colMap.wpReference]) : "";
+      var comment = colMap.comment != null ? normalizeWs(row[colMap.comment]) : "";
+      if (wpExtract) cov.wpExtract = wpExtract;
+      if (wpReference) cov.wpReference = wpReference;
+      if (comment) cov.notes = cov.notes ? cov.notes + "\n" + comment : comment;
+      cov.updatedAt = new Date().toISOString();
+      cov.updatedBy = identityName();
+      updated++;
+    });
+    var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
+    logChange("import", "coverage", meth ? meth.name : "", "Imported WP mapping from Excel — " + updated + " row(s) applied" +
+      (createdStandards ? ", " + createdStandards + " new standard(s)" : "") + (createdParagraphs ? ", " + createdParagraphs + " new paragraph(s)" : "") +
+      (skipped ? ", " + skipped + " row(s) skipped" : "") + ".");
+    persist();
+    return { updated: updated, createdStandards: createdStandards, createdParagraphs: createdParagraphs, skipped: skipped };
+  }
+
+  // ---------- Import / Export (JSON) ----------
+  function exportData() {
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = "draftworx-standards-tracker-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+  function handleImportFile(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var parsed = JSON.parse(reader.result);
+        if (!parsed || !Array.isArray(parsed.methodologies) || !Array.isArray(parsed.standards)) { alert("This file doesn't look like a valid export from this tool."); return; }
+        pendingJsonImport = parsed;
+        document.getElementById("dlg-import-confirm").showModal();
+      } catch (e) { alert("Could not read that file as JSON."); }
+    };
+    reader.readAsText(file);
+  }
+
+  // ---------- Wiring ----------
+  function closeDialog(e) { var dlg = e.target.closest("dialog"); if (dlg) dlg.close(); }
+
+  function openIdentityModal(mandatory) {
+    var dlg = document.getElementById("dlg-identity");
+    var hasUsers = data.users.length > 0;
+    var existingWrap = document.getElementById("identity-existing-wrap");
+    var toggleBtn = document.getElementById("identity-add-toggle");
+    var newWrap = document.getElementById("identity-new-wrap");
+    if (hasUsers) {
+      existingWrap.style.display = ""; toggleBtn.style.display = ""; newWrap.style.display = "none";
+      var sel = document.getElementById("f-identity-user");
+      sel.innerHTML = '<option value="">Choose your name…</option>' + data.users.map(function (u) { return '<option value="' + escapeAttr(u.id) + '">' + escapeHtml(u.name) + "</option>"; }).join("");
+      if (identity && identity.userId) sel.value = identity.userId;
+    } else {
+      existingWrap.style.display = "none"; toggleBtn.style.display = "none"; newWrap.style.display = "";
+    }
+    document.getElementById("f-identity-new-name").value = "";
+    document.getElementById("f-identity-pc").value = identity ? identity.pcName : "";
+    dlg.querySelectorAll("[data-close]").forEach(function (b) { b.style.display = mandatory ? "none" : ""; });
+    dlg.dataset.mandatory = mandatory ? "1" : "0";
+    dlg.showModal();
+  }
+  function saveIdentityHandler() {
+    var pcInput = document.getElementById("f-identity-pc").value.trim();
+    if (!pcInput) { alert("Please enter a PC/device name."); return; }
+    var addWrapVisible = document.getElementById("identity-new-wrap").style.display !== "none";
+    var userObj, isNewUser = false;
+    if (data.users.length === 0 || addWrapVisible) {
+      var newName = document.getElementById("f-identity-new-name").value.trim();
+      if (!newName) { alert("Please enter your name."); return; }
+      var existing = data.users.find(function (u) { return u.name.toLowerCase() === newName.toLowerCase(); });
+      if (existing) userObj = existing;
+      else { userObj = { id: uid("user"), name: newName }; data.users.push(userObj); isNewUser = true; }
+    } else {
+      var selVal = document.getElementById("f-identity-user").value;
+      userObj = data.users.find(function (u) { return u.id === selVal; });
+      if (!userObj) { alert("Please choose your name from the list."); return; }
+    }
+    var dlg = document.getElementById("dlg-identity");
+    var wasMandatory = dlg.dataset.mandatory === "1";
+    var previousUser = resolveIdentityUser();
+    identity = { userId: userObj.id, pcName: pcInput };
+    localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
+    if (isNewUser) logChange("create", "user", userObj.name, 'Added team member "' + userObj.name + '"');
+    if (!wasMandatory && previousUser && previousUser.id !== userObj.id) logChange("update", "user", "Switched user", 'User changed from "' + previousUser.name + '" to "' + userObj.name + '" on this device');
+    persist();
+    dlg.close();
+    renderIdentityBadge();
+    if (wasMandatory) finishInit();
+    else { renderAuditView(); renderSettingsView(); }
+  }
+  function wireIdentityDialog() {
+    var dlg = document.getElementById("dlg-identity");
+    document.getElementById("save-identity-btn").addEventListener("click", saveIdentityHandler);
+    document.getElementById("identity-add-toggle").addEventListener("click", function () {
+      var w = document.getElementById("identity-new-wrap");
+      w.style.display = w.style.display === "none" ? "" : "none";
+    });
+    dlg.addEventListener("cancel", function (e) { if (dlg.dataset.mandatory === "1") e.preventDefault(); });
+    dlg.addEventListener("click", function (e) { if (e.target === dlg && dlg.dataset.mandatory !== "1") dlg.close(); });
+  }
+
+  function finishInit() {
+    if (data._justMigrated) {
+      logChange("update", "methodology", "Methodology names updated", "Renamed default methodologies to RAC / Review+ / Compilation / AUP / Legal Practitioner and added Property Practitioner");
+      delete data._justMigrated;
+    }
+
+    document.querySelectorAll(".tab-btn").forEach(function (btn) { btn.addEventListener("click", function () { switchToView(btn.getAttribute("data-view")); }); });
+
+    document.querySelectorAll(".sidebar [data-family]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.familyFilter = btn.getAttribute("data-family");
+        document.getElementById("filter-family").value = state.familyFilter;
+        renderSidebar(); renderCoverageView();
+      });
+    });
+    document.getElementById("filter-family").addEventListener("change", function (e) { state.familyFilter = e.target.value; renderSidebar(); renderCoverageView(); });
+    document.getElementById("filter-status").addEventListener("change", function (e) { state.statusFilter = e.target.value; renderCoverageView(); });
+    document.getElementById("search-input").addEventListener("input", function (e) { state.search = e.target.value.trim(); renderCoverageView(); });
+
+    document.getElementById("add-methodology-btn").addEventListener("click", function () { openMethodologyModal(null); });
+    document.getElementById("save-methodology-btn").addEventListener("click", saveMethodology);
+    document.getElementById("add-standard-btn").addEventListener("click", function () { openStandardModal(null); });
+    document.getElementById("save-standard-btn").addEventListener("click", saveStandard);
+    document.getElementById("add-paragraph-btn").addEventListener("click", function () { openParagraphModal(null, null); });
+    document.getElementById("save-paragraph-btn").addEventListener("click", saveParagraph);
+
+    document.querySelectorAll("[data-close]").forEach(function (b) { b.addEventListener("click", closeDialog); });
+    document.querySelectorAll("dialog:not(#dlg-identity)").forEach(function (dlg) { dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); }); });
+
+    document.getElementById("export-btn").addEventListener("click", exportData);
+    document.getElementById("import-btn").addEventListener("click", function () { document.getElementById("import-file").click(); });
+    document.getElementById("import-file").addEventListener("change", function (e) { if (e.target.files[0]) handleImportFile(e.target.files[0]); e.target.value = ""; });
+    document.getElementById("confirm-import-btn").addEventListener("click", function () {
+      if (pendingJsonImport) {
+        data = pendingJsonImport;
+        if (typeof data.nextColorIndex !== "number") data.nextColorIndex = data.methodologies.length;
+        if (!Array.isArray(data.auditLog)) data.auditLog = [];
+        if (!Array.isArray(data.pendingFlags)) data.pendingFlags = [];
+        if (!Array.isArray(data.users)) data.users = [];
+        if (typeof data.lastImport === "undefined") data.lastImport = null;
+        logChange("import", "data", "JSON import", "Replaced all data via JSON import");
+        pendingJsonImport = null;
+      }
+      document.getElementById("dlg-import-confirm").close();
+      renderAll();
+    });
+
+    document.getElementById("reset-demo-btn").addEventListener("click", function () {
+      if (!confirm("Reset all data to the demo dataset? Your current data in this browser will be lost.")) return;
+      data = seedData();
+      logChange("update", "data", "Demo data reset", "Reset all tracker data to the demo dataset");
+      renderAll();
+    });
+
+    document.getElementById("import-pdf-btn").addEventListener("click", function () { document.getElementById("import-pdf-file").click(); });
+    document.getElementById("import-pdf-file").addEventListener("change", function (e) { if (e.target.files[0]) importPdfFile(e.target.files[0]); e.target.value = ""; });
+
+    document.getElementById("import-excel-btn").addEventListener("click", function () { document.getElementById("import-excel-file").click(); });
+    document.getElementById("import-excel-file").addEventListener("change", async function (e) {
+      var file = e.target.files[0];
+      e.target.value = "";
+      if (!file) return;
+      if (typeof XLSX === "undefined") { alert("The Excel engine failed to load (this feature needs an internet connection to fetch the parser from its CDN). Please check your connection and try again."); return; }
+      if (data.methodologies.length === 0) { alert("Add a methodology first — the Excel mapping is imported into a specific methodology."); return; }
+      try {
+        var buf = await file.arrayBuffer();
+        var wb = XLSX.read(buf, { type: "array" });
+        openExcelImportModal(wb);
+      } catch (err) { alert("Could not read that Excel file: " + err.message); }
+    });
+    document.getElementById("confirm-excel-import-btn").addEventListener("click", function () {
+      function valOrNull(id) { var v = document.getElementById(id).value; return v === "" ? null : parseInt(v, 10); }
+      var colMap = {
+        standardRef: valOrNull("f-excel-col-standard"),
+        paragraphNumber: valOrNull("f-excel-col-paragraph"),
+        officialText: valOrNull("f-excel-col-official"),
+        wpReference: valOrNull("f-excel-col-wpref"),
+        wpExtract: valOrNull("f-excel-col-wpextract"),
+        comment: valOrNull("f-excel-col-comment")
+      };
+      if (colMap.standardRef === null || colMap.paragraphNumber === null || colMap.officialText === null || colMap.wpExtract === null) {
+        alert("Please select a column for standard reference, paragraph number, official standard text, and WP extract.");
+        return;
+      }
+      var methodologyId = document.getElementById("f-excel-methodology").value;
+      if (!methodologyId || !pendingExcelRows) { alert("Please choose which methodology this Excel represents."); return; }
+      var rows = pendingExcelRows.slice(1);
+      var result = applyExcelImport(rows, colMap, methodologyId);
+      document.getElementById("dlg-excel-import").close();
+      pendingExcelRows = null;
+      state.activeMethodologyId = methodologyId;
+      state.familyFilter = "all"; state.statusFilter = "all"; state.search = "";
+      document.getElementById("filter-family").value = "all";
+      document.getElementById("filter-status").value = "all";
+      document.getElementById("search-input").value = "";
+      renderAll();
+      switchToView("coverage");
+      alert("Import complete: " + result.updated + " row(s) applied" +
+        (result.createdStandards ? ", " + result.createdStandards + " new standard(s) created" : "") +
+        (result.createdParagraphs ? ", " + result.createdParagraphs + " new paragraph(s) created" : "") +
+        (result.skipped ? ", " + result.skipped + " row(s) skipped (missing standard reference or paragraph number)" : "") + ".");
+    });
+
+    document.getElementById("dismiss-all-missing-btn").addEventListener("click", function () {
+      if (!confirm("Dismiss all Missing flags? This just acknowledges them — no stored data changes.")) return;
+      var missing = data.pendingFlags.filter(function (f) { return f.status === "open" && f.type === "missing"; });
+      missing.forEach(function (f) { f.status = "dismissed"; });
+      logChange("update", "flag", "Bulk dismiss", "Dismissed " + missing.length + " Missing flag(s) from PDF import review.");
+      persist();
+      renderReviewView(); renderNotifyBanner();
+    });
+
+    document.getElementById("audit-filter-user").addEventListener("change", function (e) { state.auditFilters.user = e.target.value; renderAuditView(); });
+    document.getElementById("audit-filter-type").addEventListener("change", function (e) { state.auditFilters.entityType = e.target.value; renderAuditView(); });
+    document.getElementById("audit-search").addEventListener("input", function (e) { state.auditFilters.search = e.target.value.trim(); renderAuditView(); });
+
+    document.getElementById("add-user-btn").addEventListener("click", function () {
+      var input = document.getElementById("new-user-name");
+      var name = input.value.trim();
+      if (!name) return;
+      if (data.users.some(function (u) { return u.name.toLowerCase() === name.toLowerCase(); })) { alert("That name is already in the list."); return; }
+      var u = { id: uid("user"), name: name };
+      data.users.push(u);
+      logChange("create", "user", name, 'Added team member "' + name + '"');
+      persist();
+      input.value = "";
+      renderSettingsView();
+    });
+
+    var themeBtn = document.getElementById("theme-toggle");
+    function applyTheme(theme) {
+      if (theme === "light" || theme === "dark") document.documentElement.setAttribute("data-theme", theme);
+      else document.documentElement.removeAttribute("data-theme");
+      themeBtn.textContent = theme === "dark" ? "☀" : "☽";
+    }
+    var savedTheme = localStorage.getItem(THEME_KEY) || "auto";
+    applyTheme(savedTheme);
+    themeBtn.addEventListener("click", function () {
+      var current = localStorage.getItem(THEME_KEY) || "auto";
+      var next = current === "dark" ? "light" : current === "light" ? "auto" : "dark";
+      localStorage.setItem(THEME_KEY, next);
+      applyTheme(next);
+    });
+
+    renderAll();
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    data = load();
+    wireIdentityDialog();
+    identity = resolveSessionIdentity();
+    if (identity) { renderIdentityBadge(); finishInit(); }
+    else { openIdentityModal(true); }
+  });
+})();
+</script>
+</body>
+</html>
