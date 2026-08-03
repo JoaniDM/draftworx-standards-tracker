@@ -76,6 +76,8 @@
   .btn:hover { background: var(--gridline); }
   .btn.primary { background: var(--cat-1); border-color: var(--cat-1); color: #fff; }
   .btn.primary:hover { filter: brightness(1.08); }
+  .btn.danger { color: var(--status-critical); border-color: var(--status-critical); }
+  .btn.danger:hover { background: rgba(208,59,59,0.10); }
   .btn.icon-only { padding: 6px 10px; }
   .btn:disabled { opacity: .5; cursor: not-allowed; }
   .linklike { border: none; background: none; color: var(--cat-1); cursor: pointer; padding: 0; font-size: 12px; text-decoration: underline; }
@@ -167,6 +169,7 @@
   .review-col { padding: 12px 14px; border-right: 1px solid var(--gridline); display: flex; flex-direction: column; gap: 8px; }
   .review-col:last-child { border-right: none; }
   .review-col h4 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); }
+  .no-case { text-transform: none; }
   .review-text { font-size: 13px; color: var(--text-primary); white-space: pre-wrap; flex: 1; }
   .review-textarea { width: 100%; min-height: 84px; border: 1px solid var(--border); background: var(--page-plane); border-radius: 6px; padding: 8px; font-size: 13px; resize: vertical; }
   .status-pills { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -177,6 +180,15 @@
   .status-pill.active-na { background: var(--gridline); border-color: var(--baseline); color: var(--text-muted); }
   .overlap-hint { font-size: 11px; color: var(--text-muted); }
   .save-caption { font-size: 11px; color: var(--text-muted); margin-top: auto; }
+  .flag-alert { grid-column: 1 / -1; background: rgba(250,178,25,0.12); border-bottom: 1px solid var(--status-warning); color: var(--text-primary); padding: 8px 14px; font-size: 12px; cursor: pointer; }
+  .flag-alert:hover { background: rgba(250,178,25,0.18); }
+  .tick-marks-label { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-top: 4px; }
+  .tick-marks-grid { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+  .tick-mark-item { display: flex; align-items: center; gap: 5px; font-size: 12px; }
+  .tick-mark-item input { margin: 0; }
+  .para-group-head { font-size: 12px; font-weight: 600; color: var(--text-secondary); padding: 6px 4px; margin: 10px 0 4px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .para-group-head .collapse-chevron { font-size: 11px; }
+  .para-group-head:first-child { margin-top: 0; }
   @media (max-width: 980px) { .review-card { grid-template-columns: 1fr; } .review-col { border-right: none; border-bottom: 1px solid var(--gridline); } .review-col:last-child { border-bottom: none; } }
 
   .flag-row { padding: 12px 0; border-top: 1px solid var(--gridline); }
@@ -312,7 +324,7 @@
         </div>
         <div class="family-panel">
           <h3>Compare against the IRBA/IAASB handbook (PDF)</h3>
-          <div class="fp-sub">Flags New / Changed / Missing paragraphs for your review &mdash; nothing is applied automatically.</div>
+          <div class="fp-sub">Only compares "shall" requirement paragraphs (not explanatory/application material) against what's already in the tracker. Flags New / Changed / Removed paragraphs for your review &mdash; nothing is applied automatically, every change needs your approval.</div>
           <div class="readonly-note" id="last-import-info" style="margin-bottom:14px;">No standards PDF has been imported yet.</div>
           <div>
             <button class="btn primary" id="import-pdf-btn">Import Standards PDF</button>
@@ -325,7 +337,7 @@
         </div>
         <div class="family-panel">
           <h3>Import WP mapping (Excel)</h3>
-          <div class="fp-sub">Populates the Draftworx WP extract, WP reference and comments for each paragraph directly from your existing Excel mapping file &mdash; applied immediately so you can compare it against the standard text. Supports multi-level paragraph references split across separate columns (main number, letter, roman numeral, sub-letter, sub-sub level), combined into one reference like "25.d.iii.a". Not sure of the exact layout? Download the template below.</div>
+          <div class="fp-sub">Populates the Draftworx WP extract, WP reference, comments and expected-compliance-area tick marks for each paragraph directly from your existing Excel mapping file &mdash; applied immediately so you can compare it against the standard text. Supports multi-level paragraph references split across separate columns (main number, letter, roman numeral, sub-letter, sub-sub level), combined into one reference like "25(d)(iii)". Not sure of the exact layout? Download the template below.</div>
           <button class="btn primary" id="import-excel-btn">Import WP Mapping (Excel)</button>
           <button class="btn" id="download-excel-template-btn">Download Excel Template</button>
           <input type="file" id="import-excel-file" accept=".xlsx,.xls" hidden>
@@ -333,8 +345,8 @@
         <h2 style="font-size:14px; margin: 22px 0 10px;">Flagged differences (from PDF comparison)</h2>
         <div class="pill-row" id="review-type-pills"></div>
         <div style="margin-bottom:10px; display:flex; gap:8px;">
-          <button class="btn" id="dismiss-all-missing-btn" style="display:none;">Dismiss all Missing flags</button>
-          <button class="btn" id="clear-all-flags-btn" style="display:none; color:var(--status-critical);">Clear All Flags</button>
+          <button class="btn" id="dismiss-all-missing-btn" style="display:none;">Keep all Removed paragraphs</button>
+          <button class="btn danger" id="clear-all-flags-btn" style="display:none;">Clear All Flags</button>
         </div>
         <div class="empty-state" id="no-flags-msg">No pending differences. Import a handbook PDF to check for changes.</div>
         <div id="flags-container"></div>
@@ -357,7 +369,7 @@
           </select>
           <input type="text" id="audit-search" placeholder="Search audit trail...">
           <div class="spacer"></div>
-          <button class="btn" id="clear-audit-btn" style="display:none; color:var(--status-critical);">Clear Audit Trail</button>
+          <button class="btn danger" id="clear-audit-btn" style="display:none;">Clear Audit Trail</button>
         </div>
         <div class="table-scroll">
           <table class="matrix">
@@ -542,6 +554,21 @@
   };
   var STATUS_ORDER = ["full", "partial", "none", "na"];
 
+  var TICK_MARK_DEFS = [
+    { key: "firmManual", label: "Firm SQM1 manual / Policies" },
+    { key: "engagementLetter", label: "Engagement letter" },
+    { key: "documentationOnWp", label: "Documentation on WP" },
+    { key: "managementRepLetter", label: "Management Rep letter" },
+    { key: "managementReport", label: "Management report" },
+    { key: "groupAudits", label: "Group audits" },
+    { key: "auditReport", label: "Audit report" }
+  ];
+  function emptyTickMarks() {
+    var t = {};
+    TICK_MARK_DEFS.forEach(function (d) { t[d.key] = false; });
+    return t;
+  }
+
   var JOB_TITLES = ["Developer", "Senior", "Manager", "Partner", "Reviewer"];
   var ACCESS_LEVELS = ["viewer", "reviewer", "senior", "admin"];
   var ACCESS_RANK = { viewer: 0, reviewer: 1, senior: 2, admin: 3 };
@@ -550,8 +577,19 @@
   function currentAccessLevel() { var u = resolveIdentityUser(); return (u && u.accessLevel) || "viewer"; }
   function can(minLevel) { return ACCESS_RANK[currentAccessLevel()] >= ACCESS_RANK[minLevel]; }
 
-  if (window.pdfjsLib) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  var PDF_WORKER_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  var pdfWorkerReadySet = false;
+  function ensurePdfWorkerReady() {
+    // Browsers refuse to construct a Worker directly from a cross-origin script URL, so pdf.js
+    // would hang forever trying to spin up its worker straight from the CDN. The standard fix is
+    // a tiny same-origin blob: script whose only job is to importScripts() the real worker —
+    // importScripts (unlike the Worker constructor itself) is allowed to fetch a CORS-enabled
+    // cross-origin script like cdnjs serves.
+    if (!window.pdfjsLib || pdfWorkerReadySet) return;
+    var wrapper = "importScripts(" + JSON.stringify(PDF_WORKER_URL) + ");";
+    var blob = new Blob([wrapper], { type: "application/javascript" });
+    pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
+    pdfWorkerReadySet = true;
   }
 
   function uid(prefix) { return prefix + "_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4); }
@@ -654,6 +692,17 @@
     }
     return 0;
   }
+  // Storage/sorting keep the dot-separated form ("2400.25.d.iii"); display uses the standard's
+  // own bracket convention instead, e.g. "2400.25(d)(iii)". Case is preserved as entered/imported.
+  function formatParaNumber(number) {
+    var parts = String(number || "").split(".");
+    if (parts.length <= 2) return parts.join(".");
+    return parts.slice(0, 2).join(".") + parts.slice(2).map(function (p) { return "(" + p + ")"; }).join("");
+  }
+  function mainGroupKey(number) {
+    var parts = String(number || "").split(".");
+    return parts.slice(0, 2).join(".");
+  }
 
   // ---------- Seed data ----------
   function seedData() {
@@ -750,6 +799,7 @@
     reviewFilter: { type: "all" },
     reviewRevealed: {},
     standardCollapse: {},
+    paraGroupCollapse: {},
     editing: { methodologyId: null, standardId: null, paragraphId: null }
   };
   var STANDARD_COLLAPSE_THRESHOLD = 5;
@@ -785,6 +835,8 @@
           if (typeof c.wpExtract === "undefined") c.wpExtract = "";
           if (typeof c.wpReference === "undefined") c.wpReference = "";
           if (typeof c.updatedBy === "undefined") c.updatedBy = null;
+          if (!c.tickMarks || typeof c.tickMarks !== "object") c.tickMarks = emptyTickMarks();
+          else TICK_MARK_DEFS.forEach(function (d) { if (typeof c.tickMarks[d.key] === "undefined") c.tickMarks[d.key] = false; });
         });
       });
     });
@@ -1103,7 +1155,32 @@
           '<button class="icon-btn" data-del-std="' + std.id + '" title="Delete standard">✕</button>' +
         "</span>" : "");
       container.appendChild(head);
-      if (!isCollapsed) visibleParas.forEach(function (p) { container.appendChild(renderParagraphCard(std, p, activeMeth)); });
+      if (!isCollapsed) {
+        // Group consecutive paragraphs that share the same main paragraph number (e.g. 25, 25.a,
+        // 25.d, 25.d.iii all belong under "25") — visibleParas is already sorted, so same-group
+        // paragraphs are always contiguous.
+        var groups = [];
+        visibleParas.forEach(function (p) {
+          var key = mainGroupKey(p.number);
+          if (!groups.length || groups[groups.length - 1].key !== key) groups.push({ key: key, paras: [] });
+          groups[groups.length - 1].paras.push(p);
+        });
+        groups.forEach(function (group) {
+          if (group.paras.length > 1) {
+            var groupCollapseKey = std.id + "::" + group.key;
+            var groupCollapsed = !!state.paraGroupCollapse[groupCollapseKey];
+            var gHead = document.createElement("div");
+            gHead.className = "para-group-head";
+            gHead.setAttribute("data-toggle-group", groupCollapseKey);
+            gHead.innerHTML = '<span class="collapse-chevron">' + (groupCollapsed ? "▸" : "▾") + "</span>Paragraph " +
+              escapeHtml(group.key.split(".").pop()) + " and sub-paragraphs (" + group.paras.length + ")";
+            container.appendChild(gHead);
+            if (!groupCollapsed) group.paras.forEach(function (p) { container.appendChild(renderParagraphCard(std, p, activeMeth)); });
+          } else {
+            container.appendChild(renderParagraphCard(std, group.paras[0], activeMeth));
+          }
+        });
+      }
     });
 
     document.getElementById("coverage-empty-filtered").style.display = matchingStandards.length ? "none" : "block";
@@ -1113,6 +1190,13 @@
         var id = el.getAttribute("data-toggle-std");
         var current = state.standardCollapse.hasOwnProperty(id) ? state.standardCollapse[id] : defaultCollapsed;
         state.standardCollapse[id] = !current;
+        renderCoverageView();
+      });
+    });
+    container.querySelectorAll("[data-toggle-group]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var key = el.getAttribute("data-toggle-group");
+        state.paraGroupCollapse[key] = !state.paraGroupCollapse[key];
         renderCoverageView();
       });
     });
@@ -1128,7 +1212,7 @@
   }
 
   function renderParagraphCard(std, p, meth) {
-    var cov = p.coverage[meth.id] || { status: "none", wpExtract: "", wpReference: "", notes: "", updatedAt: null, updatedBy: null };
+    var cov = p.coverage[meth.id] || { status: "none", wpExtract: "", wpReference: "", notes: "", tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
     var card = document.createElement("div");
     card.className = "review-card";
     card.setAttribute("data-para-id", p.id);
@@ -1154,8 +1238,22 @@
     var savedCaption = cov.updatedAt ? ("Last updated by " + escapeHtml(cov.updatedBy || "Unknown") + " · " + new Date(cov.updatedAt).toLocaleString()) : "Not yet reviewed for this methodology.";
     var ro = canEditCoverage ? "" : " disabled";
 
-    card.innerHTML =
-      '<div class="review-col"><h4>Official standard text — ' + escapeHtml(p.number) + "</h4>" +
+    var pendingFlag = (data.pendingFlags || []).find(function (fl) { return fl.status === "open" && fl.paragraphId === p.id; });
+    var flagAlertHtml = "";
+    if (pendingFlag) {
+      var flagMsg = pendingFlag.type === "changed" ? "Wording changed in the latest PDF import" : "Not found in the latest PDF import";
+      flagAlertHtml = '<div class="flag-alert" data-jump-to-flag="' + pendingFlag.type + '">⚠ ' + flagMsg + " — click to review in Standards Review</div>";
+      card.className += " review-card--flagged";
+    }
+
+    var tickMarks = cov.tickMarks || emptyTickMarks();
+    var tickMarksHtml = '<div class="tick-marks-label">Expected compliance area (outside WP)</div><div class="tick-marks-grid">' +
+      TICK_MARK_DEFS.map(function (d) {
+        return '<label class="tick-mark-item"><input type="checkbox" data-tick-key="' + d.key + '"' + (tickMarks[d.key] ? " checked" : "") + ro + ">" + escapeHtml(d.label) + "</label>";
+      }).join("") + "</div>";
+
+    card.innerHTML = flagAlertHtml +
+      '<div class="review-col"><h4>Official standard text — <span class="no-case">' + escapeHtml(formatParaNumber(p.number)) + "</span></h4>" +
         '<div class="review-text">' + escapeHtml(p.text) + "</div>" +
         (canManageStructure ? '<div class="cell-actions"><button class="icon-btn" data-edit-para="' + p.id + '">✎ Edit</button><button class="icon-btn" data-del-para="' + p.id + '">✕ Delete</button></div>' : "") +
       "</div>" +
@@ -1167,6 +1265,7 @@
       '<div class="review-col"><h4>Status &amp; comparison</h4>' +
         '<div class="status-pills">' + statusPillsHtml + "</div>" +
         '<textarea class="review-textarea" data-notes-field placeholder="Comparison notes, reviewer commentary, evidence reference..."' + ro + ">" + escapeHtml(cov.notes || "") + "</textarea>" +
+        tickMarksHtml +
         '<div class="save-caption" data-caption>' + savedCaption + "</div>" +
       "</div>";
     return card;
@@ -1184,13 +1283,21 @@
       if (wpref) wpref.addEventListener("blur", function () { saveCoverageField(paraId, state.activeMethodologyId, "wpReference", wpref.value, "Updated WP reference"); });
       var notes = card.querySelector("[data-notes-field]");
       if (notes) notes.addEventListener("blur", function () { saveCoverageField(paraId, state.activeMethodologyId, "notes", notes.value, "Updated comparison notes"); });
+      card.querySelectorAll("[data-tick-key]").forEach(function (cb) {
+        cb.addEventListener("change", function () { saveTickMark(paraId, state.activeMethodologyId, cb.getAttribute("data-tick-key"), cb.checked); });
+      });
+      var jumpBtn = card.querySelector("[data-jump-to-flag]");
+      if (jumpBtn) jumpBtn.addEventListener("click", function () {
+        state.reviewFilter.type = jumpBtn.getAttribute("data-jump-to-flag");
+        switchToView("review");
+      });
     });
     container.querySelectorAll("[data-edit-para]").forEach(function (b) { b.addEventListener("click", function () { openParagraphModal(null, b.getAttribute("data-edit-para")); }); });
     container.querySelectorAll("[data-del-para]").forEach(function (b) { b.addEventListener("click", function () { deleteParagraph(b.getAttribute("data-del-para")); }); });
   }
 
   function ensureCoverageEntry(para, methodologyId) {
-    if (!para.coverage[methodologyId]) para.coverage[methodologyId] = { status: "none", wpExtract: "", wpReference: "", notes: "", updatedAt: null, updatedBy: null };
+    if (!para.coverage[methodologyId]) para.coverage[methodologyId] = { status: "none", wpExtract: "", wpReference: "", notes: "", tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
     return para.coverage[methodologyId];
   }
 
@@ -1214,6 +1321,19 @@
     if ((cov[field] || "") === value) return;
     cov[field] = value; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
     logChange("update", "coverage", found.std.code + " " + found.para.number + " — " + (meth ? meth.name : ""), summaryLabel);
+    persist();
+    withScrollPreserved(renderCoverageView);
+  }
+  function saveTickMark(paragraphId, methodologyId, tickKey, value) {
+    var found = findParagraph(paragraphId);
+    if (!found) return;
+    var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
+    var cov = ensureCoverageEntry(found.para, methodologyId);
+    if (!cov.tickMarks) cov.tickMarks = emptyTickMarks();
+    if (cov.tickMarks[tickKey] === value) return;
+    cov.tickMarks[tickKey] = value; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
+    var label = (TICK_MARK_DEFS.find(function (d) { return d.key === tickKey; }) || {}).label || tickKey;
+    logChange("update", "coverage", found.std.code + " " + found.para.number + " — " + (meth ? meth.name : ""), (value ? "Checked" : "Unchecked") + ' "' + label + '"');
     persist();
     withScrollPreserved(renderCoverageView);
   }
@@ -1368,7 +1488,7 @@
       }
     } else {
       var coverage = {};
-      data.methodologies.forEach(function (m) { coverage[m.id] = { status: "none", wpExtract: "", wpReference: "", notes: "", updatedAt: null, updatedBy: null }; });
+      data.methodologies.forEach(function (m) { coverage[m.id] = { status: "none", wpExtract: "", wpReference: "", notes: "", tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
       std.paragraphs.push({ id: uid("para"), number: number, text: text, coverage: coverage });
       sortParagraphs(std);
       logChange("create", "paragraph", std.code + " " + number, "Added paragraph " + number);
@@ -1530,6 +1650,7 @@
     });
     return sections;
   }
+  var SHALL_RE = /\bshall\b/i;
   function extractParagraphsFromSection(sec) {
     var numCoreMatch = sec.std.code.match(/\d+/);
     var numCore = numCoreMatch ? numCoreMatch[0] : "";
@@ -1542,7 +1663,8 @@
       var startIdx = matches[i].start;
       var endIdx = (i + 1 < matches.length) ? matches[i + 1].headerStart : Math.min(text.length, startIdx + 600);
       var chunk = normalizeWs(text.substring(startIdx, endIdx)).slice(0, 600);
-      if (chunk) found.push({ number: numCore + "." + matches[i].marker, text: chunk });
+      // Only requirement paragraphs (containing "shall") are tracked — explanatory/application material is not a requirement to compare.
+      if (chunk && SHALL_RE.test(chunk)) found.push({ number: numCore + "." + matches[i].marker, text: chunk });
     }
     return found;
   }
@@ -1582,10 +1704,17 @@
         var std = data.standards.find(function (s) { return s.id === flag.standardId; });
         if (std) {
           var coverage = {};
-          data.methodologies.forEach(function (m) { coverage[m.id] = { status: "none", wpExtract: "", wpReference: "", notes: "", updatedAt: null, updatedBy: null }; });
+          data.methodologies.forEach(function (m) { coverage[m.id] = { status: "none", wpExtract: "", wpReference: "", notes: "", tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
           std.paragraphs.push({ id: uid("para"), number: flag.number, text: flag.newText, coverage: coverage });
           sortParagraphs(std);
           logChange("create", "paragraph", flag.standardCode + " " + flag.number, "Added paragraph from PDF import.");
+        }
+      } else if (flag.type === "missing") {
+        if (!confirm('Remove paragraph ' + flag.number + " (" + flag.standardCode + ') from the tracker? This cannot be undone.')) return;
+        var foundM = findParagraph(flag.paragraphId);
+        if (foundM) {
+          foundM.std.paragraphs = foundM.std.paragraphs.filter(function (p) { return p.id !== foundM.para.id; });
+          logChange("delete", "paragraph", flag.standardCode + " " + flag.number, "Removed paragraph — not found as a \"shall\" requirement in the latest PDF import (approved by reviewer).");
         }
       }
       flag.status = "resolved";
@@ -1602,7 +1731,7 @@
     return c;
   }
   function renderFlagRow(f) {
-    var badge = f.type === "new" ? '<span class="flag-badge flag-new">● New</span>' : f.type === "changed" ? '<span class="flag-badge flag-changed">◐ Changed</span>' : '<span class="flag-badge flag-missing">– Missing</span>';
+    var badge = f.type === "new" ? '<span class="flag-badge flag-new">● New</span>' : f.type === "changed" ? '<span class="flag-badge flag-changed">◐ Changed</span>' : '<span class="flag-badge flag-missing">– Removed</span>';
     var canResolve = can("senior");
     var body = "";
     if (f.type === "changed") {
@@ -1617,11 +1746,11 @@
       body = '<div class="diff-block"><strong>Suggested new paragraph text (from PDF):</strong><br>' + escapeHtml(f.newText) + "</div>" +
         (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Add as new paragraph</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>' : "");
     } else {
-      body = '<div class="diff-block"><strong>Currently stored (not found in PDF):</strong><br>' + escapeHtml(f.oldText) + "</div>" +
-        '<div class="readonly-note">May have been renumbered, removed, or missed by extraction.</div>' +
-        (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn" data-dismiss-flag="' + f.id + '">Acknowledge</button></div>' : "");
+      body = '<div class="diff-block"><strong>Currently stored (no matching "shall" requirement found in PDF):</strong><br>' + escapeHtml(f.oldText) + "</div>" +
+        '<div class="readonly-note">May have been renumbered, superseded, or missed by extraction — review before removing.</div>' +
+        (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn danger" data-apply-flag="' + f.id + '">Remove from tracker</button><button class="btn" data-dismiss-flag="' + f.id + '">Keep (no change)</button></div>' : "");
     }
-    return '<div class="flag-row"><div class="flag-number">' + escapeHtml(f.number) + " " + badge + "</div>" + body + "</div>";
+    return '<div class="flag-row"><div class="flag-number">' + escapeHtml(formatParaNumber(f.number)) + " " + badge + "</div>" + body + "</div>";
   }
   function renderReviewView() {
     var infoEl = document.getElementById("last-import-info");
@@ -1634,7 +1763,7 @@
     var openFlags = (data.pendingFlags || []).filter(function (f) { return f.status === "open"; });
     var counts = flagCounts(openFlags);
     var pillsEl = document.getElementById("review-type-pills");
-    var types = [["all", "All"], ["new", "New"], ["changed", "Changed"], ["missing", "Missing"]];
+    var types = [["all", "All"], ["new", "New"], ["changed", "Changed"], ["missing", "Removed"]];
     pillsEl.innerHTML = types.map(function (t) {
       return '<button class="pill-btn' + (state.reviewFilter.type === t[0] ? " active" : "") + '" data-set-type="' + t[0] + '">' + t[1] + " (" + (counts[t[0]] || 0) + ")</button>";
     }).join("");
@@ -1691,6 +1820,12 @@
       document.getElementById("banner-dismiss-btn").addEventListener("click", function () { state.bannerDismissed = true; banner.style.display = "none"; });
     } else banner.style.display = "none";
   }
+  function withTimeout(promise, ms, message) {
+    return Promise.race([
+      promise,
+      new Promise(function (_, reject) { setTimeout(function () { reject(new Error(message)); }, ms); })
+    ]);
+  }
   async function importPdfFile(file) {
     if (typeof pdfjsLib === "undefined") { alert("The PDF engine failed to load (this feature needs an internet connection to fetch pdf.js from its CDN). Please check your connection and try again."); return; }
     var progressWrap = document.getElementById("import-progress");
@@ -1700,7 +1835,17 @@
     btn.disabled = true; progressWrap.style.display = "block"; progressFill.style.width = "0%"; progressText.textContent = "Reading file...";
     try {
       var buf = await file.arrayBuffer();
-      var pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      ensurePdfWorkerReady();
+      var pdf;
+      try {
+        progressText.textContent = "Opening PDF...";
+        pdf = await withTimeout(pdfjsLib.getDocument({ data: buf }).promise, 25000, "worker-timeout");
+      } catch (workerErr) {
+        // Fall back to running entirely on the main thread if the worker never responds —
+        // slower, but avoids depending on worker setup succeeding.
+        progressText.textContent = "Retrying without a background worker (this may take longer)...";
+        pdf = await withTimeout(pdfjsLib.getDocument({ data: buf, disableWorker: true }).promise, 60000, "Timed out opening the PDF — the file may be corrupt, password-protected, or too large.");
+      }
       var fullText = "";
       for (var i = 1; i <= pdf.numPages; i++) {
         progressText.textContent = "Parsing page " + i + " of " + pdf.numPages + "...";
@@ -1738,7 +1883,7 @@
     { key: "wpReference", label: "WP Reference", header: "WP Reference", keywords: ["wp ref", "wp no", "wp number", "reference no"], required: false },
     { key: "wpExtract", label: "WP Extract", header: "WP Extract", keywords: ["extract", "procedure", "working paper", "wp text"], required: true },
     { key: "comment", label: "Comment", header: "Comment", keywords: ["comment", "note"], required: false }
-  ];
+  ].concat(TICK_MARK_DEFS.map(function (d) { return { key: "tick_" + d.key, label: d.label, header: d.label, keywords: [d.label.toLowerCase()], required: false, isTickMark: true, tickKey: d.key }; }));
   function findColumnByExactHeader(headers, name) {
     var target = String(name).trim().toLowerCase();
     for (var i = 0; i < headers.length; i++) { if (String(headers[i] || "").trim().toLowerCase() === target) return i; }
@@ -1796,7 +1941,7 @@
       return existing;
     }
     var coverage = {};
-    data.methodologies.forEach(function (m) { coverage[m.id] = { status: "none", wpExtract: "", wpReference: "", notes: "", updatedAt: null, updatedBy: null }; });
+    data.methodologies.forEach(function (m) { coverage[m.id] = { status: "none", wpExtract: "", wpReference: "", notes: "", tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
     var p = { id: uid("para"), number: number, text: officialText || "", coverage: coverage };
     std.paragraphs.push(p);
     sortParagraphs(std);
@@ -1868,6 +2013,8 @@
       var wpExtractCell = cellVal(row, colMap.wpExtract);
       var wpReferenceCell = cellVal(row, colMap.wpReference);
       var commentCell = cellVal(row, colMap.comment);
+      var tickCells = {};
+      TICK_MARK_DEFS.forEach(function (d) { tickCells[d.key] = cellVal(row, colMap["tick_" + d.key]); });
 
       var rowIsBlank = !standardCell && !mainCell && !letterCell && !romanCell && !subletterCell && !subsubCell && !officialTextCell && !wpExtractCell && !wpReferenceCell && !commentCell;
       if (rowIsBlank) continue;
@@ -1909,6 +2056,8 @@
       if (wpExtractCell) cov.wpExtract = wpExtractCell;
       if (wpReferenceCell) cov.wpReference = wpReferenceCell;
       if (commentCell) cov.notes = cov.notes ? cov.notes + "\n" + commentCell : commentCell;
+      if (!cov.tickMarks) cov.tickMarks = emptyTickMarks();
+      TICK_MARK_DEFS.forEach(function (d) { if (tickCells[d.key]) cov.tickMarks[d.key] = true; });
       cov.updatedAt = new Date().toISOString();
       cov.updatedBy = identityName();
       updated++;
@@ -1944,6 +2093,13 @@
       ["WP Reference", "Optional", 'Your internal WP/section reference, e.g. "10.02" or "15.05".'],
       ["WP Extract", "Required", "The extract/procedure from your working paper methodology that addresses this paragraph — this is what gets imported into the tracker."],
       ["Comment", "Optional", "Any reviewer note — added to the paragraph's comparison notes."],
+      ["Firm SQM1 manual / Policies", "Optional", "Put any value (e.g. \"X\") in the cell to tick this as an expected compliance area for that paragraph; leave blank if not applicable."],
+      ["Engagement letter", "Optional", "Same as above — any non-blank value ticks it."],
+      ["Documentation on WP", "Optional", "Same as above — any non-blank value ticks it."],
+      ["Management Rep letter", "Optional", "Same as above — any non-blank value ticks it."],
+      ["Management report", "Optional", "Same as above — any non-blank value ticks it."],
+      ["Group audits", "Optional", "Same as above — any non-blank value ticks it."],
+      ["Audit report", "Optional", "Same as above — any non-blank value ticks it."],
       [],
       ["HOW THE 5 REFERENCE COLUMNS COMBINE"],
       ['The Main / Letter / Roman / Sub-Letter / Sub-Sub columns are combined into one reference, e.g. "25", "25.a", "25.d.i", "25.d.iii.a".'],
@@ -1956,20 +2112,22 @@
       ["When you import, you'll choose which methodology (e.g. RAC, AUP) this file represents — every row is imported into that one methodology."],
       ["Column order doesn't matter and extra columns are ignored — when you import, you'll match each of the columns above to whichever column in your file contains it."]
     ];
+    var tickHeaders = TICK_MARK_DEFS.map(function (d) { return d.label; });
     var mapping = [
-      ["Standard Reference", "Main Paragraph Number", "Letter Subdivision", "Roman Numeral", "Sub-Letter", "Sub-Sub Level", "Official Standard Text", "WP Reference", "WP Extract", "Comment"],
-      ["ISRE 2400", "25", "", "", "", "", "Main paragraph 25 requirement text.", "R-25", "WP extract addressing paragraph 25.", "Example row — replace with your own data"],
-      ["", "", "a", "", "", "", "Sub-paragraph 25(a) requirement text.", "R-25a", "WP extract addressing 25(a).", ""],
-      ["", "", "d", "", "", "", "Sub-paragraph 25(d) requirement text.", "R-25d", "WP extract addressing 25(d).", ""],
-      ["", "", "", "i", "", "", "Sub-sub paragraph 25(d)(i) requirement text.", "R-25di", "WP extract addressing 25(d)(i).", ""],
-      ["", "", "", "iii", "", "", "Sub-sub paragraph 25(d)(iii) requirement text.", "R-25diii", "WP extract addressing 25(d)(iii).", ""],
-      ["", "", "", "", "a", "", "Deepest paragraph 25(d)(iii)(a) requirement text.", "R-25diiia", "WP extract addressing 25(d)(iii)(a).", "Example row — replace with your own data"]
+      ["Standard Reference", "Main Paragraph Number", "Letter Subdivision", "Roman Numeral", "Sub-Letter", "Sub-Sub Level", "Official Standard Text", "WP Reference", "WP Extract", "Comment"].concat(tickHeaders),
+      ["ISRE 2400", "25", "", "", "", "", "Main paragraph 25 requirement text.", "R-25", "WP extract addressing paragraph 25.", "Example row — replace with your own data", "X", "", "X", "", "", "", ""],
+      ["", "", "a", "", "", "", "Sub-paragraph 25(a) requirement text.", "R-25a", "WP extract addressing 25(a).", "", "", "X", "X", "", "", "", ""],
+      ["", "", "d", "", "", "", "Sub-paragraph 25(d) requirement text.", "R-25d", "WP extract addressing 25(d).", "", "", "", "X", "", "", "", ""],
+      ["", "", "", "i", "", "", "Sub-sub paragraph 25(d)(i) requirement text.", "R-25di", "WP extract addressing 25(d)(i).", "", "", "", "X", "", "", "", ""],
+      ["", "", "", "iii", "", "", "Sub-sub paragraph 25(d)(iii) requirement text.", "R-25diii", "WP extract addressing 25(d)(iii).", "", "", "", "X", "", "", "", ""],
+      ["", "", "", "", "a", "", "Deepest paragraph 25(d)(iii)(a) requirement text.", "R-25diiia", "WP extract addressing 25(d)(iii)(a).", "Example row — replace with your own data", "", "", "X", "", "", "", ""]
     ];
     var wb = XLSX.utils.book_new();
     var wsInstructions = XLSX.utils.aoa_to_sheet(instructions);
     wsInstructions["!cols"] = [{ wch: 26 }, { wch: 12 }, { wch: 90 }];
     var wsMapping = XLSX.utils.aoa_to_sheet(mapping);
-    wsMapping["!cols"] = [{ wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 46 }, { wch: 12 }, { wch: 46 }, { wch: 32 }];
+    wsMapping["!cols"] = [{ wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 46 }, { wch: 12 }, { wch: 46 }, { wch: 32 }]
+      .concat(tickHeaders.map(function () { return { wch: 16 }; }));
     XLSX.utils.book_append_sheet(wb, wsInstructions, "Instructions");
     XLSX.utils.book_append_sheet(wb, wsMapping, "WP Mapping");
     XLSX.writeFile(wb, "draftworx-wp-mapping-template.xlsx");
@@ -2176,10 +2334,10 @@
     });
 
     document.getElementById("dismiss-all-missing-btn").addEventListener("click", function () {
-      if (!confirm("Dismiss all Missing flags? This just acknowledges them — no stored data changes.")) return;
+      if (!confirm("Keep all Removed paragraphs as-is? This just dismisses those flags — no paragraphs are deleted.")) return;
       var missing = data.pendingFlags.filter(function (f) { return f.status === "open" && f.type === "missing"; });
       missing.forEach(function (f) { f.status = "dismissed"; });
-      logChange("update", "flag", "Bulk dismiss", "Dismissed " + missing.length + " Missing flag(s) from PDF import review.");
+      logChange("update", "flag", "Bulk dismiss", "Kept " + missing.length + " Removed-flagged paragraph(s) as-is (no PDF match found).");
       persist();
       renderReviewView(); renderNotifyBanner();
     });
