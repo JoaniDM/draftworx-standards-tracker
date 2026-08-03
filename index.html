@@ -9,49 +9,70 @@
 <style>
   :root {
     color-scheme: light;
-    --surface-1:      #fcfcfb;
-    --page-plane:      #f9f9f7;
-    --text-primary:   #0b0b0b;
-    --text-secondary: #52514e;
-    --text-muted:     #898781;
-    --gridline:       #e1e0d9;
-    --baseline:       #c3c2b7;
-    --border:         rgba(11,11,11,0.10);
-    --success-text:   #006300;
+    --surface-page:   #f4f6fb;
+    --surface-1:      #ffffff;
+    --surface-2:      #f3f5fa;
+    --surface-hover:  #eef2f9;
+    --text-primary:   #1a2233;
+    --text-secondary: #5b6478;
+    --text-muted:     #94a0b4;
+    --border:         #e2e6ef;
+    --border-strong:  #cdd4e3;
 
-    --cat-1: #2a78d6; --cat-2: #eb6834; --cat-3: #1baf7a; --cat-4: #eda100;
-    --cat-5: #e87ba4; --cat-6: #008300; --cat-7: #4a3aa7; --cat-8: #e34948;
+    --cat-1: #2196f3; --cat-2: #f59e0b; --cat-3: #22c55e; --cat-4: #6c63ff;
+    --cat-5: #ef4444; --cat-6: #06b6d4; --cat-7: #ec4899; --cat-8: #64748b;
 
-    --status-good:     #0ca30c;
-    --status-warning:  #fab219;
-    --status-critical: #d03b3b;
-    --status-na:       #898781;
+    --status-good:      #22c55e;
+    --status-warning:   #f59e0b;
+    --status-critical:  #ef4444;
+    --status-investigate:  #6c63ff;
+    --status-na:        #94a3b8;
+    --status-good-text:     #15803d;
+    --status-warning-text:  #92400e;
+    --status-critical-text: #b91c1c;
+    --status-investigate-text: #6d28d9;
+    --success-text:  #15803d;
 
-    --radius: 8px;
-    --shadow: 0 1px 2px rgba(11,11,11,0.06), 0 1px 8px rgba(11,11,11,0.04);
+    --level-0-bg: #ffffff;
+    --level-1-bg: #f0f7ff;
+    --level-2-bg: #dbeafe;
+    --level-3-bg: #bfdbfe;
+
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(15,23,42,0.05), 0 6px 18px rgba(15,23,42,0.07);
   }
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) {
       color-scheme: dark;
-      --surface-1: #1a1a19; --page-plane: #0d0d0d; --text-primary: #ffffff;
-      --text-secondary: #c3c2b7; --text-muted: #898781; --gridline: #2c2c2a;
-      --baseline: #383835; --border: rgba(255,255,255,0.10); --success-text: #0ca30c;
-      --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70; --cat-4: #c98500;
-      --cat-5: #d55181; --cat-6: #008300; --cat-7: #9085e9; --cat-8: #e66767;
+      --surface-page: #0f1320; --surface-1: #1c2337; --surface-2: #212840; --surface-hover: #2a3350;
+      --text-primary: #e8ecf5; --text-secondary: #8892b0; --text-muted: #4a5568;
+      --border: #2a3350; --border-strong: #374162;
+      --cat-1: #4f8ef7; --cat-2: #f59e0b; --cat-3: #22c55e; --cat-4: #6c63ff;
+      --cat-5: #ef4444; --cat-6: #22d3ee; --cat-7: #f472b6; --cat-8: #94a3b8;
+      --status-good: #22c55e; --status-warning: #f59e0b; --status-critical: #ef4444; --status-investigate: #6c63ff; --status-na: #64748b;
+      --status-good-text: #22c55e; --status-warning-text: #f59e0b; --status-critical-text: #ef4444; --status-investigate-text: #6c63ff;
+      --success-text: #22c55e;
+      --level-0-bg: #1c2337; --level-1-bg: #212f4a; --level-2-bg: #26375a; --level-3-bg: #2c4270;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 22px rgba(0,0,0,0.35);
     }
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
-    --surface-1: #1a1a19; --page-plane: #0d0d0d; --text-primary: #ffffff;
-    --text-secondary: #c3c2b7; --text-muted: #898781; --gridline: #2c2c2a;
-    --baseline: #383835; --border: rgba(255,255,255,0.10); --success-text: #0ca30c;
-    --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70; --cat-4: #c98500;
-    --cat-5: #d55181; --cat-6: #008300; --cat-7: #9085e9; --cat-8: #e66767;
+    --surface-page: #0f1320; --surface-1: #1c2337; --surface-2: #212840; --surface-hover: #2a3350;
+    --text-primary: #e8ecf5; --text-secondary: #8892b0; --text-muted: #4a5568;
+    --border: #2a3350; --border-strong: #374162;
+    --cat-1: #4f8ef7; --cat-2: #f59e0b; --cat-3: #22c55e; --cat-4: #6c63ff;
+    --cat-5: #ef4444; --cat-6: #22d3ee; --cat-7: #f472b6; --cat-8: #94a3b8;
+    --status-good: #22c55e; --status-warning: #f59e0b; --status-critical: #ef4444; --status-investigate: #6c63ff; --status-na: #64748b;
+    --status-good-text: #22c55e; --status-warning-text: #f59e0b; --status-critical-text: #ef4444; --status-investigate-text: #6c63ff;
+    --success-text: #22c55e;
+    --level-0-bg: #1c2337; --level-1-bg: #212f4a; --level-2-bg: #26375a; --level-3-bg: #2c4270;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 22px rgba(0,0,0,0.35);
   }
 
   * { box-sizing: border-box; }
   html, body { height: 100%; }
-  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--page-plane); color: var(--text-primary); }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--surface-page); color: var(--text-primary); }
   button, input, select, textarea { font: inherit; color: inherit; }
   table { font-variant-numeric: tabular-nums; }
 
@@ -61,23 +82,23 @@
   .topbar h1 { font-size: 15px; font-weight: 600; margin: 0; white-space: nowrap; }
   .tabs { display: flex; gap: 4px; margin-left: 16px; flex-wrap: wrap; }
   .tab-btn { border: none; background: transparent; padding: 8px 12px; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
-  .tab-btn:hover { background: var(--gridline); }
+  .tab-btn:hover { background: var(--surface-hover); }
   .tab-btn.active { background: var(--cat-1); color: #fff; }
 
   .spacer { flex: 1; }
 
-  .search-box { display: flex; align-items: center; gap: 6px; background: var(--page-plane); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 10px; min-width: 180px; }
+  .search-box { display: flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 10px; min-width: 180px; }
   .search-box input { border: none; background: transparent; outline: none; width: 100%; font-size: 13px; color: var(--text-primary); }
   .search-box svg { flex-shrink: 0; color: var(--text-muted); }
 
   .identity-badge { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 
   .btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); padding: 7px 12px; border-radius: var(--radius); cursor: pointer; font-size: 13px; white-space: nowrap; }
-  .btn:hover { background: var(--gridline); }
+  .btn:hover { background: var(--surface-hover); }
   .btn.primary { background: var(--cat-1); border-color: var(--cat-1); color: #fff; }
   .btn.primary:hover { filter: brightness(1.08); }
-  .btn.danger { color: var(--status-critical); border-color: var(--status-critical); }
-  .btn.danger:hover { background: rgba(208,59,59,0.10); }
+  .btn.danger { color: var(--status-critical-text); border-color: var(--status-critical); }
+  .btn.danger:hover { background: rgba(239,68,68,0.10); }
   .btn.icon-only { padding: 6px 10px; }
   .btn:disabled { opacity: .5; cursor: not-allowed; }
   .linklike { border: none; background: none; color: var(--cat-1); cursor: pointer; padding: 0; font-size: 12px; text-decoration: underline; }
@@ -88,7 +109,7 @@
   .sidebar h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin: 18px 6px 8px; }
   .sidebar h2:first-child { margin-top: 0; }
   .side-item { display: flex; align-items: center; gap: 8px; width: 100%; border: none; background: transparent; text-align: left; padding: 7px 8px; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text-primary); }
-  .side-item:hover { background: var(--gridline); }
+  .side-item:hover { background: var(--surface-hover); }
   .side-item.active { background: var(--cat-1); color: #fff; }
   .side-item.active .count { color: #fff; opacity: .85; }
   .side-item .swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
@@ -100,9 +121,9 @@
   .row-actions { display: none; gap: 2px; }
   .methodology-row:hover .row-actions { display: flex; }
   .icon-btn { border: none; background: transparent; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; gap: 4px; font-size: 12px; }
-  .icon-btn:hover { background: var(--gridline); color: var(--text-primary); }
+  .icon-btn:hover { background: var(--surface-hover); color: var(--text-primary); }
 
-  .sidebar-footer { margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--gridline); font-size: 11px; color: var(--text-muted); }
+  .sidebar-footer { margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted); }
   .sidebar-footer button { border: none; background: none; color: var(--cat-1); cursor: pointer; font-size: 11px; padding: 0; margin-top: 6px; }
 
   main.content { flex: 1; overflow-y: auto; padding: 20px 24px 60px; min-width: 0; }
@@ -113,19 +134,7 @@
   .page-head h2 { margin: 0 0 4px; font-size: 18px; }
   .page-head p { margin: 0; font-size: 13px; color: var(--text-secondary); }
 
-  .notify-banner { display: none; align-items: center; gap: 12px; background: rgba(250,178,25,0.12); border: 1px solid var(--status-warning); color: var(--text-primary); padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
-
-  .tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin-bottom: 28px; }
-  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; }
-  .tile .tile-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tile .tile-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
-  .tile .hero { font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 10px; }
-  .stack-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--gridline); margin-bottom: 10px; }
-  .stack-bar span { height: 100%; }
-  .stack-bar span + span { margin-left: 2px; }
-  .tile-legend { display: flex; flex-wrap: wrap; gap: 10px; }
-  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); }
-  .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .notify-banner { display: none; align-items: center; gap: 12px; background: rgba(245,158,11,0.12); border: 1px solid var(--status-warning); color: var(--text-primary); padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
 
   .family-panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 12px; }
   .family-panel h3 { margin: 0 0 2px; font-size: 14px; }
@@ -133,7 +142,7 @@
   .hbar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
   .hbar-row:last-child { margin-bottom: 0; }
   .hbar-label { width: 170px; flex-shrink: 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .hbar-track { flex: 1; height: 10px; background: var(--gridline); border-radius: 4px; overflow: hidden; }
+  .hbar-track { flex: 1; height: 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
   .hbar-fill { height: 100%; border-radius: 4px; }
   .hbar-pct { width: 40px; text-align: right; font-size: 12px; color: var(--text-secondary); flex-shrink: 0; }
 
@@ -142,15 +151,15 @@
 
   .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
   .pill-btn { border: 1px solid var(--border); background: var(--surface-1); border-radius: 999px; padding: 6px 14px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-  .pill-btn:hover { background: var(--gridline); }
+  .pill-btn:hover { background: var(--surface-hover); }
   .pill-btn.active { background: var(--cat-1); border-color: var(--cat-1); color: #fff; }
   .pill-swatch { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; display: inline-block; }
 
   .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); }
   table.matrix { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 560px; }
-  table.matrix thead th { position: sticky; top: 0; background: var(--surface-1); border-bottom: 1px solid var(--gridline); text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); white-space: nowrap; z-index: 1; }
-  table.matrix tr.para-row td { padding: 8px 12px; border-bottom: 1px solid var(--gridline); vertical-align: top; }
-  table.matrix tr.para-row:hover td { background: var(--page-plane); }
+  table.matrix thead th { position: sticky; top: 0; background: var(--surface-1); border-bottom: 1px solid var(--border); text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); white-space: nowrap; z-index: 1; }
+  table.matrix tr.para-row td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.matrix tr.para-row:hover td { background: var(--surface-hover); }
 
   .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 13px; }
   .empty-state .btn { margin-top: 12px; }
@@ -158,67 +167,102 @@
   .fam-badge { font-weight: 500; font-size: 10px; text-transform: uppercase; color: var(--text-muted); margin-left: 8px; }
   .cell-actions { display: flex; gap: 6px; flex-wrap: wrap; white-space: nowrap; }
 
-  .para-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); margin: 18px 0 8px; font-size: 13px; font-weight: 600; }
+  .para-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin: 18px 0 8px; font-size: 13px; font-weight: 600; }
   .para-card-head:first-child { margin-top: 0; }
   .head-toggle-area { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; cursor: pointer; }
   .head-toggle-area:hover .head-toggle-text { text-decoration: underline; }
   .collapse-chevron { color: var(--text-muted); flex-shrink: 0; width: 12px; }
   .head-toggle-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  .review-card { display: grid; grid-template-columns: 1fr 1fr 1fr; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; }
-  .review-col { padding: 12px 14px; border-right: 1px solid var(--gridline); display: flex; flex-direction: column; gap: 8px; }
+  /* Paragraph rows: a true collapsible tree. A parent paragraph shows one row; its
+     sub-paragraphs are only in the DOM once the tree-toggle chevron reveals them, nested
+     inside a .para-children wrapper (which also supplies the per-level indent). Each nesting
+     level gets its own background tint, on top of the per-status left border. */
+  .para-item { background: var(--level-0-bg); border: 1px solid var(--border); border-left: 4px solid var(--border-strong); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 8px; overflow: hidden; }
+  .para-item.level-1 { background: var(--level-1-bg); }
+  .para-item.level-2 { background: var(--level-2-bg); }
+  .para-item.level-3 { background: var(--level-3-bg); }
+  .para-item.status-covered { border-left-color: var(--status-good); }
+  .para-item.status-needsUpdate { border-left-color: var(--status-warning); }
+  .para-item.status-notAddressed { border-left-color: var(--status-critical); }
+  .para-item.status-notSure { border-left-color: var(--status-investigate); }
+  .para-item.status-na { border-left-color: var(--border-strong); }
+  .para-item.para-item--flagged { border-left-color: var(--status-warning); }
+  .para-children { margin: 6px 0 0 20px; }
+  .para-children > .para-item:last-child { margin-bottom: 0; }
+  .para-row-collapsed { display: flex; align-items: center; gap: 12px; padding: 10px 14px; cursor: pointer; }
+  .para-row-collapsed:hover { background: var(--surface-hover); }
+  .tree-toggle { flex-shrink: 0; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: var(--text-muted); cursor: pointer; }
+  .tree-toggle:hover { background: var(--border-strong); color: var(--text-primary); }
+  .tree-toggle-spacer { flex-shrink: 0; width: 18px; }
+  .para-ref { color: var(--cat-1); font-weight: 600; font-size: 13px; flex-shrink: 0; white-space: nowrap; }
+  .para-preview { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--text-secondary); }
+  .source-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface-2); text-transform: uppercase; letter-spacing: .03em; flex-shrink: 0; }
+  .source-badge--excel { color: var(--status-good-text); border-color: var(--status-good); }
+  .source-badge--pdf { color: var(--cat-4); border-color: var(--cat-4); }
+  .source-badge--manual { color: var(--text-secondary); border-color: var(--border-strong); }
+  .para-provenance { padding: 0 14px 8px 44px; margin-top: -6px; font-size: 11px; color: var(--text-muted); }
+  .status-dot-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); flex-shrink: 0; white-space: nowrap; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+  .status-dot--covered { background: var(--status-good); }
+  .status-dot--needsUpdate { background: var(--status-warning); }
+  .status-dot--notAddressed { background: var(--status-critical); }
+  .status-dot--notSure { background: var(--status-investigate); }
+  .status-dot--na { background: var(--status-na); }
+
+  .review-card { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--border); background: var(--surface-1); }
+  .review-col { padding: 14px 16px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
   .review-col:last-child { border-right: none; }
+  .review-col:nth-child(2), .review-col:nth-child(3) { background: var(--surface-2); }
   .review-col h4 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); }
   .no-case { text-transform: none; }
   .review-text { font-size: 13px; color: var(--text-primary); white-space: pre-wrap; flex: 1; }
-  .review-textarea { width: 100%; min-height: 84px; border: 1px solid var(--border); background: var(--page-plane); border-radius: 6px; padding: 8px; font-size: 13px; resize: vertical; }
+  .review-textarea { width: 100%; min-height: 84px; border: 1px solid var(--border); background: var(--surface-1); border-radius: 6px; padding: 8px; font-size: 13px; resize: vertical; }
   .status-pills { display: flex; gap: 6px; flex-wrap: wrap; }
-  .status-pill { border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; font-size: 12px; cursor: pointer; background: var(--page-plane); }
-  .status-pill.active-full { background: rgba(12,163,12,0.15); border-color: var(--status-good); color: var(--success-text); }
-  .status-pill.active-partial { background: rgba(250,178,25,0.18); border-color: var(--status-warning); color: #a5690f; }
-  .status-pill.active-none { background: rgba(208,59,59,0.15); border-color: var(--status-critical); color: var(--status-critical); }
-  .status-pill.active-na { background: var(--gridline); border-color: var(--baseline); color: var(--text-muted); }
+  .status-pill { border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; font-size: 12px; cursor: pointer; background: var(--surface-1); }
+  .status-pill.active-covered { background: rgba(34,197,94,0.15); border-color: var(--status-good); color: var(--status-good-text); }
+  .status-pill.active-needsUpdate { background: rgba(245,158,11,0.15); border-color: var(--status-warning); color: var(--status-warning-text); }
+  .status-pill.active-notAddressed { background: rgba(239,68,68,0.15); border-color: var(--status-critical); color: var(--status-critical-text); }
+  .status-pill.active-notSure { background: rgba(108,99,255,0.15); border-color: var(--status-investigate); color: var(--status-investigate-text); }
+  .status-pill.active-na { background: var(--surface-1); border-color: var(--border-strong); color: var(--text-muted); }
   .overlap-hint { font-size: 11px; color: var(--text-muted); }
   .save-caption { font-size: 11px; color: var(--text-muted); margin-top: auto; }
-  .flag-alert { grid-column: 1 / -1; background: rgba(250,178,25,0.12); border-bottom: 1px solid var(--status-warning); color: var(--text-primary); padding: 8px 14px; font-size: 12px; cursor: pointer; }
-  .flag-alert:hover { background: rgba(250,178,25,0.18); }
+  .flag-alert { grid-column: 1 / -1; background: rgba(245,158,11,0.12); border-bottom: 1px solid var(--status-warning); color: var(--text-primary); padding: 8px 14px; font-size: 12px; cursor: pointer; }
+  .flag-alert:hover { background: rgba(245,158,11,0.18); }
   .tick-marks-label { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-top: 4px; }
   .tick-marks-grid { display: flex; flex-wrap: wrap; gap: 6px 12px; }
   .tick-mark-item { display: flex; align-items: center; gap: 5px; font-size: 12px; }
   .tick-mark-item input { margin: 0; }
-  .para-group-head { font-size: 12px; font-weight: 600; color: var(--text-secondary); padding: 6px 4px; margin: 10px 0 4px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-  .para-group-head .collapse-chevron { font-size: 11px; }
-  .para-group-head:first-child { margin-top: 0; }
-  @media (max-width: 980px) { .review-card { grid-template-columns: 1fr; } .review-col { border-right: none; border-bottom: 1px solid var(--gridline); } .review-col:last-child { border-bottom: none; } }
+  @media (max-width: 980px) { .review-card { grid-template-columns: 1fr; } .review-col { border-right: none; border-bottom: 1px solid var(--border); } .review-col:last-child { border-bottom: none; } }
 
-  .flag-row { padding: 12px 0; border-top: 1px solid var(--gridline); }
+  .flag-row { padding: 12px 0; border-top: 1px solid var(--border); }
   .flag-row:first-of-type { border-top: none; }
   .flag-number { font-weight: 600; margin-bottom: 4px; }
   .flag-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 8px; border: 1px solid var(--border); }
   .flag-new { color: var(--cat-1); }
-  .flag-changed { color: #a5690f; }
+  .flag-changed { color: var(--status-warning-text); }
   .flag-missing { color: var(--text-muted); }
-  .diff-block { white-space: pre-wrap; font-size: 13px; line-height: 1.5; background: var(--page-plane); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; margin: 6px 0; max-height: 200px; overflow-y: auto; }
-  .diff-del { color: var(--status-critical); text-decoration: line-through; background: rgba(208,59,59,0.10); border-radius: 2px; }
-  .diff-ins { color: var(--success-text); text-decoration: underline; background: rgba(12,163,12,0.10); border-radius: 2px; }
+  .diff-block { white-space: pre-wrap; font-size: 13px; line-height: 1.5; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; margin: 6px 0; max-height: 200px; overflow-y: auto; }
+  .diff-del { color: var(--status-critical-text); text-decoration: line-through; background: rgba(239,68,68,0.12); border-radius: 2px; }
+  .diff-ins { color: var(--status-good-text); text-decoration: underline; background: rgba(34,197,94,0.12); border-radius: 2px; }
   .diff-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .diff-col-label { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-bottom: 4px; }
   @media (max-width: 760px) { .diff-columns { grid-template-columns: 1fr; } }
 
-  .progress-track { height: 8px; background: var(--gridline); border-radius: 4px; overflow: hidden; margin: 10px 0 6px; }
+  .progress-track { height: 8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin: 10px 0 6px; }
   .progress-fill { height: 100%; background: var(--cat-1); transition: width .15s; }
 
-  dialog { border: none; border-radius: 10px; padding: 0; background: var(--surface-1); color: var(--text-primary); box-shadow: 0 8px 30px rgba(0,0,0,0.25); width: 440px; max-width: calc(100vw - 32px); }
-  dialog::backdrop { background: rgba(0,0,0,0.4); }
-  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--gridline); }
+  dialog { border: none; border-radius: var(--radius); padding: 0; background: var(--surface-1); color: var(--text-primary); box-shadow: 0 12px 40px rgba(0,0,0,0.3); width: 440px; max-width: calc(100vw - 32px); }
+  dialog::backdrop { background: rgba(10,14,26,0.5); }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); }
   .modal-head h3 { margin: 0; font-size: 15px; }
   .modal-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow-y: auto; }
-  .modal-foot { padding: 14px 18px; border-top: 1px solid var(--gridline); display: flex; justify-content: flex-end; gap: 8px; }
+  .modal-foot { padding: 14px 18px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
   .field { display: flex; flex-direction: column; gap: 5px; }
   .field label { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
-  .field input, .field select, .field textarea { border: 1px solid var(--border); background: var(--page-plane); border-radius: var(--radius); padding: 8px 10px; font-size: 13px; }
+  .field input, .field select, .field textarea { border: 1px solid var(--border); background: var(--surface-2); border-radius: var(--radius); padding: 8px 10px; font-size: 13px; }
   .field textarea { resize: vertical; min-height: 60px; }
-  .readonly-note { font-size: 12px; color: var(--text-muted); background: var(--page-plane); padding: 8px 10px; border-radius: var(--radius); }
+  .readonly-note { font-size: 12px; color: var(--text-muted); background: var(--surface-2); padding: 8px 10px; border-radius: var(--radius); }
 
   @media (max-width: 760px) {
     .sidebar { display: none; }
@@ -253,11 +297,7 @@
   <div class="layout">
     <aside class="sidebar">
       <h2>Standards</h2>
-      <button class="side-item" data-family="all"><span class="label">All families</span><span class="count" id="count-all"></span></button>
-      <button class="side-item" data-family="ISA"><span class="label">ISA</span><span class="count" id="count-ISA"></span></button>
-      <button class="side-item" data-family="ISAE 3000"><span class="label">ISAE 3000</span><span class="count" id="count-ISAE 3000"></span></button>
-      <button class="side-item" data-family="ISRS 4400"><span class="label">ISRS 4400</span><span class="count" id="count-ISRS 4400"></span></button>
-      <button class="side-item" data-family="ISRE 2400"><span class="label">ISRE 2400</span><span class="count" id="count-ISRE 2400"></span></button>
+      <div id="family-filter-list"></div>
 
       <h2>Methodologies</h2>
       <div id="methodology-list"></div>
@@ -274,9 +314,7 @@
 
       <section class="view active" id="view-dashboard">
         <div class="page-head"><h2>Overview</h2><p id="overview-sub"></p></div>
-        <div class="tile-grid" id="tile-grid"></div>
-        <h2 style="font-size:14px; margin: 0 0 10px;">Coverage by standard family</h2>
-        <div id="family-panels"></div>
+        <div id="dashboard-panels"></div>
       </section>
 
       <section class="view" id="view-coverage">
@@ -287,16 +325,13 @@
         <div class="filter-bar">
           <select id="filter-family">
             <option value="all">All families</option>
-            <option value="ISA">ISA</option>
-            <option value="ISAE 3000">ISAE 3000</option>
-            <option value="ISRS 4400">ISRS 4400</option>
-            <option value="ISRE 2400">ISRE 2400</option>
           </select>
           <select id="filter-status">
             <option value="all">All statuses</option>
-            <option value="full">Full</option>
-            <option value="partial">Partial</option>
-            <option value="none">None</option>
+            <option value="covered">Covered</option>
+            <option value="needsUpdate">Needs Update</option>
+            <option value="notAddressed">Not Addressed</option>
+            <option value="notSure">Not Sure</option>
             <option value="na">N/A</option>
           </select>
           <div class="spacer"></div>
@@ -453,6 +488,11 @@
     <div class="modal-body">
       <div class="field"><label>Name</label><input type="text" id="f-methodology-name" required></div>
       <div class="field"><label>Description</label><textarea id="f-methodology-desc" placeholder="Optional notes about this methodology"></textarea></div>
+      <div class="field">
+        <label>Standard families</label>
+        <div class="readonly-note">Only standards from these families are shown for this methodology, on both the Dashboard and Coverage Review.</div>
+        <div id="methodology-family-checks" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+      </div>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
@@ -470,19 +510,15 @@
           <option value="ISA">ISA</option>
           <option value="ISAE 3000">ISAE 3000</option>
           <option value="ISRS 4400">ISRS 4400</option>
+          <option value="ISRS 4410">ISRS 4410</option>
           <option value="ISRE 2400">ISRE 2400</option>
+          <option value="LPC Rules">LPC Rules</option>
+          <option value="PPRA Rules">PPRA Rules</option>
         </select>
+        <div class="readonly-note">Which methodologies see this standard is automatic, based on its family — edit a methodology from the sidebar to change which families it uses.</div>
       </div>
       <div class="field"><label>Code</label><input type="text" id="f-standard-code" placeholder="e.g. ISA 315 (Revised 2019)" required></div>
       <div class="field"><label>Title</label><input type="text" id="f-standard-title" placeholder="e.g. Identifying and Assessing the Risks of Material Misstatement" required></div>
-      <div class="field">
-        <label style="display:flex; align-items:center; gap:6px; font-weight:600;"><input type="checkbox" id="f-standard-all-methodologies" style="width:auto;"> Applies to all methodologies</label>
-        <div class="readonly-note">Some standards only apply to specific methodologies (e.g. ISRE 2400 only applies to a Review methodology). Uncheck this to limit which methodologies see this standard.</div>
-      </div>
-      <div class="field" id="standard-methodology-checks-wrap">
-        <label>Applicable methodologies</label>
-        <div id="standard-methodology-checks" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
-      </div>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
@@ -544,18 +580,32 @@
   var THEME_KEY = "dwx-standards-tracker-theme";
   var IDENTITY_KEY = "dwx-standards-tracker-identity";
   var CATS = ["--cat-1","--cat-2","--cat-3","--cat-4","--cat-5","--cat-6","--cat-7","--cat-8"];
-  var FAMILIES = ["ISA", "ISAE 3000", "ISRS 4400", "ISRE 2400"];
+  var FAMILIES = ["ISA", "ISAE 3000", "ISRS 4400", "ISRS 4410", "ISRE 2400", "LPC Rules", "PPRA Rules"];
+  // Each of the six built-in methodologies only ever works with a fixed set of standard
+  // families — this is the single source of truth migrateData()/seedData() apply it from.
+  var KNOWN_ALLOWED_FAMILIES = {
+    "RAC": ["ISA"],
+    "Review+": ["ISRE 2400"],
+    "Legal Practitioner": ["ISAE 3000", "LPC Rules"],
+    "Property Practitioner": ["ISAE 3000", "PPRA Rules"],
+    "Compilation": ["ISRS 4410"],
+    "AUP": ["ISRS 4400"]
+  };
 
   var STATUS = {
-    full:    { label: "Full",    icon: "✓", varName: "--status-good" },
-    partial: { label: "Partial", icon: "◐", varName: "--status-warning" },
-    none:    { label: "None",    icon: "✕", varName: "--status-critical" },
-    na:      { label: "N/A",     icon: "–", varName: "--status-na" }
+    covered:      { label: "Covered",       icon: "✓", varName: "--status-good" },
+    needsUpdate:  { label: "Needs Update",  icon: "◐", varName: "--status-warning" },
+    notAddressed: { label: "Not Addressed", icon: "✕", varName: "--status-critical" },
+    notSure:      { label: "Not Sure",      icon: "?", varName: "--status-investigate" },
+    na:           { label: "N/A",           icon: "–", varName: "--status-na" }
   };
-  var STATUS_ORDER = ["full", "partial", "none", "na"];
+  var STATUS_ORDER = ["covered", "needsUpdate", "notAddressed", "notSure", "na"];
+  // Direct semantic equivalents for the previous 4-option scheme, used both to migrate values
+  // already saved by users and to re-map the seed dataset's literal demo status values.
+  var LEGACY_STATUS_MAP = { full: "covered", partial: "needsUpdate", none: "notAddressed" };
 
   var TICK_MARK_DEFS = [
-    { key: "firmManual", label: "Firm SQM1 manual / Policies" },
+    { key: "firmManual", label: "Firm ISQM 1 manual", keywords: ["firm isqm", "isqm 1", "isqm1", "sqm1", "firm manual"] },
     { key: "engagementLetter", label: "Engagement letter" },
     { key: "documentationOnWp", label: "Documentation on WP" },
     { key: "managementRepLetter", label: "Management Rep letter" },
@@ -671,10 +721,16 @@
     for (var i = 0; i < vals.length; i++) { while (num >= vals[i][0]) { res += vals[i][1]; num -= vals[i][0]; } }
     return res;
   }
-  function parseNumberSegment(seg) {
+  // Segment index within a dot-path mirrors the Excel importer's own hierarchy columns:
+  // 0 = standard number core, 1 = main paragraph number, 2 = letter subdivision (always
+  // alphabetic), 3 = roman numeral (the only level actually parsed as a roman numeral),
+  // 4 = sub-letter (alphabetic again), 5+ = deeper/generic. Without this positional context,
+  // a bare letter like "d" or "c" is indistinguishable from the roman numerals 500/100, which
+  // previously made e.g. "25.a" sort after "25.d" instead of before it.
+  function parseNumberSegment(seg, levelIndex) {
     if (/^\d+$/.test(seg)) return { type: "num", value: parseInt(seg, 10) };
     var lower = seg.toLowerCase();
-    if (/^[mdclxvi]+$/.test(lower)) {
+    if (levelIndex === 3 && /^[mdclxvi]+$/.test(lower)) {
       var val = romanToInt(lower);
       if (val > 0 && intToRoman(val) === lower) return { type: "num", value: val };
     }
@@ -686,8 +742,8 @@
     for (var i = 0; i < len; i++) {
       if (i >= segsA.length) return -1;
       if (i >= segsB.length) return 1;
-      var pa = parseNumberSegment(segsA[i]), pb = parseNumberSegment(segsB[i]);
-      if (pa.type === "num" && pb.type === "num") { if (pa.value !== pb.value) return pa.value - pb.value; }
+      var pa = parseNumberSegment(segsA[i], i), pb = parseNumberSegment(segsB[i], i);
+      if (pa.type === pb.type) { if (pa.value !== pb.value) return pa.value < pb.value ? -1 : 1; }
       else { var sa = String(pa.value), sb = String(pb.value); if (sa !== sb) return sa < sb ? -1 : 1; }
     }
     return 0;
@@ -699,20 +755,55 @@
     if (parts.length <= 2) return parts.join(".");
     return parts.slice(0, 2).join(".") + parts.slice(2).map(function (p) { return "(" + p + ")"; }).join("");
   }
-  function mainGroupKey(number) {
-    var parts = String(number || "").split(".");
-    return parts.slice(0, 2).join(".");
+  // Builds a real parent/child tree out of a flat paragraph list, using each paragraph's own
+  // dot-hierarchy (e.g. "2400.25.d.iii"'s nearest existing ancestor is "2400.25.d", then
+  // "2400.25"). childrenOf[""] holds the top-level (main) paragraphs for the standard.
+  function buildParaTree(paragraphs) {
+    var byNumber = {};
+    paragraphs.forEach(function (p) { byNumber[p.number] = p; });
+    var childrenOf = {};
+    paragraphs.forEach(function (p) {
+      var cur = p.number.split(".");
+      var parentKey = "";
+      while (cur.length > 2) {
+        cur.pop();
+        var candidate = cur.join(".");
+        if (byNumber[candidate]) { parentKey = candidate; break; }
+      }
+      if (!childrenOf[parentKey]) childrenOf[parentKey] = [];
+      childrenOf[parentKey].push(p);
+    });
+    Object.keys(childrenOf).forEach(function (k) { childrenOf[k].sort(function (a, b) { return compareParaNumbers(a.number, b.number); }); });
+    return { byNumber: byNumber, childrenOf: childrenOf };
+  }
+  // Every existing ancestor number of a matching paragraph — when a search/status filter is
+  // active, these ancestors must have their children force-revealed so the match stays
+  // reachable in the collapsed tree, even though the ancestor itself might not match.
+  function computeForcedAncestors(tree, matchIds) {
+    var forced = {}, idSet = {};
+    matchIds.forEach(function (id) { idSet[id] = true; });
+    Object.keys(tree.byNumber).forEach(function (num) {
+      var p = tree.byNumber[num];
+      if (!idSet[p.id]) return;
+      var cur = num.split(".");
+      while (cur.length > 2) {
+        cur.pop();
+        var candidate = cur.join(".");
+        if (tree.byNumber[candidate]) forced[candidate] = true;
+      }
+    });
+    return forced;
   }
 
   // ---------- Seed data ----------
   function seedData() {
     var m = {
-      rac:      { id: uid("meth"), name: "RAC", description: "Draftworx methodology pack — RAC.", colorIndex: 0 },
-      reviewplus: { id: uid("meth"), name: "Review+", description: "Draftworx methodology pack for independent review engagements.", colorIndex: 1 },
-      compilation: { id: uid("meth"), name: "Compilation", description: "Draftworx methodology pack for compilation engagements.", colorIndex: 2 },
-      aup:      { id: uid("meth"), name: "AUP", description: "Draftworx methodology pack for agreed-upon procedures engagements.", colorIndex: 3 },
-      legal:    { id: uid("meth"), name: "Legal Practitioner", description: "Draftworx methodology pack for legal practitioner trust account engagements.", colorIndex: 4 },
-      property: { id: uid("meth"), name: "Property Practitioner", description: "Draftworx methodology pack for property practitioner trust account engagements.", colorIndex: 5 }
+      rac:      { id: uid("meth"), name: "RAC", description: "Draftworx methodology pack — RAC.", colorIndex: 0, allowedFamilies: ["ISA"] },
+      reviewplus: { id: uid("meth"), name: "Review+", description: "Draftworx methodology pack for independent review engagements.", colorIndex: 1, allowedFamilies: ["ISRE 2400"] },
+      compilation: { id: uid("meth"), name: "Compilation", description: "Draftworx methodology pack for compilation engagements.", colorIndex: 2, allowedFamilies: ["ISRS 4410"] },
+      aup:      { id: uid("meth"), name: "AUP", description: "Draftworx methodology pack for agreed-upon procedures engagements.", colorIndex: 3, allowedFamilies: ["ISRS 4400"] },
+      legal:    { id: uid("meth"), name: "Legal Practitioner", description: "Draftworx methodology pack for legal practitioner trust account engagements.", colorIndex: 4, allowedFamilies: ["ISAE 3000", "LPC Rules"] },
+      property: { id: uid("meth"), name: "Property Practitioner", description: "Draftworx methodology pack for property practitioner trust account engagements.", colorIndex: 5, allowedFamilies: ["ISAE 3000", "PPRA Rules"] }
     };
     var methodologies = [m.rac, m.reviewplus, m.compilation, m.aup, m.legal, m.property];
 
@@ -721,62 +812,89 @@
       Object.keys(spec).forEach(function (key) {
         var meth = m[key];
         var v = spec[key];
-        out[meth.id] = { status: v.status, wpExtract: v.wpExtract || "", wpReference: v.wpReference || "", notes: v.notes || "", updatedAt: v.wpExtract ? "2026-06-15T09:30:00.000Z" : null, updatedBy: v.wpExtract ? "Demo Reviewer" : null };
+        out[meth.id] = { status: v.status, wpExtract: v.wpExtract || "", wpReference: v.wpReference || "", notes: v.notes || "", source: v.wpExtract ? "manual" : null, updatedAt: v.wpExtract ? "2026-06-15T09:30:00.000Z" : null, updatedBy: v.wpExtract ? "Demo Reviewer" : null };
       });
       return out;
     }
 
+    // Each standard's family alone determines which methodologies see it (via each
+    // methodology's allowedFamilies above) — no per-standard scoping needed.
     var standards = [
       {
-        id: uid("std"), family: "ISA", code: "ISA 315 (Revised 2019)", applicableMethodologyIds: [m.rac.id, m.legal.id],
+        id: uid("std"), family: "ISA", code: "ISA 315 (Revised 2019)",
         title: "Identifying and Assessing the Risks of Material Misstatement",
         paragraphs: [
-          { id: uid("para"), number: "315.11", text: "Understand the entity's relevant industry, regulatory and other external factors.", coverage: cov({ rac: { status: "full", wpReference: "2.1", wpExtract: "WP 2.1 Industry & Regulatory Understanding — documents relevant industry, legal and regulatory factors, updated via the annual planning checklist." }, legal: { status: "partial" } }) },
-          { id: uid("para"), number: "315.19", text: "Identify and assess risks of material misstatement at the financial statement and assertion levels.", coverage: cov({ rac: { status: "full", wpExtract: "WP 4.3 Risk Assessment Summary — assertion-level risk register completed for each significant class of transaction." }, legal: { status: "none" } }) },
-          { id: uid("para"), number: "315.25", text: "Evaluate the design of identified controls and determine implementation.", coverage: cov({ rac: { status: "partial" } }) }
+          { id: uid("para"), number: "315.11", text: "Understand the entity's relevant industry, regulatory and other external factors.", source: "manual", coverage: cov({ rac: { status: "covered", wpReference: "2.1", wpExtract: "WP 2.1 Industry & Regulatory Understanding — documents relevant industry, legal and regulatory factors, updated via the annual planning checklist." } }) },
+          { id: uid("para"), number: "315.19", text: "Identify and assess risks of material misstatement at the financial statement and assertion levels.", source: "manual", coverage: cov({ rac: { status: "covered", wpExtract: "WP 4.3 Risk Assessment Summary — assertion-level risk register completed for each significant class of transaction." } }) },
+          { id: uid("para"), number: "315.25", text: "Evaluate the design of identified controls and determine implementation.", source: "manual", coverage: cov({ rac: { status: "needsUpdate" } }) }
         ]
       },
       {
-        id: uid("std"), family: "ISA", code: "ISA 500", applicableMethodologyIds: [m.rac.id, m.legal.id],
+        id: uid("std"), family: "ISA", code: "ISA 500",
         title: "Audit Evidence",
         paragraphs: [
-          { id: uid("para"), number: "500.6", text: "Design and perform audit procedures to obtain sufficient appropriate audit evidence.", coverage: cov({ rac: { status: "full", wpReference: "6.0", wpExtract: "WP 6.0 Evidence Gathering Program — audit procedures selected per financial statement area with cross-reference to the risk register." }, legal: { status: "full" } }) },
-          { id: uid("para"), number: "500.9", text: "Consider the relevance and reliability of information used as audit evidence.", coverage: cov({ rac: { status: "full" }, legal: { status: "partial" } }) }
+          { id: uid("para"), number: "500.6", text: "Design and perform audit procedures to obtain sufficient appropriate audit evidence.", source: "manual", coverage: cov({ rac: { status: "covered", wpReference: "6.0", wpExtract: "WP 6.0 Evidence Gathering Program — audit procedures selected per financial statement area with cross-reference to the risk register." } }) },
+          { id: uid("para"), number: "500.9", text: "Consider the relevance and reliability of information used as audit evidence.", source: "manual", coverage: cov({ rac: { status: "covered" } }) }
         ]
       },
       {
-        id: uid("std"), family: "ISA", code: "ISA 700 (Revised)", applicableMethodologyIds: [m.rac.id],
+        id: uid("std"), family: "ISA", code: "ISA 700 (Revised)",
         title: "Forming an Opinion and Reporting on Financial Statements",
         paragraphs: [
-          { id: uid("para"), number: "700.10", text: "Form an opinion on whether the financial statements are prepared in accordance with the applicable framework.", coverage: cov({ rac: { status: "full" } }) },
-          { id: uid("para"), number: "700.24", text: "Describe the auditor's responsibilities for the audit of the financial statements.", coverage: cov({ rac: { status: "partial" } }) }
+          { id: uid("para"), number: "700.10", text: "Form an opinion on whether the financial statements are prepared in accordance with the applicable framework.", source: "manual", coverage: cov({ rac: { status: "covered" } }) },
+          { id: uid("para"), number: "700.24", text: "Describe the auditor's responsibilities for the audit of the financial statements.", source: "manual", coverage: cov({ rac: { status: "needsUpdate" } }) }
         ]
       },
       {
-        id: uid("std"), family: "ISAE 3000", code: "ISAE 3000 (Revised)", applicableMethodologyIds: [m.legal.id, m.property.id],
+        id: uid("std"), family: "ISAE 3000", code: "ISAE 3000 (Revised)",
         title: "Assurance Engagements Other than Audits or Reviews of Historical Financial Information",
         paragraphs: [
-          { id: uid("para"), number: "3000.34", text: "Plan the engagement so it will be performed effectively, including determining materiality.", coverage: cov({ legal: { status: "full", wpReference: "1.0", wpExtract: "Trust Account AUP Planning Memo — materiality and scope agreed with the Legal Practice Council requirements." } }) },
-          { id: uid("para"), number: "3000.44", text: "Obtain sufficient appropriate evidence to support the conclusion.", coverage: cov({ legal: { status: "partial" } }) },
-          { id: uid("para"), number: "3000.60", text: "Prepare an assurance report containing all required elements.", coverage: cov({ legal: { status: "none" } }) }
+          { id: uid("para"), number: "3000.34", text: "Plan the engagement so it will be performed effectively, including determining materiality.", source: "manual", coverage: cov({ legal: { status: "covered", wpReference: "1.0", wpExtract: "Trust Account AUP Planning Memo — materiality and scope agreed with the Legal Practice Council requirements." }, property: { status: "covered", wpReference: "1.0", wpExtract: "PPRA Trust Account Planning Memo — materiality and scope agreed with the Property Practitioners Regulatory Authority requirements." } }) },
+          { id: uid("para"), number: "3000.44", text: "Obtain sufficient appropriate evidence to support the conclusion.", source: "manual", coverage: cov({ legal: { status: "needsUpdate" }, property: { status: "needsUpdate" } }) },
+          { id: uid("para"), number: "3000.60", text: "Prepare an assurance report containing all required elements.", source: "manual", coverage: cov({ legal: { status: "notAddressed" }, property: { status: "notAddressed" } }) }
         ]
       },
       {
-        id: uid("std"), family: "ISRS 4400", code: "ISRS 4400 (Revised)", applicableMethodologyIds: [m.aup.id],
+        id: uid("std"), family: "LPC Rules", code: "LPC Rules",
+        title: "Legal Practice Council Rules Relating to Trust Accounts",
+        paragraphs: [
+          { id: uid("para"), number: "54.1", text: "A trust account practice shall open and keep a trust banking account at a trust account bank.", source: "manual", coverage: cov({ legal: { status: "covered", wpReference: "TA-1", wpExtract: "Trust Account Register confirms a dedicated trust banking account is held at an approved trust account bank." } }) },
+          { id: uid("para"), number: "54.2", text: "A trust account practice shall keep proper accounting records of all trust monies received and paid.", source: "manual", coverage: cov({ legal: { status: "needsUpdate" } }) }
+        ]
+      },
+      {
+        id: uid("std"), family: "PPRA Rules", code: "PPRA Rules",
+        title: "Property Practitioners Regulatory Authority Rules",
+        paragraphs: [
+          { id: uid("para"), number: "12.1", text: "A property practitioner shall open and maintain a separate trust account for trust monies received.", source: "manual", coverage: cov({ property: { status: "covered", wpReference: "TA-1", wpExtract: "Trust Account Register confirms a dedicated PPRA trust account is maintained separately from business funds." } }) },
+          { id: uid("para"), number: "12.2", text: "A property practitioner shall account to every person for trust monies received on that person's behalf.", source: "manual", coverage: cov({ property: { status: "notAddressed" } }) }
+        ]
+      },
+      {
+        id: uid("std"), family: "ISRS 4400", code: "ISRS 4400 (Revised)",
         title: "Agreed-Upon Procedures Engagements",
         paragraphs: [
-          { id: uid("para"), number: "4400.14", text: "Agree the terms of the engagement with the engaging party.", coverage: cov({ aup: { status: "full", wpReference: "AUP-1", wpExtract: "AUP Engagement Letter template — terms agreed and signed by the engaging party prior to commencement." } }) },
-          { id: uid("para"), number: "4400.25", text: "Perform the agreed-upon procedures and use the evidence obtained as the basis for the findings.", coverage: cov({ aup: { status: "full" } }) },
-          { id: uid("para"), number: "4400.40", text: "Report factual findings in accordance with the terms of engagement.", coverage: cov({ aup: { status: "partial" } }) }
+          { id: uid("para"), number: "4400.14", text: "Agree the terms of the engagement with the engaging party.", source: "manual", coverage: cov({ aup: { status: "covered", wpReference: "AUP-1", wpExtract: "AUP Engagement Letter template — terms agreed and signed by the engaging party prior to commencement." } }) },
+          { id: uid("para"), number: "4400.25", text: "Perform the agreed-upon procedures and use the evidence obtained as the basis for the findings.", source: "manual", coverage: cov({ aup: { status: "covered" } }) },
+          { id: uid("para"), number: "4400.40", text: "Report factual findings in accordance with the terms of engagement.", source: "manual", coverage: cov({ aup: { status: "needsUpdate" } }) }
         ]
       },
       {
-        id: uid("std"), family: "ISRE 2400", code: "ISRE 2400 (Revised)", applicableMethodologyIds: [m.reviewplus.id],
+        id: uid("std"), family: "ISRS 4410", code: "ISRS 4410 (Revised)",
+        title: "Compilation Engagements",
+        paragraphs: [
+          { id: uid("para"), number: "4410.20", text: "Agree the terms of the compilation engagement with management.", source: "manual", coverage: cov({ compilation: { status: "covered", wpReference: "C-1", wpExtract: "Compilation Engagement Letter template — terms agreed with management prior to commencement." } }) },
+          { id: uid("para"), number: "4410.24", text: "Compile the financial information using the records, documents, explanations and other information provided by management.", source: "manual", coverage: cov({ compilation: { status: "needsUpdate" } }) },
+          { id: uid("para"), number: "4410.40", text: "Include an appropriate description of the practitioner's responsibility in the compilation report.", source: "manual", coverage: cov({ compilation: { status: "notAddressed" } }) }
+        ]
+      },
+      {
+        id: uid("std"), family: "ISRE 2400", code: "ISRE 2400 (Revised)",
         title: "Engagements to Review Historical Financial Statements",
         paragraphs: [
-          { id: uid("para"), number: "2400.30", text: "Understand the entity to identify areas where material misstatements are likely to arise.", coverage: cov({ reviewplus: { status: "full", wpReference: "R-1", wpExtract: "Review WP 1 — Entity Understanding Checklist covering nature of business, related parties and accounting policies." } }) },
-          { id: uid("para"), number: "2400.50", text: "Design and perform inquiry and analytical procedures to address identified risk areas.", coverage: cov({ reviewplus: { status: "partial" } }) },
-          { id: uid("para"), number: "2400.71", text: "Form a conclusion on whether anything has come to attention indicating the financial statements are materially misstated.", coverage: cov({ reviewplus: { status: "none" } }) }
+          { id: uid("para"), number: "2400.30", text: "Understand the entity to identify areas where material misstatements are likely to arise.", source: "manual", coverage: cov({ reviewplus: { status: "covered", wpReference: "R-1", wpExtract: "Review WP 1 — Entity Understanding Checklist covering nature of business, related parties and accounting policies." } }) },
+          { id: uid("para"), number: "2400.50", text: "Design and perform inquiry and analytical procedures to address identified risk areas.", source: "manual", coverage: cov({ reviewplus: { status: "needsUpdate" } }) },
+          { id: uid("para"), number: "2400.71", text: "Form a conclusion on whether anything has come to attention indicating the financial statements are materially misstated.", source: "manual", coverage: cov({ reviewplus: { status: "notAddressed" } }) }
         ]
       }
     ];
@@ -799,7 +917,8 @@
     reviewFilter: { type: "all" },
     reviewRevealed: {},
     standardCollapse: {},
-    paraGroupCollapse: {},
+    paraExpanded: {},
+    childrenExpanded: {},
     editing: { methodologyId: null, standardId: null, paragraphId: null }
   };
   var STANDARD_COLLAPSE_THRESHOLD = 5;
@@ -827,23 +946,50 @@
       if (typeof u.accessLevel === "undefined") u.accessLevel = idx === 0 ? "admin" : "reviewer";
     });
     if (d.users.length && !d.users.some(function (u) { return u.accessLevel === "admin"; })) d.users[0].accessLevel = "admin";
+
+    // Each of the six known methodologies always gets its fixed family list (even overriding a
+    // stale value, so a change to KNOWN_ALLOWED_FAMILIES takes effect for everyone). A custom
+    // methodology someone added themselves keeps/derives its own list instead, so nothing it was
+    // already showing silently disappears.
+    d.methodologies.forEach(function (meth) {
+      if (KNOWN_ALLOWED_FAMILIES[meth.name]) {
+        meth.allowedFamilies = KNOWN_ALLOWED_FAMILIES[meth.name].slice();
+      } else if (!Array.isArray(meth.allowedFamilies)) {
+        var derived = {};
+        d.standards.forEach(function (std) {
+          var scoped = Array.isArray(std.applicableMethodologyIds) && std.applicableMethodologyIds.length > 0;
+          if (!scoped || std.applicableMethodologyIds.indexOf(meth.id) !== -1) derived[std.family] = true;
+        });
+        var derivedList = Object.keys(derived);
+        meth.allowedFamilies = derivedList.length ? derivedList : FAMILIES.slice();
+      }
+    });
+
     d.standards.forEach(function (std) {
-      if (!Array.isArray(std.applicableMethodologyIds)) std.applicableMethodologyIds = [];
+      delete std.applicableMethodologyIds;
       std.paragraphs.forEach(function (p) {
         Object.keys(p.coverage || {}).forEach(function (mid) {
           var c = p.coverage[mid];
           if (typeof c.wpExtract === "undefined") c.wpExtract = "";
           if (typeof c.wpReference === "undefined") c.wpReference = "";
           if (typeof c.updatedBy === "undefined") c.updatedBy = null;
+          if (typeof c.source === "undefined") c.source = null;
           if (!c.tickMarks || typeof c.tickMarks !== "object") c.tickMarks = emptyTickMarks();
           else TICK_MARK_DEFS.forEach(function (d) { if (typeof c.tickMarks[d.key] === "undefined") c.tickMarks[d.key] = false; });
+          if (LEGACY_STATUS_MAP[c.status]) c.status = LEGACY_STATUS_MAP[c.status];
         });
       });
     });
     return methodologyRenamed;
   }
+  // A methodology only ever sees standards from its own fixed set of families (e.g. RAC -> ISA
+  // only, Legal Practitioner -> ISAE 3000 + LPC Rules) — this single check drives both Coverage
+  // Review filtering and the Dashboard, so a methodology never shows a bar for a family it
+  // doesn't use.
   function isStandardApplicable(std, methodologyId) {
-    return !std.applicableMethodologyIds || std.applicableMethodologyIds.length === 0 || std.applicableMethodologyIds.indexOf(methodologyId) !== -1;
+    var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
+    if (!meth || !Array.isArray(meth.allowedFamilies)) return true;
+    return meth.allowedFamilies.indexOf(std.family) !== -1;
   }
 
   function load() {
@@ -917,7 +1063,7 @@
   }
   function getStatus(para, methodologyId) {
     var c = para.coverage[methodologyId];
-    return c ? c.status : "none";
+    return c ? c.status : "notSure";
   }
   function matchesFilters(std, para) {
     if (!isStandardApplicable(std, state.activeMethodologyId)) return false;
@@ -934,7 +1080,7 @@
     return true;
   }
   function computeCounts(methodologyId, familyFilter) {
-    var counts = { full: 0, partial: 0, none: 0, na: 0 };
+    var counts = { covered: 0, needsUpdate: 0, notAddressed: 0, notSure: 0, na: 0 };
     data.standards.forEach(function (std) {
       if (familyFilter && std.family !== familyFilter) return;
       if (!isStandardApplicable(std, methodologyId)) return;
@@ -943,9 +1089,17 @@
     return counts;
   }
   function coveragePercent(counts) {
-    var applicable = counts.full + counts.partial + counts.none;
+    var applicable = counts.covered + counts.needsUpdate + counts.notAddressed + counts.notSure;
     if (applicable === 0) return null;
-    return Math.round(((counts.full + counts.partial * 0.5) / applicable) * 100);
+    return Math.round(((counts.covered + counts.needsUpdate * 0.5) / applicable) * 100);
+  }
+  // The families relevant to whichever methodology is currently active in Coverage Review —
+  // drives both the sidebar family list and the Coverage Review family filter, so neither ever
+  // offers a family that methodology can't use in the first place.
+  function activeAllowedFamilies() {
+    var methId = state.activeMethodologyId || (data.methodologies[0] && data.methodologies[0].id);
+    var meth = data.methodologies.find(function (m) { return m.id === methId; });
+    return (meth && Array.isArray(meth.allowedFamilies) && meth.allowedFamilies.length) ? meth.allowedFamilies : FAMILIES;
   }
   function findParagraph(id) {
     for (var i = 0; i < data.standards.length; i++) {
@@ -1000,16 +1154,27 @@
   }
 
   function renderSidebar() {
-    var totalParas = allParagraphs().length;
-    document.getElementById("count-all").textContent = totalParas;
-    FAMILIES.forEach(function (fam) {
-      var n = data.standards.filter(function (s) { return s.family === fam; }).reduce(function (sum, s) { return sum + s.paragraphs.length; }, 0);
-      var el = document.getElementById("count-" + fam);
-      if (el) el.textContent = n;
+    var families = activeAllowedFamilies();
+    if (state.familyFilter !== "all" && families.indexOf(state.familyFilter) === -1) state.familyFilter = "all";
+    var totalParas = data.standards.filter(function (s) { return families.indexOf(s.family) !== -1; })
+      .reduce(function (sum, s) { return sum + s.paragraphs.length; }, 0);
+    var familyList = document.getElementById("family-filter-list");
+    familyList.innerHTML = '<button class="side-item' + (state.familyFilter === "all" ? " active" : "") + '" data-family="all"><span class="label">All families</span><span class="count">' + totalParas + "</span></button>" +
+      families.map(function (fam) {
+        var n = data.standards.filter(function (s) { return s.family === fam; }).reduce(function (sum, s) { return sum + s.paragraphs.length; }, 0);
+        return '<button class="side-item' + (state.familyFilter === fam ? " active" : "") + '" data-family="' + escapeAttr(fam) + '"><span class="label">' + escapeHtml(fam) + '</span><span class="count">' + n + "</span></button>";
+      }).join("");
+    familyList.querySelectorAll("[data-family]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.familyFilter = btn.getAttribute("data-family");
+        renderSidebar(); renderCoverageView();
+      });
     });
-    document.querySelectorAll(".sidebar [data-family]").forEach(function (btn) {
-      btn.classList.toggle("active", btn.getAttribute("data-family") === state.familyFilter);
-    });
+
+    var filterFamilySelect = document.getElementById("filter-family");
+    filterFamilySelect.innerHTML = '<option value="all">All families</option>' +
+      families.map(function (fam) { return '<option value="' + escapeAttr(fam) + '">' + escapeHtml(fam) + "</option>"; }).join("");
+    filterFamilySelect.value = state.familyFilter;
 
     var list = document.getElementById("methodology-list");
     list.innerHTML = "";
@@ -1045,46 +1210,32 @@
     document.getElementById("overview-sub").textContent =
       data.methodologies.length + " methodologies tracked across " + data.standards.length + " standards and " + totalParas + " paragraphs.";
 
-    var grid = document.getElementById("tile-grid");
-    grid.innerHTML = "";
-    if (data.methodologies.length === 0) grid.innerHTML = '<div class="empty-state">No methodologies yet. Add one from the sidebar to start tracking coverage.</div>';
-    function seg(n, total, varName) { if (n <= 0) return ""; return '<span style="width:' + (n / total) * 100 + '%; background:var(' + varName + ')"></span>'; }
-    function legendItem(varName, label, n) { return '<span class="legend-item"><span class="legend-dot" style="background:var(' + varName + ')"></span>' + label + " (" + n + ")</span>"; }
-    data.methodologies.forEach(function (meth) {
-      var counts = computeCounts(meth.id, null);
-      var pct = coveragePercent(counts);
-      var applicable = counts.full + counts.partial + counts.none;
-      var tile = document.createElement("div");
-      tile.className = "tile";
-      var barSegs = applicable > 0 ? (seg(counts.full, applicable, "--status-good") + seg(counts.partial, applicable, "--status-warning") + seg(counts.none, applicable, "--status-critical")) : "";
-      tile.innerHTML =
-        '<div class="tile-title" title="' + escapeAttr(meth.name) + '">' + escapeHtml(meth.name) + "</div>" +
-        '<div class="tile-sub">' + applicable + " applicable paragraph" + (applicable === 1 ? "" : "s") + (counts.na ? ", " + counts.na + " n/a" : "") + "</div>" +
-        '<div class="hero">' + (pct === null ? "–" : pct + "%") + "</div>" +
-        '<div class="stack-bar">' + barSegs + "</div>" +
-        '<div class="tile-legend">' + legendItem("--status-good", "Full", counts.full) + legendItem("--status-warning", "Partial", counts.partial) + legendItem("--status-critical", "None", counts.none) + legendItem("--status-na", "N/A", counts.na) + "</div>";
-      grid.appendChild(tile);
-    });
-
-    var panels = document.getElementById("family-panels");
+    var panels = document.getElementById("dashboard-panels");
     panels.innerHTML = "";
-    FAMILIES.forEach(function (fam) {
-      var famStandards = data.standards.filter(function (s) { return s.family === fam; });
-      var famParaCount = famStandards.reduce(function (sum, s) { return sum + s.paragraphs.length; }, 0);
+    if (data.methodologies.length === 0) {
+      panels.innerHTML = '<div class="empty-state">No methodologies yet. Add one from the sidebar to start tracking coverage.</div>';
+      return;
+    }
+    // One panel per methodology, limited to the families it actually uses — a methodology
+    // never shows a bar for a family it has nothing to do with, and a family it hasn't added
+    // any standards for yet shows a note instead of a dead 0% bar.
+    data.methodologies.forEach(function (meth) {
+      var families = (Array.isArray(meth.allowedFamilies) && meth.allowedFamilies.length) ? meth.allowedFamilies : FAMILIES;
+      var overallPct = coveragePercent(computeCounts(meth.id, null));
       var panel = document.createElement("div");
       panel.className = "family-panel";
-      var rows = "";
-      if (data.methodologies.length === 0 || famParaCount === 0) rows = '<div class="fp-sub">No data yet for this family.</div>';
-      else {
-        data.methodologies.forEach(function (meth) {
-          var counts = computeCounts(meth.id, fam);
-          var pct = coveragePercent(counts);
-          rows += '<div class="hbar-row"><div class="hbar-label" title="' + escapeAttr(meth.name) + '">' + escapeHtml(meth.name) + '</div>' +
-            '<div class="hbar-track"><div class="hbar-fill" style="width:' + (pct || 0) + "%; background:" + catColor(meth.colorIndex) + ';"></div></div>' +
-            '<div class="hbar-pct">' + (pct === null ? "–" : pct + "%") + "</div></div>";
-        });
-      }
-      panel.innerHTML = "<h3>" + escapeHtml(fam) + "</h3>" + '<div class="fp-sub">' + famStandards.length + " standard" + (famStandards.length === 1 ? "" : "s") + ", " + famParaCount + " paragraph" + (famParaCount === 1 ? "" : "s") + "</div>" + rows;
+      var rows = families.map(function (fam) {
+        var famStandardCount = data.standards.filter(function (s) { return s.family === fam; }).length;
+        if (famStandardCount === 0) {
+          return '<div class="hbar-row"><div class="hbar-label" title="' + escapeAttr(fam) + '">' + escapeHtml(fam) + '</div><div class="fp-sub" style="flex:1; margin:0;">No standards added yet</div></div>';
+        }
+        var pct = coveragePercent(computeCounts(meth.id, fam));
+        return '<div class="hbar-row"><div class="hbar-label" title="' + escapeAttr(fam) + '">' + escapeHtml(fam) + '</div>' +
+          '<div class="hbar-track"><div class="hbar-fill" style="width:' + (pct || 0) + "%; background:" + catColor(meth.colorIndex) + ';"></div></div>' +
+          '<div class="hbar-pct">' + (pct === null ? "–" : pct + "%") + "</div></div>";
+      }).join("");
+      panel.innerHTML = "<h3>" + escapeHtml(meth.name) + " — " + (overallPct === null ? "–" : overallPct + "%") + "</h3>" +
+        '<div class="fp-sub">' + escapeHtml(families.join(", ")) + "</div>" + rows;
       panels.appendChild(panel);
     });
   }
@@ -1099,6 +1250,9 @@
     if (!state.activeMethodologyId || !data.methodologies.some(function (m) { return m.id === state.activeMethodologyId; })) {
       state.activeMethodologyId = data.methodologies[0].id;
     }
+    // The sidebar's family list and this page's family filter are both scoped to whichever
+    // methodology is active, so keep them in sync whenever that changes.
+    renderSidebar();
 
     var toolbar = document.getElementById("coverage-methodology-pills");
     toolbar.innerHTML = "";
@@ -1121,8 +1275,8 @@
 
     var matchingStandards = [];
     data.standards.forEach(function (std) {
-      var visibleParas = std.paragraphs.filter(function (p) { return matchesFilters(std, p); }).sort(function (a, b) { return compareParaNumbers(a.number, b.number); });
-      if (visibleParas.length > 0) matchingStandards.push({ std: std, paras: visibleParas });
+      var matchingParas = std.paragraphs.filter(function (p) { return matchesFilters(std, p); });
+      if (matchingParas.length > 0) matchingStandards.push({ std: std, matchingParas: matchingParas });
     });
 
     var defaultCollapsed = matchingStandards.length > STANDARD_COLLAPSE_THRESHOLD;
@@ -1131,22 +1285,19 @@
     document.getElementById("coverage-collapse-summary").textContent = matchingStandards.length + " standard" + (matchingStandards.length === 1 ? "" : "s") +
       (defaultCollapsed ? " (collapsed by default — click a heading, or Expand all, to see paragraphs)" : "");
 
+    var filterActive = !!state.search || state.statusFilter !== "all";
+
     matchingStandards.forEach(function (entry) {
-      var std = entry.std, visibleParas = entry.paras;
+      var std = entry.std, matchingParas = entry.matchingParas;
       var isCollapsed = state.standardCollapse.hasOwnProperty(std.id) ? state.standardCollapse[std.id] : defaultCollapsed;
       var head = document.createElement("div");
       head.className = "para-card-head";
-      var scopeBadge = "";
-      if (std.applicableMethodologyIds && std.applicableMethodologyIds.length) {
-        var scopeNames = std.applicableMethodologyIds.map(function (mid) { var mm = data.methodologies.find(function (x) { return x.id === mid; }); return mm ? mm.name : "?"; }).join(", ");
-        scopeBadge = '<span class="fam-badge" title="Only shown for these methodologies">Scoped: ' + escapeHtml(scopeNames) + "</span>";
-      }
       head.innerHTML =
         '<span class="head-toggle-area" data-toggle-std="' + std.id + '">' +
           '<span class="collapse-chevron">' + (isCollapsed ? "▸" : "▾") + "</span>" +
           '<span class="head-toggle-text">' + escapeHtml(std.code) + " — " + escapeHtml(std.title) +
-            '<span class="fam-badge">' + escapeHtml(std.family) + "</span>" + scopeBadge +
-            '<span class="fam-badge">' + visibleParas.length + " paragraph" + (visibleParas.length === 1 ? "" : "s") + "</span>" +
+            '<span class="fam-badge">' + escapeHtml(std.family) + "</span>" +
+            '<span class="fam-badge">' + matchingParas.length + " paragraph" + (matchingParas.length === 1 ? "" : "s") + "</span>" +
           "</span>" +
         "</span>" +
         (canManageStructure ? '<span class="cell-actions">' +
@@ -1156,30 +1307,14 @@
         "</span>" : "");
       container.appendChild(head);
       if (!isCollapsed) {
-        // Group consecutive paragraphs that share the same main paragraph number (e.g. 25, 25.a,
-        // 25.d, 25.d.iii all belong under "25") — visibleParas is already sorted, so same-group
-        // paragraphs are always contiguous.
-        var groups = [];
-        visibleParas.forEach(function (p) {
-          var key = mainGroupKey(p.number);
-          if (!groups.length || groups[groups.length - 1].key !== key) groups.push({ key: key, paras: [] });
-          groups[groups.length - 1].paras.push(p);
-        });
-        groups.forEach(function (group) {
-          if (group.paras.length > 1) {
-            var groupCollapseKey = std.id + "::" + group.key;
-            var groupCollapsed = !!state.paraGroupCollapse[groupCollapseKey];
-            var gHead = document.createElement("div");
-            gHead.className = "para-group-head";
-            gHead.setAttribute("data-toggle-group", groupCollapseKey);
-            gHead.innerHTML = '<span class="collapse-chevron">' + (groupCollapsed ? "▸" : "▾") + "</span>Paragraph " +
-              escapeHtml(group.key.split(".").pop()) + " and sub-paragraphs (" + group.paras.length + ")";
-            container.appendChild(gHead);
-            if (!groupCollapsed) group.paras.forEach(function (p) { container.appendChild(renderParagraphCard(std, p, activeMeth)); });
-          } else {
-            container.appendChild(renderParagraphCard(std, group.paras[0], activeMeth));
-          }
-        });
+        // A real collapsible tree: top-level paragraphs (25) show as one row each, with
+        // sub-paragraphs (25(a)..25(d)) only added to the DOM once their parent's tree-toggle
+        // reveals them, and deeper levels (25(d)(i)) nested the same way under 25(d).
+        var tree = buildParaTree(std.paragraphs);
+        var matchSet = {};
+        matchingParas.forEach(function (p) { matchSet[p.id] = true; });
+        var forcedAncestors = filterActive ? computeForcedAncestors(tree, matchingParas.map(function (p) { return p.id; })) : {};
+        renderParaLevel(container, std, tree, "", 0, matchSet, forcedAncestors, activeMeth);
       }
     });
 
@@ -1190,13 +1325,6 @@
         var id = el.getAttribute("data-toggle-std");
         var current = state.standardCollapse.hasOwnProperty(id) ? state.standardCollapse[id] : defaultCollapsed;
         state.standardCollapse[id] = !current;
-        renderCoverageView();
-      });
-    });
-    container.querySelectorAll("[data-toggle-group]").forEach(function (el) {
-      el.addEventListener("click", function () {
-        var key = el.getAttribute("data-toggle-group");
-        state.paraGroupCollapse[key] = !state.paraGroupCollapse[key];
         renderCoverageView();
       });
     });
@@ -1211,11 +1339,78 @@
     if (addParaBtn) addParaBtn.style.display = canManageStructure ? "" : "none";
   }
 
-  function renderParagraphCard(std, p, meth) {
-    var cov = p.coverage[meth.id] || { status: "none", wpExtract: "", wpReference: "", notes: "", tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
-    var card = document.createElement("div");
-    card.className = "review-card";
-    card.setAttribute("data-para-id", p.id);
+  // Walks one level of the paragraph tree, appending each visible row (and, if its children
+  // are revealed, a nested .para-children wrapper) into container. Recurses for grandchildren.
+  function renderParaLevel(container, std, tree, parentKey, depth, matchSet, forcedAncestors, meth) {
+    var children = tree.childrenOf[parentKey] || [];
+    children.forEach(function (p) {
+      if (!matchSet[p.id] && !forcedAncestors[p.number]) return;
+      var hasChildren = !!(tree.childrenOf[p.number] && tree.childrenOf[p.number].length);
+      var storedChildrenOpen = state.childrenExpanded.hasOwnProperty(p.id) ? state.childrenExpanded[p.id] : false;
+      var childrenOpen = hasChildren && (!!forcedAncestors[p.number] || storedChildrenOpen);
+
+      var item = renderParagraphCard(std, p, meth, depth, hasChildren, childrenOpen);
+      container.appendChild(item);
+
+      if (childrenOpen) {
+        var wrap = document.createElement("div");
+        wrap.className = "para-children";
+        item.appendChild(wrap);
+        renderParaLevel(wrap, std, tree, p.number, depth + 1, matchSet, forcedAncestors, meth);
+      }
+    });
+  }
+
+  // A paragraph is a single compact row by default; clicking it reveals the 3-column detail
+  // (official text / WP extract / status+checkboxes+comments) below. Rows with an open PDF-diff
+  // flag start expanded automatically so the user notices them. If it has sub-paragraphs, a
+  // separate tree-toggle chevron reveals/hides them independently of the detail view.
+  function renderParagraphCard(std, p, meth, depth, hasChildren, childrenOpen) {
+    var cov = p.coverage[meth.id] || { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
+    var pendingFlag = (data.pendingFlags || []).find(function (fl) { return fl.status === "open" && fl.paragraphId === p.id; });
+    var isExpanded = state.paraExpanded.hasOwnProperty(p.id) ? state.paraExpanded[p.id] : !!pendingFlag;
+
+    var item = document.createElement("div");
+    var levelClass = depth > 0 ? " level-" + Math.min(depth, 3) : "";
+    item.className = "para-item" + levelClass + " status-" + cov.status + (pendingFlag ? " para-item--flagged" : "");
+    item.setAttribute("data-para-id", p.id);
+
+    var sourceBadgeHtml = p.source === "excel" ? '<span class="source-badge source-badge--excel">Excel</span>'
+      : p.source === "pdf" ? '<span class="source-badge source-badge--pdf">PDF</span>'
+      : p.source === "manual" ? '<span class="source-badge source-badge--manual">Manual</span>' : "";
+
+    var treeToggleHtml = hasChildren
+      ? '<span class="tree-toggle" data-toggle-children="' + p.id + '">' + (childrenOpen ? "▾" : "▸") + "</span>"
+      : '<span class="tree-toggle-spacer"></span>';
+
+    var row = document.createElement("div");
+    row.className = "para-row-collapsed";
+    row.setAttribute("data-toggle-para", p.id);
+    row.innerHTML =
+      treeToggleHtml +
+      '<span class="para-ref no-case">' + escapeHtml(formatParaNumber(p.number)) + "</span>" +
+      '<span class="para-preview">' + escapeHtml(p.text) + "</span>" +
+      sourceBadgeHtml +
+      '<span class="status-dot-pill"><span class="status-dot status-dot--' + cov.status + '"></span>' + STATUS[cov.status].label + "</span>";
+    item.appendChild(row);
+
+    // Where the WP-extract/status data itself came from, visible without expanding the card.
+    if (cov.source || cov.updatedAt) {
+      var covSourceLabel = cov.source === "excel" ? "Excel" : cov.source === "manual" ? "Manual" : "Unknown source";
+      var whenWho = cov.updatedAt ? (" · updated " + new Date(cov.updatedAt).toLocaleDateString() + (cov.updatedBy ? " by " + cov.updatedBy : "")) : "";
+      var prov = document.createElement("div");
+      prov.className = "para-provenance";
+      prov.textContent = covSourceLabel + whenWho;
+      item.appendChild(prov);
+    }
+
+    if (isExpanded) item.appendChild(renderParagraphDetail(p, meth, cov, pendingFlag));
+    return item;
+  }
+
+  function renderParagraphDetail(p, meth, cov, pendingFlag) {
+    var detail = document.createElement("div");
+    detail.className = "review-card";
 
     var overlapHtml;
     if (cov.wpExtract) {
@@ -1238,12 +1433,10 @@
     var savedCaption = cov.updatedAt ? ("Last updated by " + escapeHtml(cov.updatedBy || "Unknown") + " · " + new Date(cov.updatedAt).toLocaleString()) : "Not yet reviewed for this methodology.";
     var ro = canEditCoverage ? "" : " disabled";
 
-    var pendingFlag = (data.pendingFlags || []).find(function (fl) { return fl.status === "open" && fl.paragraphId === p.id; });
     var flagAlertHtml = "";
     if (pendingFlag) {
       var flagMsg = pendingFlag.type === "changed" ? "Wording changed in the latest PDF import" : "Not found in the latest PDF import";
       flagAlertHtml = '<div class="flag-alert" data-jump-to-flag="' + pendingFlag.type + '">⚠ ' + flagMsg + " — click to review in Standards Review</div>";
-      card.className += " review-card--flagged";
     }
 
     var tickMarks = cov.tickMarks || emptyTickMarks();
@@ -1252,8 +1445,8 @@
         return '<label class="tick-mark-item"><input type="checkbox" data-tick-key="' + d.key + '"' + (tickMarks[d.key] ? " checked" : "") + ro + ">" + escapeHtml(d.label) + "</label>";
       }).join("") + "</div>";
 
-    card.innerHTML = flagAlertHtml +
-      '<div class="review-col"><h4>Official standard text — <span class="no-case">' + escapeHtml(formatParaNumber(p.number)) + "</span></h4>" +
+    detail.innerHTML = flagAlertHtml +
+      '<div class="review-col"><h4>Official standard text</h4>' +
         '<div class="review-text">' + escapeHtml(p.text) + "</div>" +
         (canManageStructure ? '<div class="cell-actions"><button class="icon-btn" data-edit-para="' + p.id + '">✎ Edit</button><button class="icon-btn" data-del-para="' + p.id + '">✕ Delete</button></div>' : "") +
       "</div>" +
@@ -1264,16 +1457,34 @@
       "</div>" +
       '<div class="review-col"><h4>Status &amp; comparison</h4>' +
         '<div class="status-pills">' + statusPillsHtml + "</div>" +
-        '<textarea class="review-textarea" data-notes-field placeholder="Comparison notes, reviewer commentary, evidence reference..."' + ro + ">" + escapeHtml(cov.notes || "") + "</textarea>" +
         tickMarksHtml +
+        '<textarea class="review-textarea" data-notes-field placeholder="Comparison notes, reviewer commentary, evidence reference..."' + ro + ">" + escapeHtml(cov.notes || "") + "</textarea>" +
         '<div class="save-caption" data-caption>' + savedCaption + "</div>" +
       "</div>";
-    return card;
+    return detail;
   }
 
   function wireParagraphCardEvents(container) {
+    container.querySelectorAll("[data-toggle-children]").forEach(function (el) {
+      el.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var id = el.getAttribute("data-toggle-children");
+        var current = state.childrenExpanded.hasOwnProperty(id) ? state.childrenExpanded[id] : false;
+        state.childrenExpanded[id] = !current;
+        withScrollPreserved(renderCoverageView);
+      });
+    });
+    container.querySelectorAll("[data-toggle-para]").forEach(function (row) {
+      row.addEventListener("click", function () {
+        var id = row.getAttribute("data-toggle-para");
+        var pendingFlag = (data.pendingFlags || []).some(function (fl) { return fl.status === "open" && fl.paragraphId === id; });
+        var current = state.paraExpanded.hasOwnProperty(id) ? state.paraExpanded[id] : pendingFlag;
+        state.paraExpanded[id] = !current;
+        withScrollPreserved(renderCoverageView);
+      });
+    });
     container.querySelectorAll(".review-card").forEach(function (card) {
-      var paraId = card.getAttribute("data-para-id");
+      var paraId = card.closest(".para-item").getAttribute("data-para-id");
       card.querySelectorAll("[data-set-status]").forEach(function (btn) {
         btn.addEventListener("click", function () { setCoverageStatus(paraId, state.activeMethodologyId, btn.getAttribute("data-set-status")); });
       });
@@ -1297,7 +1508,7 @@
   }
 
   function ensureCoverageEntry(para, methodologyId) {
-    if (!para.coverage[methodologyId]) para.coverage[methodologyId] = { status: "none", wpExtract: "", wpReference: "", notes: "", tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
+    if (!para.coverage[methodologyId]) para.coverage[methodologyId] = { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
     return para.coverage[methodologyId];
   }
 
@@ -1308,7 +1519,7 @@
     var cov = ensureCoverageEntry(found.para, methodologyId);
     if (cov.status === status) return;
     var prevLabel = STATUS[cov.status].label;
-    cov.status = status; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
+    cov.status = status; cov.source = "manual"; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
     logChange("update", "coverage", found.std.code + " " + found.para.number + " — " + (meth ? meth.name : ""), "Status: " + prevLabel + " → " + STATUS[status].label);
     persist();
     withScrollPreserved(renderCoverageView);
@@ -1319,7 +1530,7 @@
     var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
     var cov = ensureCoverageEntry(found.para, methodologyId);
     if ((cov[field] || "") === value) return;
-    cov[field] = value; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
+    cov[field] = value; cov.source = "manual"; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
     logChange("update", "coverage", found.std.code + " " + found.para.number + " — " + (meth ? meth.name : ""), summaryLabel);
     persist();
     withScrollPreserved(renderCoverageView);
@@ -1331,7 +1542,7 @@
     var cov = ensureCoverageEntry(found.para, methodologyId);
     if (!cov.tickMarks) cov.tickMarks = emptyTickMarks();
     if (cov.tickMarks[tickKey] === value) return;
-    cov.tickMarks[tickKey] = value; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
+    cov.tickMarks[tickKey] = value; cov.source = "manual"; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
     var label = (TICK_MARK_DEFS.find(function (d) { return d.key === tickKey; }) || {}).label || tickKey;
     logChange("update", "coverage", found.std.code + " " + found.para.number + " — " + (meth ? meth.name : ""), (value ? "Checked" : "Unchecked") + ' "' + label + '"');
     persist();
@@ -1339,6 +1550,13 @@
   }
 
   // ---------- CRUD: Methodologies ----------
+  function renderMethodologyFamilyChecks(selectedFamilies) {
+    var wrap = document.getElementById("methodology-family-checks");
+    wrap.innerHTML = FAMILIES.map(function (fam) {
+      var checked = selectedFamilies.indexOf(fam) !== -1;
+      return '<label style="display:flex; align-items:center; gap:4px; font-size:12px;"><input type="checkbox" value="' + escapeAttr(fam) + '" data-fam-check' + (checked ? " checked" : "") + '>' + escapeHtml(fam) + "</label>";
+    }).join("");
+  }
   function openMethodologyModal(id) {
     state.editing.methodologyId = id || null;
     var dlg = document.getElementById("dlg-methodology");
@@ -1346,19 +1564,21 @@
     document.getElementById("dlg-methodology-title").textContent = meth ? "Edit methodology" : "Add methodology";
     document.getElementById("f-methodology-name").value = meth ? meth.name : "";
     document.getElementById("f-methodology-desc").value = meth ? meth.description : "";
+    renderMethodologyFamilyChecks(meth && Array.isArray(meth.allowedFamilies) ? meth.allowedFamilies : []);
     dlg.showModal();
   }
   function saveMethodology() {
     var name = document.getElementById("f-methodology-name").value.trim();
     if (!name) return;
     var desc = document.getElementById("f-methodology-desc").value.trim();
+    var allowedFamilies = Array.from(document.querySelectorAll("#methodology-family-checks input:checked")).map(function (cb) { return cb.value; });
     if (state.editing.methodologyId) {
       var meth = data.methodologies.find(function (m) { return m.id === state.editing.methodologyId; });
       var oldName = meth.name;
-      meth.name = name; meth.description = desc;
-      logChange("update", "methodology", name, oldName !== name ? 'Renamed "' + oldName + '" to "' + name + '"' : "Updated description");
+      meth.name = name; meth.description = desc; meth.allowedFamilies = allowedFamilies;
+      logChange("update", "methodology", name, oldName !== name ? 'Renamed "' + oldName + '" to "' + name + '"' : "Updated description/standard families");
     } else {
-      data.methodologies.push({ id: uid("meth"), name: name, description: desc, colorIndex: data.nextColorIndex });
+      data.methodologies.push({ id: uid("meth"), name: name, description: desc, colorIndex: data.nextColorIndex, allowedFamilies: allowedFamilies });
       data.nextColorIndex++;
       logChange("create", "methodology", name, 'Added methodology "' + name + '"');
     }
@@ -1376,17 +1596,6 @@
   }
 
   // ---------- CRUD: Standards ----------
-  function renderStandardMethodologyChecks(selectedIds) {
-    var wrap = document.getElementById("standard-methodology-checks");
-    wrap.innerHTML = data.methodologies.map(function (m) {
-      var checked = selectedIds.indexOf(m.id) !== -1;
-      return '<label style="display:flex; align-items:center; gap:4px; font-size:12px;"><input type="checkbox" value="' + escapeAttr(m.id) + '" data-meth-check' + (checked ? " checked" : "") + '>' + escapeHtml(m.name) + "</label>";
-    }).join("");
-  }
-  function toggleStandardMethodologyChecksDisabled(disabled) {
-    document.querySelectorAll("#standard-methodology-checks input").forEach(function (cb) { cb.disabled = disabled; });
-    document.getElementById("standard-methodology-checks-wrap").style.opacity = disabled ? "0.5" : "1";
-  }
   function openStandardModal(id) {
     state.editing.standardId = id || null;
     var dlg = document.getElementById("dlg-standard");
@@ -1395,21 +1604,6 @@
     document.getElementById("f-standard-family").value = std ? std.family : (state.familyFilter !== "all" ? state.familyFilter : "ISA");
     document.getElementById("f-standard-code").value = std ? std.code : "";
     document.getElementById("f-standard-title").value = std ? std.title : "";
-
-    var scoped = std && Array.isArray(std.applicableMethodologyIds) && std.applicableMethodologyIds.length > 0;
-    var selectedIds;
-    var allChk = document.getElementById("f-standard-all-methodologies");
-    if (std) {
-      selectedIds = scoped ? std.applicableMethodologyIds : data.methodologies.map(function (m) { return m.id; });
-      allChk.checked = !scoped;
-    } else {
-      selectedIds = state.activeMethodologyId ? [state.activeMethodologyId] : [];
-      allChk.checked = false;
-    }
-    renderStandardMethodologyChecks(selectedIds);
-    toggleStandardMethodologyChecksDisabled(allChk.checked);
-    allChk.onchange = function () { toggleStandardMethodologyChecksDisabled(allChk.checked); };
-
     dlg.showModal();
   }
   function saveStandard() {
@@ -1417,18 +1611,12 @@
     var code = document.getElementById("f-standard-code").value.trim();
     var title = document.getElementById("f-standard-title").value.trim();
     if (!code || !title) return;
-    var allMethodologies = document.getElementById("f-standard-all-methodologies").checked;
-    var applicableMethodologyIds = allMethodologies ? [] : Array.from(document.querySelectorAll("#standard-methodology-checks input:checked")).map(function (cb) { return cb.value; });
-    if (!allMethodologies && applicableMethodologyIds.length === 0) {
-      alert('Select at least one methodology, or check "Applies to all methodologies".');
-      return;
-    }
     if (state.editing.standardId) {
       var std = data.standards.find(function (s) { return s.id === state.editing.standardId; });
-      std.family = family; std.code = code; std.title = title; std.applicableMethodologyIds = applicableMethodologyIds;
+      std.family = family; std.code = code; std.title = title;
       logChange("update", "standard", code, 'Updated standard "' + code + '"');
     } else {
-      data.standards.push({ id: uid("std"), family: family, code: code, title: title, paragraphs: [], applicableMethodologyIds: applicableMethodologyIds });
+      data.standards.push({ id: uid("std"), family: family, code: code, title: title, paragraphs: [] });
       logChange("create", "standard", code, 'Added standard "' + code + '"');
     }
     document.getElementById("dlg-standard").close();
@@ -1488,8 +1676,8 @@
       }
     } else {
       var coverage = {};
-      data.methodologies.forEach(function (m) { coverage[m.id] = { status: "none", wpExtract: "", wpReference: "", notes: "", tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
-      std.paragraphs.push({ id: uid("para"), number: number, text: text, coverage: coverage });
+      data.methodologies.forEach(function (m) { coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
+      std.paragraphs.push({ id: uid("para"), number: number, text: text, source: "manual", coverage: coverage });
       sortParagraphs(std);
       logChange("create", "paragraph", std.code + " " + number, "Added paragraph " + number);
     }
@@ -1704,8 +1892,8 @@
         var std = data.standards.find(function (s) { return s.id === flag.standardId; });
         if (std) {
           var coverage = {};
-          data.methodologies.forEach(function (m) { coverage[m.id] = { status: "none", wpExtract: "", wpReference: "", notes: "", tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
-          std.paragraphs.push({ id: uid("para"), number: flag.number, text: flag.newText, coverage: coverage });
+          data.methodologies.forEach(function (m) { coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
+          std.paragraphs.push({ id: uid("para"), number: flag.number, text: flag.newText, source: "pdf", coverage: coverage });
           sortParagraphs(std);
           logChange("create", "paragraph", flag.standardCode + " " + flag.number, "Added paragraph from PDF import.");
         }
@@ -1883,7 +2071,7 @@
     { key: "wpReference", label: "WP Reference", header: "WP Reference", keywords: ["wp ref", "wp no", "wp number", "reference no"], required: false },
     { key: "wpExtract", label: "WP Extract", header: "WP Extract", keywords: ["extract", "procedure", "working paper", "wp text"], required: true },
     { key: "comment", label: "Comment", header: "Comment", keywords: ["comment", "note"], required: false }
-  ].concat(TICK_MARK_DEFS.map(function (d) { return { key: "tick_" + d.key, label: d.label, header: d.label, keywords: [d.label.toLowerCase()], required: false, isTickMark: true, tickKey: d.key }; }));
+  ].concat(TICK_MARK_DEFS.map(function (d) { return { key: "tick_" + d.key, label: d.label, header: d.label, keywords: d.keywords || [d.label.toLowerCase()], required: false, isTickMark: true, tickKey: d.key }; }));
   function findColumnByExactHeader(headers, name) {
     var target = String(name).trim().toLowerCase();
     for (var i = 0; i < headers.length; i++) { if (String(headers[i] || "").trim().toLowerCase() === target) return i; }
@@ -1913,11 +2101,17 @@
   function expectedColorTier(depth) { return depth <= 1 ? "dark-green" : depth === 2 ? "light-green" : "white"; }
 
   function parseStandardReference(ref) {
-    var m = String(ref).match(/^\s*(ISA|ISAE|ISRS|ISRE)\s*([\d.]+)?/i);
+    var m = String(ref).match(/^\s*(ISA|ISAE|ISRS|ISRE|LPC|PPRA)\s*(?:RULES)?\s*([\d.]+)?/i);
     if (!m) return null;
     var prefix = m[1].toUpperCase();
     var num = m[2] || "";
-    var family = prefix === "ISA" ? "ISA" : prefix === "ISAE" ? "ISAE 3000" : prefix === "ISRS" ? "ISRS 4400" : "ISRE 2400";
+    var family;
+    if (prefix === "ISA") family = "ISA";
+    else if (prefix === "ISAE") family = "ISAE 3000";
+    else if (prefix === "ISRS") family = num.indexOf("4410") === 0 ? "ISRS 4410" : "ISRS 4400";
+    else if (prefix === "ISRE") family = "ISRE 2400";
+    else if (prefix === "LPC") family = "LPC Rules";
+    else family = "PPRA Rules";
     return { prefix: prefix, num: num, family: family };
   }
   function composeParaNumber(core, bare) {
@@ -1926,11 +2120,11 @@
     if (bare.toLowerCase().indexOf(core.toLowerCase() + ".") === 0) return bare;
     return core + "." + bare;
   }
-  function findOrCreateStandard(refInfo, rawCode, methodologyId) {
+  function findOrCreateStandard(refInfo, rawCode) {
     var target = (refInfo.prefix + " " + refInfo.num).trim().toLowerCase();
     var existing = data.standards.find(function (s) { return s.code.toLowerCase().indexOf(target) === 0; });
     if (existing) return existing;
-    var std = { id: uid("std"), family: refInfo.family, code: normalizeWs(rawCode), title: "Imported standard — click ✎ to edit the title", paragraphs: [], applicableMethodologyIds: methodologyId ? [methodologyId] : [] };
+    var std = { id: uid("std"), family: refInfo.family, code: normalizeWs(rawCode), title: "Imported standard — click ✎ to edit the title", paragraphs: [] };
     data.standards.push(std);
     return std;
   }
@@ -1941,8 +2135,8 @@
       return existing;
     }
     var coverage = {};
-    data.methodologies.forEach(function (m) { coverage[m.id] = { status: "none", wpExtract: "", wpReference: "", notes: "", tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
-    var p = { id: uid("para"), number: number, text: officialText || "", coverage: coverage };
+    data.methodologies.forEach(function (m) { coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
+    var p = { id: uid("para"), number: number, text: officialText || "", source: "excel", coverage: coverage };
     std.paragraphs.push(p);
     sortParagraphs(std);
     return p;
@@ -2046,7 +2240,7 @@
       }
 
       var stdCountBefore = data.standards.length;
-      var std = findOrCreateStandard(refInfo, state.standard, methodologyId);
+      var std = findOrCreateStandard(refInfo, state.standard);
       if (data.standards.length > stdCountBefore) createdStandards++;
       var number = composeParaNumber(refInfo.num, bareNumber);
       var paraCountBefore = std.paragraphs.length;
@@ -2058,6 +2252,7 @@
       if (commentCell) cov.notes = cov.notes ? cov.notes + "\n" + commentCell : commentCell;
       if (!cov.tickMarks) cov.tickMarks = emptyTickMarks();
       TICK_MARK_DEFS.forEach(function (d) { if (tickCells[d.key]) cov.tickMarks[d.key] = true; });
+      cov.source = "excel";
       cov.updatedAt = new Date().toISOString();
       cov.updatedBy = identityName();
       updated++;
@@ -2083,7 +2278,7 @@
       ["2. WP Mapping — fill this in with your data, one row per paragraph, then import it via Standards Review > Import WP Mapping (Excel)"],
       [],
       ["Column", "Required?", "Format / notes"],
-      ["Standard Reference", "Required", 'Starts with ISA, ISAE, ISRS or ISRE plus the standard number, e.g. "ISA 315", "ISAE 3000", "ISRS 4400", "ISRE 2400".'],
+      ["Standard Reference", "Required", 'Starts with ISA, ISAE, ISRS, ISRE, LPC or PPRA plus the standard number, e.g. "ISA 315", "ISAE 3000", "ISRS 4400", "ISRS 4410", "ISRE 2400", "LPC Rules", "PPRA Rules".'],
       ["Main Paragraph Number", "Required", 'The top-level paragraph number, e.g. "25".'],
       ["Letter Subdivision", "Optional", 'e.g. "a", "b", "c" — a first-level subdivision of the main paragraph, e.g. paragraph 25(a).'],
       ["Roman Numeral", "Optional", 'e.g. "i", "ii", "iii" — a subdivision under the letter, e.g. paragraph 25(d)(i).'],
@@ -2093,7 +2288,7 @@
       ["WP Reference", "Optional", 'Your internal WP/section reference, e.g. "10.02" or "15.05".'],
       ["WP Extract", "Required", "The extract/procedure from your working paper methodology that addresses this paragraph — this is what gets imported into the tracker."],
       ["Comment", "Optional", "Any reviewer note — added to the paragraph's comparison notes."],
-      ["Firm SQM1 manual / Policies", "Optional", "Put any value (e.g. \"X\") in the cell to tick this as an expected compliance area for that paragraph; leave blank if not applicable."],
+      ["Firm ISQM 1 manual", "Optional", "Put any value (e.g. \"X\") in the cell to tick this as an expected compliance area for that paragraph; leave blank if not applicable."],
       ["Engagement letter", "Optional", "Same as above — any non-blank value ticks it."],
       ["Documentation on WP", "Optional", "Same as above — any non-blank value ticks it."],
       ["Management Rep letter", "Optional", "Same as above — any non-blank value ticks it."],
@@ -2239,22 +2434,21 @@
 
     document.querySelectorAll(".tab-btn").forEach(function (btn) { btn.addEventListener("click", function () { switchToView(btn.getAttribute("data-view")); }); });
 
-    document.querySelectorAll(".sidebar [data-family]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        state.familyFilter = btn.getAttribute("data-family");
-        document.getElementById("filter-family").value = state.familyFilter;
-        renderSidebar(); renderCoverageView();
-      });
-    });
     document.getElementById("filter-family").addEventListener("change", function (e) { state.familyFilter = e.target.value; renderSidebar(); renderCoverageView(); });
     document.getElementById("filter-status").addEventListener("change", function (e) { state.statusFilter = e.target.value; renderCoverageView(); });
     document.getElementById("search-input").addEventListener("input", function (e) { state.search = e.target.value.trim(); renderCoverageView(); });
     document.getElementById("expand-all-std-btn").addEventListener("click", function () {
-      data.standards.forEach(function (std) { state.standardCollapse[std.id] = false; });
+      data.standards.forEach(function (std) {
+        state.standardCollapse[std.id] = false;
+        std.paragraphs.forEach(function (p) { state.paraExpanded[p.id] = true; state.childrenExpanded[p.id] = true; });
+      });
       renderCoverageView();
     });
     document.getElementById("collapse-all-std-btn").addEventListener("click", function () {
-      data.standards.forEach(function (std) { state.standardCollapse[std.id] = true; });
+      data.standards.forEach(function (std) {
+        state.standardCollapse[std.id] = true;
+        std.paragraphs.forEach(function (p) { state.paraExpanded[p.id] = false; state.childrenExpanded[p.id] = false; });
+      });
       renderCoverageView();
     });
 
