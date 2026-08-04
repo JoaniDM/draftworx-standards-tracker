@@ -386,7 +386,7 @@
         </div>
         <div class="family-panel">
           <h3>Compare against the IRBA/IAASB handbook (PDF)</h3>
-          <div class="fp-sub">Only compares "shall" requirement paragraphs (not explanatory/application material) against what's already in the tracker. Flags New / Changed / Removed paragraphs for your review &mdash; nothing is applied automatically, every change needs your approval.</div>
+          <div class="fp-sub">Compares numbered requirement paragraphs (not explanatory/application material) against what's already in the tracker. Flags New / Changed / Removed paragraphs for your review &mdash; nothing is applied automatically, every change needs your approval.</div>
           <div class="readonly-note" id="last-import-info" style="margin-bottom:14px;">No standards PDF has been imported yet.</div>
           <div>
             <button class="btn primary" id="import-pdf-btn">Import Standards PDF</button>
@@ -1857,21 +1857,109 @@
     });
     return sections;
   }
-  var SHALL_RE = /\bshall\b/i;
+  // Some IAASB standards' numbered paragraphs don't start as "requirements" from 1 — earlier
+  // ones are scope/introduction. Record a family's known first-requirement number here as we
+  // learn it; a family not listed defaults to no cutoff (starts from paragraph 1).
+  var REQUIREMENTS_START_PARA = { "ISRE 2400": 17 };
+
+  // Only single letters ("a".."z") ever appear as markers in these standards, so plain
+  // charCode+1 covers every real case — no need to handle multi-letter overflow (aa, ab, ...).
+  function nextLetter(letter) {
+    if (!letter || letter.length !== 1) return null;
+    var code = letter.charCodeAt(0) + 1;
+    return code <= 122 ? String.fromCharCode(code) : null;
+  }
+  // Decides where a bracketed marker token — e.g. "d", "iii", "a" — fits in the CURRENT
+  // nesting stack, purely from the sequence of markers seen so far (a flat extracted text
+  // stream carries no other structural cue, like indentation, to go on). Letters and romans
+  // that are lexically identical (d/i/v/x/l/c/m are valid as both) are disambiguated entirely
+  // by context: what's already open, and what would continue it.
+  function resolveSubMarker(token, stack) {
+    if (stack.length) {
+      var top = stack[stack.length - 1];
+      var nextInTop = top.kind === "roman" ? intToRoman(romanToInt(top.value) + 1) : nextLetter(top.value);
+      if (token === nextInTop) return { depth: stack.length, kind: top.kind };
+    }
+    // Continuing an OUTER list after finishing a nested one, e.g. ...(iii)(a)(b) then (iv):
+    // (iv) isn't next-after-(b), but it IS next-after-(iii) one level up — pop back to there.
+    for (var d = stack.length - 1; d >= 1; d--) {
+      var lvl = stack[d - 1];
+      var nextInLvl = lvl.kind === "roman" ? intToRoman(romanToInt(lvl.value) + 1) : nextLetter(lvl.value);
+      if (token === nextInLvl) return { depth: d, kind: lvl.kind };
+    }
+    // Otherwise this can only be the START of a brand-new nested level, one deeper than
+    // whatever's currently open (or depth 1 if nothing's open) — and only "a"/"i" can start
+    // one. Anything else doesn't fit any known context, so it's not really a sub-paragraph
+    // marker (e.g. a stray "(x)" inside ordinary prose) — ignore it.
+    if (token === "a") return { depth: stack.length + 1, kind: "letter" };
+    if (token === "i") return { depth: stack.length + 1, kind: "roman" };
+    return null;
+  }
+  // Splits one main paragraph's own body text into itself plus every (a)/(b)/(i)/(ii)/etc.
+  // sub-paragraph nested inside it, producing the same dot-notation hierarchy the Excel WP
+  // mapping already uses: 25 -> 25.a -> 25.d -> 25.d.i -> 25.d.iii.a.
+  function extractSubParagraphs(mainNumber, body) {
+    var subMarkerRe = /\(([a-z]{1,3}|[ivxlcdm]{1,4})\)/gi;
+    var raw = [], m;
+    while ((m = subMarkerRe.exec(body))) raw.push({ token: m[1].toLowerCase(), markerStart: m.index, textStart: m.index + m[0].length });
+
+    var stack = [];
+    var items = [{ ref: mainNumber, markerStart: -1, textStart: 0 }];
+    raw.forEach(function (mk) {
+      var resolved = resolveSubMarker(mk.token, stack);
+      if (!resolved) return;
+      stack.length = resolved.depth - 1;
+      stack.push({ kind: resolved.kind, value: mk.token });
+      items.push({ ref: mainNumber + "." + stack.map(function (s) { return s.value; }).join("."), markerStart: mk.markerStart, textStart: mk.textStart });
+    });
+
+    var result = [];
+    for (var i = 0; i < items.length; i++) {
+      var endPos = (i + 1 < items.length) ? items[i + 1].markerStart : body.length;
+      var chunk = normalizeWs(body.substring(items[i].textStart, endPos)).slice(0, 600);
+      if (chunk) result.push({ number: items[i].ref, text: chunk });
+    }
+    return result;
+  }
   function extractParagraphsFromSection(sec) {
     var numCoreMatch = sec.std.code.match(/\d+/);
     var numCore = numCoreMatch ? numCoreMatch[0] : "";
     var text = sec.text;
-    var markerRe = /(?:\n|^)\s*(A?\d{1,3})\.\s+/g;
-    var matches = [], m;
-    while ((m = markerRe.exec(text))) matches.push({ marker: m[1], start: m.index + m[0].length, headerStart: m.index });
+    var startPara = REQUIREMENTS_START_PARA[sec.std.family] || 1;
+
+    // Every top-level marker: a plain number ("18.", a possible requirement) or an
+    // "A"-prefixed number ("A14.", Application Material) — the A-prefixed ones are only kept
+    // as boundary markers, so the PRECEDING requirement's text doesn't run on into them; they
+    // are never extracted as tracked items themselves.
+    var markerRe = /(?:\r?\n|^)\s*(A?\d{1,3})\.\s+/g;
+    var markers = [], m;
+    while ((m = markerRe.exec(text))) {
+      var raw = m[1];
+      var isAppMaterial = /^A/i.test(raw);
+      markers.push({
+        num: parseInt(isAppMaterial ? raw.slice(1) : raw, 10),
+        isAppMaterial: isAppMaterial,
+        start: m.index + m[0].length,
+        headerStart: m.index
+      });
+    }
+
     var found = [];
-    for (var i = 0; i < matches.length; i++) {
-      var startIdx = matches[i].start;
-      var endIdx = (i + 1 < matches.length) ? matches[i + 1].headerStart : Math.min(text.length, startIdx + 600);
-      var chunk = normalizeWs(text.substring(startIdx, endIdx)).slice(0, 600);
-      // Only requirement paragraphs (containing "shall") are tracked — explanatory/application material is not a requirement to compare.
-      if (chunk && SHALL_RE.test(chunk)) found.push({ number: numCore + "." + matches[i].marker, text: chunk });
+    for (var i = 0; i < markers.length; i++) {
+      var marker = markers[i];
+      if (marker.isAppMaterial) continue;
+      if (marker.num < startPara) continue; // introductory/scope paragraph, not a requirement
+
+      // A paragraph is tracked because its NUMBER is in the requirements range and it isn't
+      // Application Material — not because of what words happen to appear in its text. Relying
+      // on a "shall" keyword match here would falsely flag a genuine, existing paragraph as
+      // Removed whenever the extracted text doesn't happen to contain that exact word (odd
+      // line-break splits, rephrasing, etc.) — the paragraph NUMBER is the source of truth.
+      var startIdx = marker.start;
+      var endIdx = (i + 1 < markers.length) ? markers[i + 1].headerStart : text.length;
+      var body = text.substring(startIdx, endIdx);
+
+      extractSubParagraphs(numCore + "." + marker.num, body).forEach(function (item) { found.push(item); });
     }
     return found;
   }
@@ -1953,7 +2041,7 @@
       body = '<div class="diff-block"><strong>Suggested new paragraph text (from PDF):</strong><br>' + escapeHtml(f.newText) + "</div>" +
         (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Add as new paragraph</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>' : "");
     } else {
-      body = '<div class="diff-block"><strong>Currently stored (no matching "shall" requirement found in PDF):</strong><br>' + escapeHtml(f.oldText) + "</div>" +
+      body = '<div class="diff-block"><strong>Currently stored (this paragraph number was not found in the PDF):</strong><br>' + escapeHtml(f.oldText) + "</div>" +
         '<div class="readonly-note">May have been renumbered, superseded, or missed by extraction — review before removing.</div>' +
         (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn danger" data-apply-flag="' + f.id + '">Remove from tracker</button><button class="btn" data-dismiss-flag="' + f.id + '">Keep (no change)</button></div>' : "");
     }
