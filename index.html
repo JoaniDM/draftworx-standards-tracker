@@ -5,19 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Draftworx Standards Compliance Tracker</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- Loaded as a plain script (not a Worker) so pdf.js's main-thread "fake worker" fallback can
+     find it at globalThis.pdfjsWorker — real cross-origin Workers can't be constructed directly,
+     so this is the actually-working path, not just a fallback. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
     color-scheme: light;
-    --surface-page:   #f4f6fb;
+    --surface-page:   #f8fafc;
     --surface-1:      #ffffff;
-    --surface-2:      #f3f5fa;
-    --surface-hover:  #eef2f9;
-    --text-primary:   #1a2233;
-    --text-secondary: #5b6478;
-    --text-muted:     #94a0b4;
-    --border:         #e2e6ef;
-    --border-strong:  #cdd4e3;
+    --surface-2:      #f1f5f9;
+    --surface-hover:  #e2e8f0;
+    --text-primary:   #1e293b;
+    --text-secondary: #475569;
+    --text-muted:     #94a3b8;
+    --border:         #e2e8f0;
+    --border-strong:  #cbd5e1;
+
+    --header-bg:          #1e3a5f;
+    --header-text:        #ffffff;
+    --header-text-muted:  rgba(255,255,255,0.7);
+    --header-border:      rgba(255,255,255,0.12);
+    --header-hover-bg:    rgba(255,255,255,0.10);
 
     --cat-1: #2196f3; --cat-2: #f59e0b; --cat-3: #22c55e; --cat-4: #6c63ff;
     --cat-5: #ef4444; --cat-6: #06b6d4; --cat-7: #ec4899; --cat-8: #64748b;
@@ -33,10 +43,12 @@
     --status-investigate-text: #6d28d9;
     --success-text:  #15803d;
 
+    /* Deliberately subtle — just barely lighter/darker than the card itself, so nesting depth
+       is visible without competing with the (vivid, fixed) status-color left border. */
     --level-0-bg: #ffffff;
-    --level-1-bg: #f0f7ff;
-    --level-2-bg: #dbeafe;
-    --level-3-bg: #bfdbfe;
+    --level-1-bg: #f8fafc;
+    --level-2-bg: #f1f5f9;
+    --level-3-bg: #e9eef4;
 
     --radius: 10px;
     --shadow: 0 1px 2px rgba(15,23,42,0.05), 0 6px 18px rgba(15,23,42,0.07);
@@ -44,29 +56,33 @@
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) {
       color-scheme: dark;
-      --surface-page: #0f1320; --surface-1: #1c2337; --surface-2: #212840; --surface-hover: #2a3350;
-      --text-primary: #e8ecf5; --text-secondary: #8892b0; --text-muted: #4a5568;
-      --border: #2a3350; --border-strong: #374162;
+      --surface-page: #0f172a; --surface-1: #1e293b; --surface-2: #334155; --surface-hover: #3f4f68;
+      --text-primary: #e2e8f0; --text-secondary: #94a3b8; --text-muted: #64748b;
+      --border: #334155; --border-strong: #475569;
+      --header-bg: #0f172a; --header-text: #e2e8f0; --header-text-muted: #94a3b8;
+      --header-border: #334155; --header-hover-bg: #1e293b;
       --cat-1: #4f8ef7; --cat-2: #f59e0b; --cat-3: #22c55e; --cat-4: #6c63ff;
       --cat-5: #ef4444; --cat-6: #22d3ee; --cat-7: #f472b6; --cat-8: #94a3b8;
       --status-good: #22c55e; --status-warning: #f59e0b; --status-critical: #ef4444; --status-investigate: #6c63ff; --status-na: #64748b;
       --status-good-text: #22c55e; --status-warning-text: #f59e0b; --status-critical-text: #ef4444; --status-investigate-text: #6c63ff;
       --success-text: #22c55e;
-      --level-0-bg: #1c2337; --level-1-bg: #212f4a; --level-2-bg: #26375a; --level-3-bg: #2c4270;
+      --level-0-bg: #1e293b; --level-1-bg: #253144; --level-2-bg: #2c394c; --level-3-bg: #334155;
       --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 22px rgba(0,0,0,0.35);
     }
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
-    --surface-page: #0f1320; --surface-1: #1c2337; --surface-2: #212840; --surface-hover: #2a3350;
-    --text-primary: #e8ecf5; --text-secondary: #8892b0; --text-muted: #4a5568;
-    --border: #2a3350; --border-strong: #374162;
+    --surface-page: #0f172a; --surface-1: #1e293b; --surface-2: #334155; --surface-hover: #3f4f68;
+    --text-primary: #e2e8f0; --text-secondary: #94a3b8; --text-muted: #64748b;
+    --border: #334155; --border-strong: #475569;
+    --header-bg: #0f172a; --header-text: #e2e8f0; --header-text-muted: #94a3b8;
+    --header-border: #334155; --header-hover-bg: #1e293b;
     --cat-1: #4f8ef7; --cat-2: #f59e0b; --cat-3: #22c55e; --cat-4: #6c63ff;
     --cat-5: #ef4444; --cat-6: #22d3ee; --cat-7: #f472b6; --cat-8: #94a3b8;
     --status-good: #22c55e; --status-warning: #f59e0b; --status-critical: #ef4444; --status-investigate: #6c63ff; --status-na: #64748b;
     --status-good-text: #22c55e; --status-warning-text: #f59e0b; --status-critical-text: #ef4444; --status-investigate-text: #6c63ff;
     --success-text: #22c55e;
-    --level-0-bg: #1c2337; --level-1-bg: #212f4a; --level-2-bg: #26375a; --level-3-bg: #2c4270;
+    --level-0-bg: #1e293b; --level-1-bg: #253144; --level-2-bg: #2c394c; --level-3-bg: #334155;
     --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 22px rgba(0,0,0,0.35);
   }
 
@@ -78,11 +94,11 @@
 
   #app { display: flex; flex-direction: column; height: 100vh; }
 
-  .topbar { display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 56px; flex-shrink: 0; background: var(--surface-1); border-bottom: 1px solid var(--border); }
-  .topbar h1 { font-size: 15px; font-weight: 600; margin: 0; white-space: nowrap; }
+  .topbar { display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 56px; flex-shrink: 0; background: var(--header-bg); border-bottom: 1px solid var(--header-border); }
+  .topbar h1 { font-size: 15px; font-weight: 600; margin: 0; white-space: nowrap; color: var(--header-text); }
   .tabs { display: flex; gap: 4px; margin-left: 16px; flex-wrap: wrap; }
-  .tab-btn { border: none; background: transparent; padding: 8px 12px; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
-  .tab-btn:hover { background: var(--surface-hover); }
+  .tab-btn { border: none; background: transparent; padding: 8px 12px; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--header-text-muted); white-space: nowrap; }
+  .tab-btn:hover { background: var(--header-hover-bg); color: var(--header-text); }
   .tab-btn.active { background: var(--cat-1); color: #fff; }
 
   .spacer { flex: 1; }
@@ -91,7 +107,8 @@
   .search-box input { border: none; background: transparent; outline: none; width: 100%; font-size: 13px; color: var(--text-primary); }
   .search-box svg { flex-shrink: 0; color: var(--text-muted); }
 
-  .identity-badge { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .identity-badge { font-size: 12px; color: var(--header-text-muted); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .identity-badge span:first-child { color: var(--header-text); }
 
   .btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); padding: 7px 12px; border-radius: var(--radius); cursor: pointer; font-size: 13px; white-space: nowrap; }
   .btn:hover { background: var(--surface-hover); }
@@ -177,31 +194,41 @@
   /* Paragraph rows: a true collapsible tree. A parent paragraph shows one row; its
      sub-paragraphs are only in the DOM once the tree-toggle chevron reveals them, nested
      inside a .para-children wrapper (which also supplies the per-level indent). Each nesting
-     level gets its own background tint, on top of the per-status left border. */
-  .para-item { background: var(--level-0-bg); border: 1px solid var(--border); border-left: 4px solid var(--border-strong); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 8px; overflow: hidden; }
-  .para-item.level-1 { background: var(--level-1-bg); }
-  .para-item.level-2 { background: var(--level-2-bg); }
-  .para-item.level-3 { background: var(--level-3-bg); }
-  .para-item.status-covered { border-left-color: var(--status-good); }
-  .para-item.status-needsUpdate { border-left-color: var(--status-warning); }
-  .para-item.status-notAddressed { border-left-color: var(--status-critical); }
-  .para-item.status-notSure { border-left-color: var(--status-investigate); }
-  .para-item.status-na { border-left-color: var(--border-strong); }
-  .para-item.para-item--flagged { border-left-color: var(--status-warning); }
+     level gets its own distinct background tint so hierarchy depth is unmistakable at a
+     glance — the left border is a separate signal that always reflects the CURRENT status
+     (fixed colors, same in both themes, so status reads consistently regardless of theme). */
+  .para-item { background: var(--level-0-bg) !important; border: 1px solid var(--border); border-left: 4px solid #6b7280 !important; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 8px; overflow: hidden; }
+  .para-item.level-1 { background: var(--level-1-bg) !important; }
+  .para-item.level-2 { background: var(--level-2-bg) !important; }
+  .para-item.level-3 { background: var(--level-3-bg) !important; }
+  /* !important because a paragraph can also carry .para-item--flagged (open PDF-diff flag) —
+     status must win regardless of what else is going on with the row, per explicit requirement
+     that the border always reflects current status and nothing else. */
+  .para-item.status-covered { border-left-color: #16a34a !important; }
+  .para-item.status-needsUpdate { border-left-color: #d97706 !important; }
+  .para-item.status-notAddressed { border-left-color: #dc2626 !important; }
+  .para-item.status-notSure { border-left-color: #7c3aed !important; }
+  .para-item.status-na { border-left-color: #6b7280 !important; }
+  /* A paragraph that's never actually been reviewed defaults internally to "Not Sure" (purple
+     dot/pill), but its border should read as grey/unset until someone has actually looked at
+     it — .para-item--unset (added when coverage.updatedAt is still null) overrides that. Declared
+     after the status rules so it wins the same-specificity tie-break between two !important rules
+     when both classes are present. */
+  .para-item.para-item--unset { border-left-color: #6b7280 !important; }
   .para-children { margin: 6px 0 0 20px; }
   .para-children > .para-item:last-child { margin-bottom: 0; }
   .para-row-collapsed { display: flex; align-items: center; gap: 12px; padding: 10px 14px; cursor: pointer; }
   .para-row-collapsed:hover { background: var(--surface-hover); }
-  .tree-toggle { flex-shrink: 0; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: var(--text-muted); cursor: pointer; }
-  .tree-toggle:hover { background: var(--border-strong); color: var(--text-primary); }
-  .tree-toggle-spacer { flex-shrink: 0; width: 18px; }
+  .tree-toggle { flex-shrink: 0; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 6px; color: var(--cat-1); font-size: 18px; font-weight: 700; cursor: pointer; }
+  .tree-toggle:hover { background: var(--surface-hover); filter: brightness(1.15); }
+  .tree-toggle-spacer { flex-shrink: 0; width: 26px; }
   .para-ref { color: var(--cat-1); font-weight: 600; font-size: 13px; flex-shrink: 0; white-space: nowrap; }
   .para-preview { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--text-secondary); }
   .source-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface-2); text-transform: uppercase; letter-spacing: .03em; flex-shrink: 0; }
   .source-badge--excel { color: var(--status-good-text); border-color: var(--status-good); }
   .source-badge--pdf { color: var(--cat-4); border-color: var(--cat-4); }
   .source-badge--manual { color: var(--text-secondary); border-color: var(--border-strong); }
-  .para-provenance { padding: 0 14px 8px 44px; margin-top: -6px; font-size: 11px; color: var(--text-muted); }
+  .para-provenance { padding: 0 14px 8px 52px; margin-top: -6px; font-size: 11px; color: var(--text-muted); }
   .status-dot-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); flex-shrink: 0; white-space: nowrap; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
   .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
   .status-dot--covered { background: var(--status-good); }
@@ -627,20 +654,12 @@
   function currentAccessLevel() { var u = resolveIdentityUser(); return (u && u.accessLevel) || "viewer"; }
   function can(minLevel) { return ACCESS_RANK[currentAccessLevel()] >= ACCESS_RANK[minLevel]; }
 
-  var PDF_WORKER_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-  var pdfWorkerReadySet = false;
-  function ensurePdfWorkerReady() {
-    // Browsers refuse to construct a Worker directly from a cross-origin script URL, so pdf.js
-    // would hang forever trying to spin up its worker straight from the CDN. The standard fix is
-    // a tiny same-origin blob: script whose only job is to importScripts() the real worker —
-    // importScripts (unlike the Worker constructor itself) is allowed to fetch a CORS-enabled
-    // cross-origin script like cdnjs serves.
-    if (!window.pdfjsLib || pdfWorkerReadySet) return;
-    var wrapper = "importScripts(" + JSON.stringify(PDF_WORKER_URL) + ");";
-    var blob = new Blob([wrapper], { type: "application/javascript" });
-    pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
-    pdfWorkerReadySet = true;
-  }
+  // Browsers refuse to construct a real Worker directly from a cross-origin script URL, and
+  // pdf.js's own "fake worker" (main-thread) fallback needs its worker code pre-loaded as a
+  // normal global script beforehand — pdf.js checks globalThis.pdfjsWorker.WorkerMessageHandler,
+  // which only exists because pdf.worker.min.js is loaded via a <script> tag in <head> (see
+  // above). So we skip the real-Worker attempt entirely and go straight to the working
+  // main-thread path via disableWorker below — no blob/importScripts trick needed.
 
   function uid(prefix) { return prefix + "_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4); }
   function catColor(colorIndex) { return "var(" + CATS[colorIndex % CATS.length] + ")"; }
@@ -1148,7 +1167,7 @@
     var u = resolveIdentityUser();
     if (!u || !identity) { el.innerHTML = ""; return; }
     el.innerHTML = '<span title="PC: ' + escapeAttr(identity.pcName) + '">' + escapeHtml(u.name) + "</span>" +
-      ' <span style="color:var(--text-muted);">· ' + escapeHtml(u.jobTitle || "") + " · " + accessLevelLabel(u.accessLevel) + "</span>" +
+      ' <span style="color:var(--header-text-muted);">· ' + escapeHtml(u.jobTitle || "") + " · " + accessLevelLabel(u.accessLevel) + "</span>" +
       ' <button class="btn icon-only" id="switch-user-btn" title="Switch user" style="padding:2px 6px; font-size:11px;">Switch User</button>';
     document.getElementById("switch-user-btn").addEventListener("click", function () { openIdentityModal(false); });
   }
@@ -1372,7 +1391,7 @@
 
     var item = document.createElement("div");
     var levelClass = depth > 0 ? " level-" + Math.min(depth, 3) : "";
-    item.className = "para-item" + levelClass + " status-" + cov.status + (pendingFlag ? " para-item--flagged" : "");
+    item.className = "para-item" + levelClass + " status-" + cov.status + (cov.updatedAt ? "" : " para-item--unset");
     item.setAttribute("data-para-id", p.id);
 
     var sourceBadgeHtml = p.source === "excel" ? '<span class="source-badge source-badge--excel">Excel</span>'
@@ -2023,17 +2042,11 @@
     btn.disabled = true; progressWrap.style.display = "block"; progressFill.style.width = "0%"; progressText.textContent = "Reading file...";
     try {
       var buf = await file.arrayBuffer();
-      ensurePdfWorkerReady();
-      var pdf;
-      try {
-        progressText.textContent = "Opening PDF...";
-        pdf = await withTimeout(pdfjsLib.getDocument({ data: buf }).promise, 25000, "worker-timeout");
-      } catch (workerErr) {
-        // Fall back to running entirely on the main thread if the worker never responds —
-        // slower, but avoids depending on worker setup succeeding.
-        progressText.textContent = "Retrying without a background worker (this may take longer)...";
-        pdf = await withTimeout(pdfjsLib.getDocument({ data: buf, disableWorker: true }).promise, 60000, "Timed out opening the PDF — the file may be corrupt, password-protected, or too large.");
-      }
+      progressText.textContent = "Opening PDF...";
+      // Cross-origin Workers can't be constructed directly from the CDN URL, so this runs on
+      // the main thread instead — pdf.worker.min.js is pre-loaded as a plain <script> in <head>
+      // specifically so this path works (see the comment above that script tag).
+      var pdf = await withTimeout(pdfjsLib.getDocument({ data: buf, disableWorker: true }).promise, 60000, "Timed out opening the PDF — the file may be corrupt, password-protected, or too large.");
       var fullText = "";
       for (var i = 1; i <= pdf.numPages; i++) {
         progressText.textContent = "Parsing page " + i + " of " + pdf.numPages + "...";
@@ -2155,6 +2168,21 @@
     var sheetSel = document.getElementById("f-excel-sheet");
     sheetSel.innerHTML = sheetNames.map(function (n) { return '<option value="' + escapeAttr(n) + '">' + escapeHtml(n) + "</option>"; }).join("");
     sheetWrap.style.display = sheetNames.length > 1 ? "" : "none";
+
+    // A workbook with more than one sheet (e.g. an "Instructions" sheet alongside the real
+    // "WP Mapping" data) previously always defaulted to the FIRST sheet, which silently
+    // disabled the Import button whenever that first sheet wasn't the actual data — with no
+    // obvious error, it just looked like clicking Import did nothing. Default instead to
+    // whichever sheet actually has the fewest missing required columns.
+    if (sheetNames.length > 1) {
+      var bestSheet = sheetNames[0], bestMissing = Infinity;
+      sheetNames.forEach(function (name) {
+        var previewHeaders = (XLSX.utils.sheet_to_json(workbook.Sheets[name], { header: 1, defval: "" })[0]) || [];
+        var missingCount = autoDetectColumns(previewHeaders).missingRequired.length;
+        if (missingCount < bestMissing) { bestMissing = missingCount; bestSheet = name; }
+      });
+      sheetSel.value = bestSheet;
+    }
 
     var methSel = document.getElementById("f-excel-methodology");
     methSel.innerHTML = data.methodologies.map(function (m) { return '<option value="' + escapeAttr(m.id) + '">' + escapeHtml(m.name) + "</option>"; }).join("");
