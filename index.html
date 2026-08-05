@@ -238,11 +238,9 @@
   .status-pill.active-na { background: var(--surface-1); border-color: var(--border-strong); color: var(--status-na-text); }
   .status-pill.active-bookmark { background: rgba(8,145,178,0.12); border-color: var(--status-bookmark); color: var(--status-bookmark-text); }
   .save-caption { font-size: 11px; color: var(--text-muted); margin-top: auto; }
-  .review-para-ref { font-size: 12px; color: var(--text-muted); }
   .review-source-line { font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px; }
-  .wp-diff-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-  .flag-alert-panel { grid-column: 1 / -1; background: rgba(33,150,243,0.08); border-bottom: 1px solid var(--cat-1); color: var(--text-primary); padding: 12px 14px; font-size: 13px; }
-  .flag-alert-head { font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .new-version-panel { background: rgba(33,150,243,0.08); border: 1px solid var(--cat-1); border-radius: 6px; padding: 10px 12px; margin-top: 8px; font-size: 13px; }
+  .new-version-head { font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .tick-marks-label { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-top: 4px; }
   .tick-marks-grid { display: flex; flex-wrap: wrap; gap: 6px 12px; }
   .tick-mark-item { display: flex; align-items: center; gap: 5px; font-size: 12px; }
@@ -262,9 +260,7 @@
   .diff-block { white-space: pre-wrap; font-size: 13px; line-height: 1.5; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; margin: 6px 0; max-height: 200px; overflow-y: auto; }
   .diff-del { color: #b91c1c; text-decoration: line-through; background: rgba(239,68,68,0.12); border-radius: 2px; }
   .diff-ins { color: #15803d; background: rgba(34,197,94,0.12); border-radius: 2px; }
-  .diff-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .diff-col-label { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-bottom: 4px; }
-  @media (max-width: 760px) { .diff-columns { grid-template-columns: 1fr; } }
 
   .progress-track { height: 8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin: 10px 0 6px; }
   .progress-fill { height: 100%; background: var(--cat-1); transition: width .15s; }
@@ -374,11 +370,11 @@
       <section class="view" id="view-review">
         <div class="page-head">
           <h2>Standards Review</h2>
-          <p>Import in order: first the handbook PDF (writes the Official Standard Text directly, no review step), then the Excel WP mapping (writes the WP Extract). The two are compared afterwards, once both are populated.</p>
+          <p>The first handbook PDF import for a standard sets its baseline Official Standard Text directly, no review step. Importing a newer edition of that PDF later compares it against the existing baseline paragraph by paragraph, and you Accept or Dismiss each difference. Excel WP mapping import works independently, populating the WP Extract column.</p>
         </div>
         <div class="family-panel">
           <h3><span class="import-step-badge">1</span>Import the IRBA/IAASB handbook (PDF)</h3>
-          <div class="fp-sub">Reads numbered requirement paragraphs (not explanatory/application material) straight out of the PDF and writes them into Official Standard Text on Coverage Review, creating the paragraph if it doesn't exist yet &mdash; applied immediately, no review queue. This is the only thing PDF import does; comparing it against your Excel-sourced WP extract happens separately, after both are in place.</div>
+          <div class="fp-sub">First import for a standard: reads numbered requirement paragraphs (not explanatory/application material) straight out of the PDF and writes them into Official Standard Text on Coverage Review as the baseline &mdash; applied immediately, no review queue. Importing again later (e.g. a new handbook edition) compares the new text against that baseline instead of overwriting it &mdash; each difference (Update Body / Renumbered / Removed / New Paragraph) is flagged for you to Accept or Dismiss, shown both below and inline on Coverage Review. Accepting replaces the baseline and keeps the old version in that paragraph's history.</div>
           <div class="readonly-note" id="last-import-info" style="margin-bottom:14px;">No standards PDF has been imported yet.</div>
           <div class="field" style="max-width:360px; margin-bottom:10px;">
             <label>Handbook name / edition (shown as the source on each paragraph)</label>
@@ -708,17 +704,6 @@
       return '<span class="diff-ins">' + t + "</span>";
     }).join("");
   }
-  function renderSideBySideDiff(oldStr, newStr) {
-    var left = [], right = [];
-    wordDiff(oldStr, newStr).forEach(function (op) {
-      var t = escapeHtml(op.text);
-      if (op.type === "equal") { left.push(t); right.push(t); }
-      else if (op.type === "remove") left.push('<span class="diff-del">' + t + "</span>");
-      else right.push('<span class="diff-ins">' + t + "</span>");
-    });
-    return { left: left.join(""), right: right.join("") };
-  }
-
   // ---------- Natural sort for hierarchical paragraph numbers (e.g. "25" < "25.a" < "25.d.i") ----------
   function romanToInt(s) {
     var map = { i: 1, v: 5, x: 10, l: 50, c: 100, d: 500, m: 1000 };
@@ -1481,11 +1466,6 @@
     var savedCaption = cov.updatedAt ? ("Last updated by " + escapeHtml(cov.updatedBy || "Unknown") + " · " + new Date(cov.updatedAt).toLocaleString()) : "Not yet reviewed for this methodology.";
     var ro = canEditCoverage ? "" : " disabled";
 
-    var flagAlertHtml = "";
-    if (pendingFlag) {
-      flagAlertHtml = '<div class="flag-alert-panel"><div class="flag-alert-head">' + flagBadgeHtml(pendingFlag.type) + " flagged from the latest " + (pendingFlag.source === "excel" ? "Excel" : "PDF") + " import</div>" + flagBodyHtml(pendingFlag) + "</div>";
-    }
-
     // Where the OFFICIAL TEXT itself came from — the handbook/edition it was imported from
     // (for PDF-sourced paragraphs), or a plain provenance label otherwise.
     var sourceLine;
@@ -1494,13 +1474,15 @@
     else if (p.source === "pdf") sourceLine = "Source: PDF import";
     else sourceLine = "Source: Manual entry";
 
-    var wpComparisonHtml;
-    if (!p.text) {
-      wpComparisonHtml = '<div class="overlap-hint">Import the handbook PDF first to compare this against the official text.</div>';
-    } else if (cov.wpExtract) {
-      wpComparisonHtml = '<div class="wp-diff-label">Word-for-word comparison vs. official text</div><div class="diff-block">' + renderWordDiff(p.text, cov.wpExtract) + "</div>";
-    } else {
-      wpComparisonHtml = '<div class="overlap-hint">No WP extract captured yet.</div>';
+    // A pending PDF "new version" difference for this paragraph is shown right here, at the
+    // bottom of the WP extract column — the new version's text with word-level differences
+    // against the current (locked) baseline, plus the Accept/Dismiss decision for it. Accepting
+    // replaces the baseline and files the old version in this paragraph's history; Dismiss
+    // leaves the baseline exactly as it is.
+    var newVersionHtml = "";
+    if (pendingFlag) {
+      var pendingOriginLabel = pendingFlag.source === "excel" ? "Excel WP mapping" : "PDF";
+      newVersionHtml = '<div class="new-version-panel"><div class="new-version-head">' + flagBadgeHtml(pendingFlag.type) + " — flagged from the latest " + pendingOriginLabel + " import</div>" + flagBodyHtml(pendingFlag) + "</div>";
     }
 
     var tickMarks = cov.tickMarks || emptyTickMarks();
@@ -1509,19 +1491,18 @@
         return '<label class="tick-mark-item"><input type="checkbox" data-tick-key="' + d.key + '"' + (tickMarks[d.key] ? " checked" : "") + ro + ">" + escapeHtml(d.label) + "</label>";
       }).join("") + "</div>";
 
-    detail.innerHTML = flagAlertHtml +
-      '<div class="review-col"><h4>Official standard text</h4>' +
-        '<div class="review-para-ref no-case">' + escapeHtml(formatParaNumber(p.number)) + "</div>" +
+    detail.innerHTML =
+      '<div class="review-col"><h4>Current official text</h4>' +
         '<div class="review-text">' + officialTextHtml(p) + "</div>" +
-        '<div class="readonly-note" style="margin-top:2px;">Read-only — only updated by accepting a change from a PDF import.' + (canManageStructure ? ' <button class="icon-btn" data-del-para="' + p.id + '" style="margin-left:4px;">✕ Delete paragraph</button>' : "") + "</div>" +
+        '<div class="readonly-note" style="margin-top:2px;">Read-only — only updated by accepting a new version from a PDF import.' + (canManageStructure ? ' <button class="icon-btn" data-del-para="' + p.id + '" style="margin-left:4px;">✕ Delete paragraph</button>' : "") + "</div>" +
         '<div class="review-source-line">' + sourceLine + "</div>" +
       "</div>" +
       '<div class="review-col"><h4>Draftworx WP extract — ' + escapeHtml(meth.name) + "</h4>" +
         '<input type="text" class="review-textarea" style="min-height:auto; padding:6px 8px;" data-wpref-field placeholder="WP reference (e.g. 10.02)" value="' + escapeAttr(cov.wpReference || "") + '"' + ro + ">" +
         '<textarea class="review-textarea" data-wp-field placeholder="Paste or type the working paper procedure/extract that addresses this paragraph..."' + ro + ">" + escapeHtml(cov.wpExtract || "") + "</textarea>" +
-        wpComparisonHtml +
+        newVersionHtml +
       "</div>" +
-      '<div class="review-col"><h4>' + escapeHtml(std.code) + " · " + escapeHtml(meth.name) + " — Status &amp; Comparison</h4>" +
+      '<div class="review-col"><h4>' + escapeHtml(std.code) + " · " + escapeHtml(meth.name) + " — Status</h4>" +
         '<div class="status-pills">' + statusPillsHtml + "</div>" +
         tickMarksHtml +
         '<textarea class="review-textarea" data-notes-field placeholder="Comparison notes, reviewer commentary, evidence reference..."' + ro + ">" + escapeHtml(cov.notes || "") + "</textarea>" +
@@ -2107,63 +2088,62 @@
   // (Matched/Update Body/Renumbered/Removed) — every paragraph in a standard the PDF actually
   // covers ends up in exactly one bucket, purely from a NUMBER match plus (for renumbering) an
   // exact CONTENT match; nothing here depends on keyword text like "shall".
-  function computeFlags(fullText) {
-    var sections = buildExtractionSections(fullText);
-    var notFoundStandards = data.standards.filter(function (std) { return !sections.some(function (s) { return s.std.id === std.id; }); });
-    var flags = [];
-    var statusUpdates = []; // [{ paragraphId, autoStatus }] — applied to every methodology that can see this paragraph
-    sections.forEach(function (sec) {
-      var extracted = extractParagraphsFromSection(sec);
-      var extractedByNumber = {};
-      extracted.forEach(function (e) { extractedByNumber[e.number] = e; });
-
-      var missingCandidates = [], changedList = [];
-      sec.std.paragraphs.forEach(function (p) {
-        var match = extractedByNumber[p.number];
-        if (!match) { missingCandidates.push(p); return; }
-        var a = normalizeWs(p.text).toLowerCase(), b = normalizeWs(match.text).toLowerCase();
-        // An empty stored text (e.g. a placeholder paragraph created by Excel before the PDF
-        // was ever imported) is trivially "contained in" any string — that's not a real match,
-        // it's a paragraph that has never had its official text populated. Always flag it.
-        if (!a && b) changedList.push({ para: p, match: match });
-        else if (a !== b && b.indexOf(a) === -1 && a.indexOf(b) === -1) changedList.push({ para: p, match: match });
-        else statusUpdates.push({ paragraphId: p.id, autoStatus: "matched" });
-      });
-      var newCandidates = extracted.filter(function (e) { return !sec.std.paragraphs.some(function (p) { return p.number === e.number; }); });
-
-      // Renumber detection: a "missing" paragraph and a "new" paragraph that share essentially
-      // the same CONTENT are the same requirement moved to a different number, not one removed
-      // and an unrelated one added — pair them up by exact normalized text match.
-      var usedNew = {};
-      missingCandidates = missingCandidates.filter(function (p) {
-        var normOld = normalizeWs(p.text).toLowerCase();
-        if (!normOld) { statusUpdates.push({ paragraphId: p.id, autoStatus: "removed" }); return true; }
-        for (var i = 0; i < newCandidates.length; i++) {
-          if (usedNew[i]) continue;
-          if (normalizeWs(newCandidates[i].text).toLowerCase() === normOld) {
-            usedNew[i] = true;
-            flags.push({ id: uid("flag"), type: "renumbered", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: p.id, number: newCandidates[i].number, oldNumber: p.number, oldText: p.text, newText: newCandidates[i].text, status: "open" });
-            statusUpdates.push({ paragraphId: p.id, autoStatus: "renumbered" });
-            return false;
-          }
-        }
-        statusUpdates.push({ paragraphId: p.id, autoStatus: "removed" });
-        return true;
-      });
-      newCandidates = newCandidates.filter(function (_, i) { return !usedNew[i]; });
-
-      changedList.forEach(function (c) {
-        flags.push({ id: uid("flag"), type: "changed", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: c.para.id, number: c.para.number, oldText: c.para.text, newText: c.match.text, status: "open" });
-        statusUpdates.push({ paragraphId: c.para.id, autoStatus: "updateBody" });
-      });
-      missingCandidates.forEach(function (p) {
-        flags.push({ id: uid("flag"), type: "missing", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: p.id, number: p.number, oldText: p.text, newText: null, status: "open" });
-      });
-      newCandidates.forEach(function (e) {
-        flags.push({ id: uid("flag"), type: "new", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: null, number: e.number, oldText: null, newText: e.text, status: "open" });
-      });
+  // Only called once a standard already has an established baseline (some paragraph with a
+  // sourceDoc already set) — this is the "second PDF import" comparison: baseline vs new
+  // version, paragraph by paragraph, purely by NUMBER (with a CONTENT match to catch
+  // renumbering). Nothing here writes to the paragraph directly; it only proposes flags for the
+  // reviewer to Accept or Dismiss, and status updates that apply regardless of that decision
+  // (the status reflects the real comparison result immediately; Accept is what changes the data).
+  function computeFlagsForSection(sec, extracted, handbookName) {
+    var extractedByNumber = {};
+    extracted.forEach(function (e) { extractedByNumber[e.number] = e; });
+    var flags = [], statusUpdates = [];
+    var missingCandidates = [], changedList = [];
+    sec.std.paragraphs.forEach(function (p) {
+      var match = extractedByNumber[p.number];
+      if (!match) { missingCandidates.push(p); return; }
+      var a = normalizeWs(p.text).toLowerCase(), b = normalizeWs(match.text).toLowerCase();
+      // An empty stored text (e.g. a placeholder paragraph created by Excel before the PDF
+      // was ever imported) is trivially "contained in" any string — that's not a real match,
+      // it's a paragraph that has never had its official text populated. Always flag it.
+      if (!a && b) changedList.push({ para: p, match: match });
+      else if (a !== b && b.indexOf(a) === -1 && a.indexOf(b) === -1) changedList.push({ para: p, match: match });
+      else statusUpdates.push({ paragraphId: p.id, autoStatus: "matched" });
     });
-    return { flags: flags, notFoundStandards: notFoundStandards, statusUpdates: statusUpdates };
+    var newCandidates = extracted.filter(function (e) { return !sec.std.paragraphs.some(function (p) { return p.number === e.number; }); });
+
+    // Renumber detection: a "missing" paragraph and a "new" paragraph that share essentially
+    // the same CONTENT are the same requirement moved to a different number, not one removed
+    // and an unrelated one added — pair them up by exact normalized text match.
+    var usedNew = {};
+    missingCandidates = missingCandidates.filter(function (p) {
+      var normOld = normalizeWs(p.text).toLowerCase();
+      if (!normOld) { statusUpdates.push({ paragraphId: p.id, autoStatus: "removed" }); return true; }
+      for (var i = 0; i < newCandidates.length; i++) {
+        if (usedNew[i]) continue;
+        if (normalizeWs(newCandidates[i].text).toLowerCase() === normOld) {
+          usedNew[i] = true;
+          flags.push({ id: uid("flag"), type: "renumbered", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: p.id, number: newCandidates[i].number, oldNumber: p.number, oldText: p.text, newText: newCandidates[i].text, status: "open", source: "pdf", handbookName: handbookName });
+          statusUpdates.push({ paragraphId: p.id, autoStatus: "renumbered" });
+          return false;
+        }
+      }
+      statusUpdates.push({ paragraphId: p.id, autoStatus: "removed" });
+      return true;
+    });
+    newCandidates = newCandidates.filter(function (_, i) { return !usedNew[i]; });
+
+    changedList.forEach(function (c) {
+      flags.push({ id: uid("flag"), type: "changed", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: c.para.id, number: c.para.number, oldText: c.para.text, newText: c.match.text, status: "open", source: "pdf", handbookName: handbookName });
+      statusUpdates.push({ paragraphId: c.para.id, autoStatus: "updateBody" });
+    });
+    missingCandidates.forEach(function (p) {
+      flags.push({ id: uid("flag"), type: "missing", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: p.id, number: p.number, oldText: p.text, newText: null, status: "open", source: "pdf", handbookName: handbookName });
+    });
+    newCandidates.forEach(function (e) {
+      flags.push({ id: uid("flag"), type: "new", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: null, number: e.number, oldText: null, newText: e.text, status: "open", source: "pdf", handbookName: handbookName });
+    });
+    return { flags: flags, statusUpdates: statusUpdates };
   }
   // Auto-computed states never overwrite a reviewer's deliberate N/A or Bookmark call — those
   // are the only two states meant to be sticky across re-imports.
@@ -2190,21 +2170,25 @@
         var found = findParagraph(flag.paragraphId);
         if (found) {
           var oldText = found.para.text;
+          if (!found.para.history) found.para.history = [];
+          found.para.history.push({ number: found.para.number, text: oldText, sourceDoc: found.para.sourceDoc || null, sourceImportedAt: found.para.sourceImportedAt || null, replacedAt: new Date().toISOString(), replacedBy: identityName() });
           found.para.text = flag.newText;
           if (flag.source === "pdf" && handbookName) { found.para.sourceDoc = handbookName; found.para.sourceImportedAt = new Date().toISOString(); }
           applyAutoStatus(flag.paragraphId, "matched");
-          logChange("update", "paragraph", flag.standardCode + " " + flag.number, "Accepted an Update Body change from " + originLabel + " import — paragraph text updated to match handbook wording.",
+          logChange("update", "paragraph", flag.standardCode + " " + flag.number, "Accepted an Update Body change from " + originLabel + " import — paragraph text updated to match handbook wording; previous version kept in history.",
             { paragraphRef: flag.number, oldText: oldText, newText: flag.newText });
         }
       } else if (flag.type === "renumbered") {
         var foundR = findParagraph(flag.paragraphId);
         if (foundR) {
           var oldNumber = foundR.para.number;
+          if (!foundR.para.history) foundR.para.history = [];
+          foundR.para.history.push({ number: oldNumber, text: foundR.para.text, sourceDoc: foundR.para.sourceDoc || null, sourceImportedAt: foundR.para.sourceImportedAt || null, replacedAt: new Date().toISOString(), replacedBy: identityName() });
           foundR.para.number = flag.number;
           if (flag.source === "pdf" && handbookName) { foundR.para.sourceDoc = handbookName; foundR.para.sourceImportedAt = new Date().toISOString(); }
           sortParagraphs(foundR.std);
           applyAutoStatus(foundR.para.id, "matched");
-          logChange("update", "paragraph", flag.standardCode + " " + oldNumber + " → " + flag.number, "Accepted a Renumbered change from " + originLabel + " import — paragraph number updated (text unchanged).",
+          logChange("update", "paragraph", flag.standardCode + " " + oldNumber + " → " + flag.number, "Accepted a Renumbered change from " + originLabel + " import — paragraph number updated (text unchanged); previous number kept in history.",
             { paragraphRef: flag.number, oldNumber: oldNumber, newNumber: flag.number });
         }
       } else if (flag.type === "new") {
@@ -2254,11 +2238,7 @@
     var canResolve = can("senior");
     var originLabel = f.source === "excel" ? "Excel WP mapping" : "PDF";
     if (f.type === "changed") {
-      var diff = renderSideBySideDiff(f.oldText, f.newText);
-      return '<div class="diff-columns">' +
-          '<div><div class="diff-col-label">Currently stored</div><div class="diff-block">' + diff.left + "</div></div>" +
-          '<div><div class="diff-col-label">Found in ' + escapeHtml(originLabel) + '</div><div class="diff-block">' + diff.right + "</div></div>" +
-        "</div>" +
+      return '<div class="diff-col-label">New version (from ' + escapeHtml(originLabel) + ")</div><div class=\"diff-block\">" + renderWordDiff(f.oldText, f.newText) + "</div>" +
         '<div class="readonly-note"><span class="diff-del" style="padding:0 2px;">strikethrough</span> = removed, <span class="diff-ins" style="padding:0 2px;">highlight</span> = added.</div>' +
         (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Accept</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>' : "");
     }
@@ -2380,50 +2360,75 @@
         var content = await page.getTextContent();
         fullText += pageItemsToText(content.items) + "\n";
       }
-      progressText.textContent = "Populating Official Standard Text...";
+      progressText.textContent = "Comparing against the tracker...";
       var handbookName = normalizeWs(document.getElementById("f-pdf-handbook-name").value) || file.name;
       var importedAt = new Date().toISOString();
       // A standard has to already exist for buildExtractionSections to know to look for it — if
       // it was deleted (or never added), scan the raw text for its code independently first.
       var newlyCreatedStandards = discoverNewStandardsInPdf(fullText);
-      // The PDF import has exactly one job: write the handbook's own wording into Official
-      // Standard Text for every paragraph number it contains, creating the paragraph if it
-      // doesn't exist yet. No diffing against whatever was there before, no flags, no review
-      // queue — the PDF is the trusted source for this column, so it's applied directly.
-      // Comparing that text against the Excel-sourced WP extract is a separate step, done later.
       var sections = buildExtractionSections(fullText);
       var notFoundStandards = data.standards.filter(function (std) { return !sections.some(function (s) { return s.std.id === std.id; }); });
-      var createdCount = 0, updatedCount = 0;
+      var createdCount = 0, updatedCount = 0, flaggedCount = 0;
       var touchedStandards = []; // for the diagnostic log + so we can jump to a methodology that can actually see the result
+      var newPdfFlags = [];
       sections.forEach(function (sec) {
-        var stdCreated = 0, stdUpdated = 0;
-        extractParagraphsFromSection(sec).forEach(function (e) {
-          var existing = sec.std.paragraphs.find(function (p) { return p.number === e.number; });
-          if (existing) {
-            existing.text = e.text;
-            existing.source = "pdf";
-            existing.sourceDoc = handbookName;
-            existing.sourceImportedAt = importedAt;
-            updatedCount++; stdUpdated++;
-          } else {
-            var coverage = {};
-            data.methodologies.forEach(function (m) { coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
-            sec.std.paragraphs.push({ id: uid("para"), number: e.number, text: e.text, source: "pdf", sourceDoc: handbookName, sourceImportedAt: importedAt, coverage: coverage });
-            createdCount++; stdCreated++;
-          }
-        });
-        sortParagraphs(sec.std);
-        if (stdCreated || stdUpdated) touchedStandards.push({ std: sec.std, created: stdCreated, updated: stdUpdated });
+        var extracted = extractParagraphsFromSection(sec);
+        // A standard with NO paragraph carrying a sourceDoc yet has never had a PDF baseline —
+        // this import establishes it directly, the same way a brand-new standard would be
+        // populated. Once a baseline exists, a later import is a NEW VERSION: nothing gets
+        // overwritten automatically, every difference is proposed as a flag for the reviewer to
+        // Accept (which then updates the baseline and files the old version in that paragraph's
+        // history) or Dismiss (leaves the baseline exactly as it was).
+        var hasBaseline = sec.std.paragraphs.some(function (p) { return !!p.sourceDoc; });
+        var stdCreated = 0, stdUpdated = 0, stdFlagged = 0;
+        if (!hasBaseline) {
+          extracted.forEach(function (e) {
+            var existing = sec.std.paragraphs.find(function (p) { return p.number === e.number; });
+            if (existing) {
+              existing.text = e.text;
+              existing.source = "pdf";
+              existing.sourceDoc = handbookName;
+              existing.sourceImportedAt = importedAt;
+              updatedCount++; stdUpdated++;
+            } else {
+              var coverage = {};
+              data.methodologies.forEach(function (m) { coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
+              sec.std.paragraphs.push({ id: uid("para"), number: e.number, text: e.text, source: "pdf", sourceDoc: handbookName, sourceImportedAt: importedAt, coverage: coverage });
+              createdCount++; stdCreated++;
+            }
+          });
+          sortParagraphs(sec.std);
+          // A first-time baseline has nothing to be out of sync with yet — but only for the
+          // paragraphs this PDF actually contains. A paragraph this import never even found
+          // (e.g. existing manually-entered content the PDF doesn't cover) has no baseline yet
+          // either way and must be left alone, not marked Matched against a PDF it isn't in.
+          extracted.forEach(function (e) {
+            var touched = sec.std.paragraphs.find(function (p) { return p.number === e.number; });
+            if (touched) applyAutoStatus(touched.id, "matched");
+          });
+        } else {
+          var result = computeFlagsForSection(sec, extracted, handbookName);
+          result.flags.forEach(function (f) { newPdfFlags.push(f); });
+          result.statusUpdates.forEach(function (u) { applyAutoStatus(u.paragraphId, u.autoStatus); });
+          stdFlagged = result.flags.length;
+          flaggedCount += stdFlagged;
+        }
+        if (stdCreated || stdUpdated || stdFlagged) touchedStandards.push({ std: sec.std, created: stdCreated, updated: stdUpdated, flagged: stdFlagged, isNewVersion: hasBaseline });
       });
-      data.lastImport = { fileName: file.name, handbookName: handbookName, importedAt: importedAt, importedBy: identityName(), pageCount: pdf.numPages, notFoundStandards: notFoundStandards.map(function (s) { return s.code; }), createdCount: createdCount, updatedCount: updatedCount, createdStandards: newlyCreatedStandards.map(function (s) { return s.code; }) };
-      logChange("import", "standards", file.name, 'Imported standards PDF "' + file.name + '" (' + handbookName + ", " + pdf.numPages + " pages) — populated Official Standard Text for " + createdCount + " new and " + updatedCount + " existing paragraph(s)." +
+      // A fresh PDF import's comparison fully supersedes whatever the previous PDF import
+      // flagged, but must not clobber still-open flags raised by an Excel WP-mapping import.
+      data.pendingFlags = (data.pendingFlags || []).filter(function (f) { return f.source && f.source !== "pdf"; }).concat(newPdfFlags);
+      data.lastImport = { fileName: file.name, handbookName: handbookName, importedAt: importedAt, importedBy: identityName(), pageCount: pdf.numPages, notFoundStandards: notFoundStandards.map(function (s) { return s.code; }), createdCount: createdCount, updatedCount: updatedCount, flaggedCount: flaggedCount, createdStandards: newlyCreatedStandards.map(function (s) { return s.code; }) };
+      state.bannerDismissed = false;
+      state.reviewRevealed = {};
+      logChange("import", "standards", file.name, 'Imported standards PDF "' + file.name + '" (' + handbookName + ", " + pdf.numPages + " pages) — baselined " + createdCount + " new and " + updatedCount + " existing paragraph(s); flagged " + flaggedCount + " difference(s) against the existing baseline for review." +
         (newlyCreatedStandards.length ? " Added " + newlyCreatedStandards.length + " new standard(s) found in the PDF but not yet in the tracker: " + newlyCreatedStandards.map(function (s) { return s.code + " (" + s.family + ")"; }).join(", ") + "." : ""));
 
       // Diagnostic: exactly what got written and where, so a "nothing" report can be checked
       // against the actual saved data rather than guessed at.
       if (newlyCreatedStandards.length) console.log("[PDF import] new standards created from the PDF text (weren't in the tracker before):", newlyCreatedStandards.map(function (s) { return s.code + " -> family " + s.family; }));
-      console.log("[PDF import] handbook:", handbookName, "| pages:", pdf.numPages, "| created:", createdCount, "| updated:", updatedCount);
-      console.log("[PDF import] standards touched:", touchedStandards.map(function (t) { return t.std.code + " (family " + t.std.family + "): +" + t.created + " new, " + t.updated + " updated, " + t.std.paragraphs.length + " total paragraphs now"; }));
+      console.log("[PDF import] handbook:", handbookName, "| pages:", pdf.numPages, "| baselined:", createdCount + updatedCount, "| flagged:", flaggedCount);
+      console.log("[PDF import] standards touched:", touchedStandards.map(function (t) { return t.std.code + " (family " + t.std.family + "): " + (t.isNewVersion ? "NEW VERSION — " + t.flagged + " difference(s) flagged" : "BASELINE — +" + t.created + " new, " + t.updated + " updated") + ", " + t.std.paragraphs.length + " total paragraphs now"; }));
       console.log("[PDF import] sample of saved paragraphs:", touchedStandards.slice(0, 3).map(function (t) {
         return { standard: t.std.code, sample: t.std.paragraphs.slice(0, 3).map(function (p) { return { number: p.number, textPreview: (p.text || "").slice(0, 80), sourceDoc: p.sourceDoc }; }) };
       }));
@@ -2446,9 +2451,10 @@
         if (candidateMeth) state.activeMethodologyId = candidateMeth.id;
       }
       persist();
-      renderCoverageView(); renderDashboard(); renderAuditView();
-      if (createdCount || updatedCount) switchToView("coverage");
-      alert("Imported " + handbookName + ": " + createdCount + " new paragraph(s) created, " + updatedCount + " existing paragraph(s) updated with the handbook's official text." +
+      renderCoverageView(); renderDashboard(); renderAuditView(); renderReviewView(); renderNotifyBanner();
+      if (createdCount || updatedCount || flaggedCount) switchToView("coverage");
+      alert("Imported " + handbookName + ": " + createdCount + " new paragraph(s) baselined, " + updatedCount + " existing baseline paragraph(s) updated (first import for that standard)." +
+        (flaggedCount ? " " + flaggedCount + " difference(s) flagged against the existing baseline — review and Accept/Dismiss each on Coverage Review (or Standards Review)." : "") +
         (newlyCreatedStandards.length ? " Added " + newlyCreatedStandards.length + " new standard(s) found in the PDF: " + newlyCreatedStandards.map(function (s) { return s.code; }).join(", ") + " — double-check the family/title on each (Coverage Review > ✎ Edit standard)." : "") +
         (touchedStandards.length ? " Standards touched: " + touchedStandards.map(function (t) { return t.std.code; }).join(", ") + "." : " No matching standard headers were found in this PDF, so nothing could be written — check the standard codes in Coverage Review match the handbook's wording.") +
         (notFoundStandards.length ? " Not found in this PDF: " + notFoundStandards.map(function (s) { return s.code; }).join(", ") + "." : "") +
