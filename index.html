@@ -32,15 +32,25 @@
     --cat-1: #2196f3; --cat-2: #f59e0b; --cat-3: #22c55e; --cat-4: #6c63ff;
     --cat-5: #ef4444; --cat-6: #06b6d4; --cat-7: #ec4899; --cat-8: #64748b;
 
-    --status-good:      #22c55e;
-    --status-warning:   #f59e0b;
-    --status-critical:  #ef4444;
-    --status-investigate:  #6c63ff;
-    --status-na:        #94a3b8;
-    --status-good-text:     #15803d;
-    --status-warning-text:  #92400e;
-    --status-critical-text: #b91c1c;
-    --status-investigate-text: #6d28d9;
+    /* The comparison status a paragraph is automatically given from the last PDF import
+       (Matched/Update Body/Renumbered/Removed/New Paragraph), plus the manual-only overrides
+       (Not Sure/N/A/Bookmark) a reviewer can set when the automation can't decide. */
+    --status-matched:        #16a34a;
+    --status-updatebody:     #d97706;
+    --status-newparagraph:   #2196f3;
+    --status-renumbered:     #7c3aed;
+    --status-removed:        #dc2626;
+    --status-notsure:        #6b7280;
+    --status-na:             #94a3b8;
+    --status-bookmark:       #0891b2;
+    --status-matched-text:      #15803d;
+    --status-updatebody-text:   #92400e;
+    --status-newparagraph-text: #1d4ed8;
+    --status-renumbered-text:   #6d28d9;
+    --status-removed-text:      #b91c1c;
+    --status-notsure-text:      #374151;
+    --status-na-text:           #475569;
+    --status-bookmark-text:     #0e7490;
     --success-text:  #15803d;
 
     /* Deliberately subtle — just barely lighter/darker than the card itself, so nesting depth
@@ -53,39 +63,6 @@
     --radius: 10px;
     --shadow: 0 1px 2px rgba(15,23,42,0.05), 0 6px 18px rgba(15,23,42,0.07);
   }
-  @media (prefers-color-scheme: dark) {
-    :root:where(:not([data-theme="light"])) {
-      color-scheme: dark;
-      --surface-page: #0f172a; --surface-1: #1e293b; --surface-2: #334155; --surface-hover: #3f4f68;
-      --text-primary: #e2e8f0; --text-secondary: #94a3b8; --text-muted: #64748b;
-      --border: #334155; --border-strong: #475569;
-      --header-bg: #0f172a; --header-text: #e2e8f0; --header-text-muted: #94a3b8;
-      --header-border: #334155; --header-hover-bg: #1e293b;
-      --cat-1: #4f8ef7; --cat-2: #f59e0b; --cat-3: #22c55e; --cat-4: #6c63ff;
-      --cat-5: #ef4444; --cat-6: #22d3ee; --cat-7: #f472b6; --cat-8: #94a3b8;
-      --status-good: #22c55e; --status-warning: #f59e0b; --status-critical: #ef4444; --status-investigate: #6c63ff; --status-na: #64748b;
-      --status-good-text: #22c55e; --status-warning-text: #f59e0b; --status-critical-text: #ef4444; --status-investigate-text: #6c63ff;
-      --success-text: #22c55e;
-      --level-0-bg: #1e293b; --level-1-bg: #253144; --level-2-bg: #2c394c; --level-3-bg: #334155;
-      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 22px rgba(0,0,0,0.35);
-    }
-  }
-  :root[data-theme="dark"] {
-    color-scheme: dark;
-    --surface-page: #0f172a; --surface-1: #1e293b; --surface-2: #334155; --surface-hover: #3f4f68;
-    --text-primary: #e2e8f0; --text-secondary: #94a3b8; --text-muted: #64748b;
-    --border: #334155; --border-strong: #475569;
-    --header-bg: #0f172a; --header-text: #e2e8f0; --header-text-muted: #94a3b8;
-    --header-border: #334155; --header-hover-bg: #1e293b;
-    --cat-1: #4f8ef7; --cat-2: #f59e0b; --cat-3: #22c55e; --cat-4: #6c63ff;
-    --cat-5: #ef4444; --cat-6: #22d3ee; --cat-7: #f472b6; --cat-8: #94a3b8;
-    --status-good: #22c55e; --status-warning: #f59e0b; --status-critical: #ef4444; --status-investigate: #6c63ff; --status-na: #64748b;
-    --status-good-text: #22c55e; --status-warning-text: #f59e0b; --status-critical-text: #ef4444; --status-investigate-text: #6c63ff;
-    --success-text: #22c55e;
-    --level-0-bg: #1e293b; --level-1-bg: #253144; --level-2-bg: #2c394c; --level-3-bg: #334155;
-    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 22px rgba(0,0,0,0.35);
-  }
-
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--surface-page); color: var(--text-primary); }
@@ -114,7 +91,7 @@
   .btn:hover { background: var(--surface-hover); }
   .btn.primary { background: var(--cat-1); border-color: var(--cat-1); color: #fff; }
   .btn.primary:hover { filter: brightness(1.08); }
-  .btn.danger { color: var(--status-critical-text); border-color: var(--status-critical); }
+  .btn.danger { color: var(--status-removed-text); border-color: var(--status-removed); }
   .btn.danger:hover { background: rgba(239,68,68,0.10); }
   .btn.icon-only { padding: 6px 10px; }
   .btn:disabled { opacity: .5; cursor: not-allowed; }
@@ -151,7 +128,7 @@
   .page-head h2 { margin: 0 0 4px; font-size: 18px; }
   .page-head p { margin: 0; font-size: 13px; color: var(--text-secondary); }
 
-  .notify-banner { display: none; align-items: center; gap: 12px; background: rgba(245,158,11,0.12); border: 1px solid var(--status-warning); color: var(--text-primary); padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
+  .notify-banner { display: none; align-items: center; gap: 12px; background: rgba(33,150,243,0.10); border: 1px solid var(--cat-1); color: var(--text-primary); padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
 
   .family-panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 12px; }
   .family-panel h3 { margin: 0 0 2px; font-size: 14px; }
@@ -195,20 +172,19 @@
      sub-paragraphs are only in the DOM once the tree-toggle chevron reveals them, nested
      inside a .para-children wrapper (which also supplies the per-level indent). Each nesting
      level gets its own distinct background tint so hierarchy depth is unmistakable at a
-     glance — the left border is a separate signal that always reflects the CURRENT status
-     (fixed colors, same in both themes, so status reads consistently regardless of theme). */
+     glance — the left border is a separate signal that always reflects the CURRENT status. */
   .para-item { background: var(--level-0-bg) !important; border: 1px solid var(--border); border-left: 4px solid #6b7280 !important; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 8px; overflow: hidden; }
   .para-item.level-1 { background: var(--level-1-bg) !important; }
   .para-item.level-2 { background: var(--level-2-bg) !important; }
   .para-item.level-3 { background: var(--level-3-bg) !important; }
-  /* !important because a paragraph can also carry .para-item--flagged (open PDF-diff flag) —
-     status must win regardless of what else is going on with the row, per explicit requirement
-     that the border always reflects current status and nothing else. */
-  .para-item.status-covered { border-left-color: #16a34a !important; }
-  .para-item.status-needsUpdate { border-left-color: #d97706 !important; }
-  .para-item.status-notAddressed { border-left-color: #dc2626 !important; }
-  .para-item.status-notSure { border-left-color: #7c3aed !important; }
-  .para-item.status-na { border-left-color: #6b7280 !important; }
+  .para-item.status-matched { border-left-color: #16a34a !important; }
+  .para-item.status-updateBody { border-left-color: #d97706 !important; }
+  .para-item.status-newParagraph { border-left-color: #2196f3 !important; }
+  .para-item.status-renumbered { border-left-color: #7c3aed !important; }
+  .para-item.status-removed { border-left-color: #dc2626 !important; }
+  .para-item.status-notSure { border-left-color: #6b7280 !important; }
+  .para-item.status-na { border-left-color: #94a3b8 !important; }
+  .para-item.status-bookmark { border-left-color: #0891b2 !important; }
   /* A paragraph that's never actually been reviewed defaults internally to "Not Sure" (purple
      dot/pill), but its border should read as grey/unset until someone has actually looked at
      it — .para-item--unset (added when coverage.updatedAt is still null) overrides that. Declared
@@ -225,17 +201,20 @@
   .para-ref { color: var(--cat-1); font-weight: 600; font-size: 13px; flex-shrink: 0; white-space: nowrap; }
   .para-preview { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--text-secondary); }
   .source-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface-2); text-transform: uppercase; letter-spacing: .03em; flex-shrink: 0; }
-  .source-badge--excel { color: var(--status-good-text); border-color: var(--status-good); }
+  .source-badge--excel { color: var(--status-matched-text); border-color: var(--status-matched); }
   .source-badge--pdf { color: var(--cat-4); border-color: var(--cat-4); }
   .source-badge--manual { color: var(--text-secondary); border-color: var(--border-strong); }
   .para-provenance { padding: 0 14px 8px 52px; margin-top: -6px; font-size: 11px; color: var(--text-muted); }
   .status-dot-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); flex-shrink: 0; white-space: nowrap; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
   .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
-  .status-dot--covered { background: var(--status-good); }
-  .status-dot--needsUpdate { background: var(--status-warning); }
-  .status-dot--notAddressed { background: var(--status-critical); }
-  .status-dot--notSure { background: var(--status-investigate); }
+  .status-dot--matched { background: var(--status-matched); }
+  .status-dot--updateBody { background: var(--status-updatebody); }
+  .status-dot--newParagraph { background: var(--status-newparagraph); }
+  .status-dot--renumbered { background: var(--status-renumbered); }
+  .status-dot--removed { background: var(--status-removed); }
+  .status-dot--notSure { background: var(--status-notsure); }
   .status-dot--na { background: var(--status-na); }
+  .status-dot--bookmark { background: var(--status-bookmark); }
 
   .review-card { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--border); background: var(--surface-1); }
   .review-col { padding: 14px 16px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
@@ -244,18 +223,26 @@
   .review-col h4 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); }
   .no-case { text-transform: none; }
   .review-text { font-size: 13px; color: var(--text-primary); white-space: pre-wrap; flex: 1; }
+  .official-text-placeholder { color: var(--text-muted); font-style: italic; }
+  .import-step-badge { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--cat-1); color: #fff; font-size: 11px; font-weight: 700; margin-right: 8px; flex-shrink: 0; }
+  .import-order-note { font-size: 12px; color: var(--cat-1); margin: -4px 0 12px; }
   .review-textarea { width: 100%; min-height: 84px; border: 1px solid var(--border); background: var(--surface-1); border-radius: 6px; padding: 8px; font-size: 13px; resize: vertical; }
   .status-pills { display: flex; gap: 6px; flex-wrap: wrap; }
   .status-pill { border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; font-size: 12px; cursor: pointer; background: var(--surface-1); }
-  .status-pill.active-covered { background: rgba(34,197,94,0.15); border-color: var(--status-good); color: var(--status-good-text); }
-  .status-pill.active-needsUpdate { background: rgba(245,158,11,0.15); border-color: var(--status-warning); color: var(--status-warning-text); }
-  .status-pill.active-notAddressed { background: rgba(239,68,68,0.15); border-color: var(--status-critical); color: var(--status-critical-text); }
-  .status-pill.active-notSure { background: rgba(108,99,255,0.15); border-color: var(--status-investigate); color: var(--status-investigate-text); }
-  .status-pill.active-na { background: var(--surface-1); border-color: var(--border-strong); color: var(--text-muted); }
-  .overlap-hint { font-size: 11px; color: var(--text-muted); }
+  .status-pill.active-matched { background: rgba(22,163,74,0.12); border-color: var(--status-matched); color: var(--status-matched-text); }
+  .status-pill.active-updateBody { background: rgba(217,119,6,0.12); border-color: var(--status-updatebody); color: var(--status-updatebody-text); }
+  .status-pill.active-newParagraph { background: rgba(33,150,243,0.12); border-color: var(--status-newparagraph); color: var(--status-newparagraph-text); }
+  .status-pill.active-renumbered { background: rgba(124,58,237,0.12); border-color: var(--status-renumbered); color: var(--status-renumbered-text); }
+  .status-pill.active-removed { background: rgba(220,38,38,0.12); border-color: var(--status-removed); color: var(--status-removed-text); }
+  .status-pill.active-notSure { background: var(--surface-2); border-color: var(--status-notsure); color: var(--status-notsure-text); }
+  .status-pill.active-na { background: var(--surface-1); border-color: var(--border-strong); color: var(--status-na-text); }
+  .status-pill.active-bookmark { background: rgba(8,145,178,0.12); border-color: var(--status-bookmark); color: var(--status-bookmark-text); }
   .save-caption { font-size: 11px; color: var(--text-muted); margin-top: auto; }
-  .flag-alert { grid-column: 1 / -1; background: rgba(245,158,11,0.12); border-bottom: 1px solid var(--status-warning); color: var(--text-primary); padding: 8px 14px; font-size: 12px; cursor: pointer; }
-  .flag-alert:hover { background: rgba(245,158,11,0.18); }
+  .review-para-ref { font-size: 12px; color: var(--text-muted); }
+  .review-source-line { font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px; }
+  .wp-diff-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .flag-alert-panel { grid-column: 1 / -1; background: rgba(33,150,243,0.08); border-bottom: 1px solid var(--cat-1); color: var(--text-primary); padding: 12px 14px; font-size: 13px; }
+  .flag-alert-head { font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
   .tick-marks-label { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-top: 4px; }
   .tick-marks-grid { display: flex; flex-wrap: wrap; gap: 6px 12px; }
   .tick-mark-item { display: flex; align-items: center; gap: 5px; font-size: 12px; }
@@ -265,13 +252,16 @@
   .flag-row { padding: 12px 0; border-top: 1px solid var(--border); }
   .flag-row:first-of-type { border-top: none; }
   .flag-number { font-weight: 600; margin-bottom: 4px; }
-  .flag-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 8px; border: 1px solid var(--border); }
-  .flag-new { color: var(--cat-1); }
-  .flag-changed { color: var(--status-warning-text); }
-  .flag-missing { color: var(--text-muted); }
+  .flag-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 8px; border: 1px solid var(--border); cursor: pointer; }
+  .flag-new { color: var(--status-newparagraph-text); border-color: var(--status-newparagraph); }
+  .flag-changed { color: var(--status-updatebody-text); border-color: var(--status-updatebody); }
+  .flag-renumbered { color: var(--status-renumbered-text); border-color: var(--status-renumbered); }
+  .flag-missing { color: var(--status-removed-text); border-color: var(--status-removed); }
+  .new-flag-panel { border: 1px dashed var(--cat-1); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 8px; background: rgba(33,150,243,0.06); }
+  .new-flag-panel .flag-row:first-of-type { border-top: none; }
   .diff-block { white-space: pre-wrap; font-size: 13px; line-height: 1.5; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; margin: 6px 0; max-height: 200px; overflow-y: auto; }
-  .diff-del { color: var(--status-critical-text); text-decoration: line-through; background: rgba(239,68,68,0.12); border-radius: 2px; }
-  .diff-ins { color: var(--status-good-text); text-decoration: underline; background: rgba(34,197,94,0.12); border-radius: 2px; }
+  .diff-del { color: #b91c1c; text-decoration: line-through; background: rgba(239,68,68,0.12); border-radius: 2px; }
+  .diff-ins { color: #15803d; background: rgba(34,197,94,0.12); border-radius: 2px; }
   .diff-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .diff-col-label { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-bottom: 4px; }
   @media (max-width: 760px) { .diff-columns { grid-template-columns: 1fr; } }
@@ -315,7 +305,6 @@
       <input type="text" id="search-input" placeholder="Search paragraphs, standards...">
     </div>
     <span class="identity-badge" id="identity-badge"></span>
-    <button class="btn icon-only" id="theme-toggle" title="Toggle theme"></button>
     <button class="btn" id="export-btn">Export JSON</button>
     <button class="btn" id="import-btn">Import JSON</button>
     <input type="file" id="import-file" accept="application/json" hidden>
@@ -347,7 +336,7 @@
       <section class="view" id="view-coverage">
         <div class="page-head">
           <h2>Coverage Review</h2>
-          <p>Compare the official standard text against the Draftworx WP extract for <strong id="coverage-active-meth-name"></strong>, and record the compliance status.</p>
+          <p>Compare the official standard text (from the handbook PDF) against the Draftworx WP extract (from Excel) for <strong id="coverage-active-meth-name"></strong> — status is set automatically from that comparison.</p>
         </div>
         <div class="filter-bar">
           <select id="filter-family">
@@ -355,11 +344,14 @@
           </select>
           <select id="filter-status">
             <option value="all">All statuses</option>
-            <option value="covered">Covered</option>
-            <option value="needsUpdate">Needs Update</option>
-            <option value="notAddressed">Not Addressed</option>
+            <option value="matched">Matched</option>
+            <option value="updateBody">Update Body</option>
+            <option value="newParagraph">New Paragraph</option>
+            <option value="renumbered">Renumbered</option>
+            <option value="removed">Removed</option>
             <option value="notSure">Not Sure</option>
             <option value="na">N/A</option>
+            <option value="bookmark">Bookmark</option>
           </select>
           <div class="spacer"></div>
           <button class="btn" id="add-standard-btn">+ Add standard</button>
@@ -382,12 +374,16 @@
       <section class="view" id="view-review">
         <div class="page-head">
           <h2>Standards Review</h2>
-          <p>Import a text-based IRBA/IAASB handbook PDF to compare it against your stored paragraphs. Extraction is best-effort text matching &mdash; always review before applying a change.</p>
+          <p>Import in order: first the handbook PDF (writes the Official Standard Text directly, no review step), then the Excel WP mapping (writes the WP Extract). The two are compared afterwards, once both are populated.</p>
         </div>
         <div class="family-panel">
-          <h3>Compare against the IRBA/IAASB handbook (PDF)</h3>
-          <div class="fp-sub">Compares numbered requirement paragraphs (not explanatory/application material) against what's already in the tracker. Flags New / Changed / Removed paragraphs for your review &mdash; nothing is applied automatically, every change needs your approval.</div>
+          <h3><span class="import-step-badge">1</span>Import the IRBA/IAASB handbook (PDF)</h3>
+          <div class="fp-sub">Reads numbered requirement paragraphs (not explanatory/application material) straight out of the PDF and writes them into Official Standard Text on Coverage Review, creating the paragraph if it doesn't exist yet &mdash; applied immediately, no review queue. This is the only thing PDF import does; comparing it against your Excel-sourced WP extract happens separately, after both are in place.</div>
           <div class="readonly-note" id="last-import-info" style="margin-bottom:14px;">No standards PDF has been imported yet.</div>
+          <div class="field" style="max-width:360px; margin-bottom:10px;">
+            <label>Handbook name / edition (shown as the source on each paragraph)</label>
+            <input type="text" id="f-pdf-handbook-name" placeholder="e.g. IAASB 2025 Handbook Volume 4">
+          </div>
           <div>
             <button class="btn primary" id="import-pdf-btn">Import Standards PDF</button>
             <input type="file" id="import-pdf-file" accept="application/pdf" hidden>
@@ -398,7 +394,7 @@
           </div>
         </div>
         <div class="family-panel">
-          <h3>Import WP mapping (Excel)</h3>
+          <h3><span class="import-step-badge">2</span>Import WP mapping (Excel)</h3>
           <div class="fp-sub">Populates the Draftworx WP extract, WP reference, comments and expected-compliance-area tick marks for each paragraph directly from your existing Excel mapping file &mdash; applied immediately so you can compare it against the standard text. Supports multi-level paragraph references split across separate columns (main number, letter, roman numeral, sub-letter, sub-sub level), combined into one reference like "25(d)(iii)". Not sure of the exact layout? Download the template below.</div>
           <button class="btn primary" id="import-excel-btn">Import WP Mapping (Excel)</button>
           <button class="btn" id="download-excel-template-btn">Download Excel Template</button>
@@ -431,6 +427,7 @@
           </select>
           <input type="text" id="audit-search" placeholder="Search audit trail...">
           <div class="spacer"></div>
+          <button class="btn" id="export-audit-csv-btn">Export CSV</button>
           <button class="btn danger" id="clear-audit-btn" style="display:none;">Clear Audit Trail</button>
         </div>
         <div class="table-scroll">
@@ -589,8 +586,9 @@
       <div class="readonly-note" id="excel-import-summary"></div>
       <div class="field" id="excel-sheet-wrap" style="display:none;"><label>Sheet</label><select id="f-excel-sheet"></select></div>
       <div class="field"><label>Import into methodology</label><select id="f-excel-methodology"></select></div>
+      <div class="import-order-note" id="excel-order-note" style="display:none;">⚠ Step 1 (import the handbook PDF) hasn't been done yet for this methodology's standards — Official Standard Text will show a placeholder until you do.</div>
       <div class="readonly-note" id="excel-detected-columns" style="white-space:pre-wrap;"></div>
-      <div class="readonly-note" id="excel-missing-columns" style="display:none; color:var(--status-critical);"></div>
+      <div class="readonly-note" id="excel-missing-columns" style="display:none; color:var(--status-removed);"></div>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
@@ -604,7 +602,6 @@
   "use strict";
 
   var STORAGE_KEY = "dwx-standards-tracker-v1";
-  var THEME_KEY = "dwx-standards-tracker-theme";
   var IDENTITY_KEY = "dwx-standards-tracker-identity";
   var CATS = ["--cat-1","--cat-2","--cat-3","--cat-4","--cat-5","--cat-6","--cat-7","--cat-8"];
   var FAMILIES = ["ISA", "ISAE 3000", "ISRS 4400", "ISRS 4410", "ISRE 2400", "LPC Rules", "PPRA Rules"];
@@ -619,17 +616,30 @@
     "AUP": ["ISRS 4400"]
   };
 
+  // The status shown per paragraph is now the automated PDF-vs-tracker COMPARISON state, not a
+  // manual compliance judgment: matched/updateBody/newParagraph/renumbered/removed are set
+  // automatically whenever a handbook PDF is imported (see computeFlags/applyPdfStatusUpdates);
+  // notSure/na/bookmark are the only values a reviewer sets manually, and are "sticky" — an
+  // automatic recomputation never overwrites na/bookmark (notSure is just the no-data-yet default).
   var STATUS = {
-    covered:      { label: "Covered",       icon: "✓", varName: "--status-good" },
-    needsUpdate:  { label: "Needs Update",  icon: "◐", varName: "--status-warning" },
-    notAddressed: { label: "Not Addressed", icon: "✕", varName: "--status-critical" },
-    notSure:      { label: "Not Sure",      icon: "?", varName: "--status-investigate" },
-    na:           { label: "N/A",           icon: "–", varName: "--status-na" }
+    matched:      { label: "Matched",       icon: "✓", varName: "--status-matched" },
+    updateBody:   { label: "Update Body",   icon: "◐", varName: "--status-updatebody" },
+    newParagraph: { label: "New Paragraph", icon: "✚", varName: "--status-newparagraph" },
+    renumbered:   { label: "Renumbered",    icon: "⇄", varName: "--status-renumbered" },
+    removed:      { label: "Removed",       icon: "✕", varName: "--status-removed" },
+    notSure:      { label: "Not Sure",      icon: "?", varName: "--status-notsure" },
+    na:           { label: "N/A",           icon: "–", varName: "--status-na" },
+    bookmark:     { label: "Bookmark",      icon: "⚑", varName: "--status-bookmark" }
   };
-  var STATUS_ORDER = ["covered", "needsUpdate", "notAddressed", "notSure", "na"];
-  // Direct semantic equivalents for the previous 4-option scheme, used both to migrate values
-  // already saved by users and to re-map the seed dataset's literal demo status values.
-  var LEGACY_STATUS_MAP = { full: "covered", partial: "needsUpdate", none: "notAddressed" };
+  // "New Paragraph" isn't offered as a manual pill choice — it's only ever set automatically the
+  // moment a PDF "new" flag is accepted, since manually claiming a paragraph is "new" makes no sense.
+  var STATUS_ORDER = ["matched", "updateBody", "renumbered", "removed", "notSure", "na", "bookmark"];
+  // Best-effort carry-over so existing saved data doesn't just collapse to "Not Sure" wholesale —
+  // approximate old compliance judgments as the closest new comparison state.
+  var LEGACY_STATUS_MAP = {
+    full: "matched", partial: "updateBody", none: "removed",
+    covered: "matched", needsUpdate: "updateBody", notAddressed: "removed"
+  };
 
   var TICK_MARK_DEFS = [
     { key: "firmManual", label: "Firm ISQM 1 manual", keywords: ["firm isqm", "isqm 1", "isqm1", "sqm1", "firm manual"] },
@@ -668,20 +678,6 @@
     return String(str).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
   }
   function escapeAttr(str) { return escapeHtml(str); }
-
-  function textOverlapPct(a, b) {
-    var wa = normalizeWs(a).toLowerCase().split(/\W+/).filter(Boolean);
-    var wb = normalizeWs(b).toLowerCase().split(/\W+/).filter(Boolean);
-    if (!wa.length || !wb.length) return null;
-    var setA = {}, setB = {};
-    wa.forEach(function (w) { setA[w] = true; });
-    wb.forEach(function (w) { setB[w] = true; });
-    var intersection = 0, unionSet = {};
-    Object.keys(setA).forEach(function (w) { unionSet[w] = true; if (setB[w]) intersection++; });
-    Object.keys(setB).forEach(function (w) { unionSet[w] = true; });
-    var union = Object.keys(unionSet).length;
-    return union ? Math.round((intersection / union) * 100) : null;
-  }
 
   function wordDiff(oldStr, newStr) {
     var a = normalizeWs(oldStr).split(/(\s+)/).filter(function (t) { return t.length; });
@@ -774,6 +770,12 @@
     if (parts.length <= 2) return parts.join(".");
     return parts.slice(0, 2).join(".") + parts.slice(2).map(function (p) { return "(" + p + ")"; }).join("");
   }
+  // The intended workflow is PDF first (populates official text) then Excel (populates the WP
+  // extract) — a paragraph can still exist with no official text yet (e.g. created by an Excel
+  // row that left that column blank), so show this instead of a blank space, pointing at the fix.
+  function officialTextHtml(p) {
+    return p.text ? escapeHtml(p.text) : '<span class="official-text-placeholder">Import handbook PDF to populate</span>';
+  }
   // Builds a real parent/child tree out of a flat paragraph list, using each paragraph's own
   // dot-hierarchy (e.g. "2400.25.d.iii"'s nearest existing ancestor is "2400.25.d", then
   // "2400.25"). childrenOf[""] holds the top-level (main) paragraphs for the standard.
@@ -831,7 +833,10 @@
       Object.keys(spec).forEach(function (key) {
         var meth = m[key];
         var v = spec[key];
-        out[meth.id] = { status: v.status, wpExtract: v.wpExtract || "", wpReference: v.wpReference || "", notes: v.notes || "", source: v.wpExtract ? "manual" : null, updatedAt: v.wpExtract ? "2026-06-15T09:30:00.000Z" : null, updatedBy: v.wpExtract ? "Demo Reviewer" : null };
+        // Nothing has been compared against a handbook PDF yet on a fresh seeded profile, so
+        // every paragraph starts "Not Sure" — the guided PDF/Excel import flow is what actually
+        // populates a real Matched/Update Body/Renumbered/Removed status.
+        out[meth.id] = { status: "notSure", wpExtract: v.wpExtract || "", wpReference: v.wpReference || "", notes: v.notes || "", source: v.wpExtract ? "manual" : null, updatedAt: v.wpExtract ? "2026-06-15T09:30:00.000Z" : null, updatedBy: v.wpExtract ? "Demo Reviewer" : null };
       });
       return out;
     }
@@ -843,77 +848,77 @@
         id: uid("std"), family: "ISA", code: "ISA 315 (Revised 2019)",
         title: "Identifying and Assessing the Risks of Material Misstatement",
         paragraphs: [
-          { id: uid("para"), number: "315.11", text: "Understand the entity's relevant industry, regulatory and other external factors.", source: "manual", coverage: cov({ rac: { status: "covered", wpReference: "2.1", wpExtract: "WP 2.1 Industry & Regulatory Understanding — documents relevant industry, legal and regulatory factors, updated via the annual planning checklist." } }) },
-          { id: uid("para"), number: "315.19", text: "Identify and assess risks of material misstatement at the financial statement and assertion levels.", source: "manual", coverage: cov({ rac: { status: "covered", wpExtract: "WP 4.3 Risk Assessment Summary — assertion-level risk register completed for each significant class of transaction." } }) },
-          { id: uid("para"), number: "315.25", text: "Evaluate the design of identified controls and determine implementation.", source: "manual", coverage: cov({ rac: { status: "needsUpdate" } }) }
+          { id: uid("para"), number: "315.11", text: "Understand the entity's relevant industry, regulatory and other external factors.", source: "manual", coverage: cov({ rac: { wpReference: "2.1", wpExtract: "WP 2.1 Industry & Regulatory Understanding — documents relevant industry, legal and regulatory factors, updated via the annual planning checklist." } }) },
+          { id: uid("para"), number: "315.19", text: "Identify and assess risks of material misstatement at the financial statement and assertion levels.", source: "manual", coverage: cov({ rac: { wpExtract: "WP 4.3 Risk Assessment Summary — assertion-level risk register completed for each significant class of transaction." } }) },
+          { id: uid("para"), number: "315.25", text: "Evaluate the design of identified controls and determine implementation.", source: "manual", coverage: cov({ rac: {} }) }
         ]
       },
       {
         id: uid("std"), family: "ISA", code: "ISA 500",
         title: "Audit Evidence",
         paragraphs: [
-          { id: uid("para"), number: "500.6", text: "Design and perform audit procedures to obtain sufficient appropriate audit evidence.", source: "manual", coverage: cov({ rac: { status: "covered", wpReference: "6.0", wpExtract: "WP 6.0 Evidence Gathering Program — audit procedures selected per financial statement area with cross-reference to the risk register." } }) },
-          { id: uid("para"), number: "500.9", text: "Consider the relevance and reliability of information used as audit evidence.", source: "manual", coverage: cov({ rac: { status: "covered" } }) }
+          { id: uid("para"), number: "500.6", text: "Design and perform audit procedures to obtain sufficient appropriate audit evidence.", source: "manual", coverage: cov({ rac: { wpReference: "6.0", wpExtract: "WP 6.0 Evidence Gathering Program — audit procedures selected per financial statement area with cross-reference to the risk register." } }) },
+          { id: uid("para"), number: "500.9", text: "Consider the relevance and reliability of information used as audit evidence.", source: "manual", coverage: cov({ rac: {} }) }
         ]
       },
       {
         id: uid("std"), family: "ISA", code: "ISA 700 (Revised)",
         title: "Forming an Opinion and Reporting on Financial Statements",
         paragraphs: [
-          { id: uid("para"), number: "700.10", text: "Form an opinion on whether the financial statements are prepared in accordance with the applicable framework.", source: "manual", coverage: cov({ rac: { status: "covered" } }) },
-          { id: uid("para"), number: "700.24", text: "Describe the auditor's responsibilities for the audit of the financial statements.", source: "manual", coverage: cov({ rac: { status: "needsUpdate" } }) }
+          { id: uid("para"), number: "700.10", text: "Form an opinion on whether the financial statements are prepared in accordance with the applicable framework.", source: "manual", coverage: cov({ rac: {} }) },
+          { id: uid("para"), number: "700.24", text: "Describe the auditor's responsibilities for the audit of the financial statements.", source: "manual", coverage: cov({ rac: {} }) }
         ]
       },
       {
         id: uid("std"), family: "ISAE 3000", code: "ISAE 3000 (Revised)",
         title: "Assurance Engagements Other than Audits or Reviews of Historical Financial Information",
         paragraphs: [
-          { id: uid("para"), number: "3000.34", text: "Plan the engagement so it will be performed effectively, including determining materiality.", source: "manual", coverage: cov({ legal: { status: "covered", wpReference: "1.0", wpExtract: "Trust Account AUP Planning Memo — materiality and scope agreed with the Legal Practice Council requirements." }, property: { status: "covered", wpReference: "1.0", wpExtract: "PPRA Trust Account Planning Memo — materiality and scope agreed with the Property Practitioners Regulatory Authority requirements." } }) },
-          { id: uid("para"), number: "3000.44", text: "Obtain sufficient appropriate evidence to support the conclusion.", source: "manual", coverage: cov({ legal: { status: "needsUpdate" }, property: { status: "needsUpdate" } }) },
-          { id: uid("para"), number: "3000.60", text: "Prepare an assurance report containing all required elements.", source: "manual", coverage: cov({ legal: { status: "notAddressed" }, property: { status: "notAddressed" } }) }
+          { id: uid("para"), number: "3000.34", text: "Plan the engagement so it will be performed effectively, including determining materiality.", source: "manual", coverage: cov({ legal: { wpReference: "1.0", wpExtract: "Trust Account AUP Planning Memo — materiality and scope agreed with the Legal Practice Council requirements." }, property: { wpReference: "1.0", wpExtract: "PPRA Trust Account Planning Memo — materiality and scope agreed with the Property Practitioners Regulatory Authority requirements." } }) },
+          { id: uid("para"), number: "3000.44", text: "Obtain sufficient appropriate evidence to support the conclusion.", source: "manual", coverage: cov({ legal: {}, property: {} }) },
+          { id: uid("para"), number: "3000.60", text: "Prepare an assurance report containing all required elements.", source: "manual", coverage: cov({ legal: {}, property: {} }) }
         ]
       },
       {
         id: uid("std"), family: "LPC Rules", code: "LPC Rules",
         title: "Legal Practice Council Rules Relating to Trust Accounts",
         paragraphs: [
-          { id: uid("para"), number: "54.1", text: "A trust account practice shall open and keep a trust banking account at a trust account bank.", source: "manual", coverage: cov({ legal: { status: "covered", wpReference: "TA-1", wpExtract: "Trust Account Register confirms a dedicated trust banking account is held at an approved trust account bank." } }) },
-          { id: uid("para"), number: "54.2", text: "A trust account practice shall keep proper accounting records of all trust monies received and paid.", source: "manual", coverage: cov({ legal: { status: "needsUpdate" } }) }
+          { id: uid("para"), number: "54.1", text: "A trust account practice shall open and keep a trust banking account at a trust account bank.", source: "manual", coverage: cov({ legal: { wpReference: "TA-1", wpExtract: "Trust Account Register confirms a dedicated trust banking account is held at an approved trust account bank." } }) },
+          { id: uid("para"), number: "54.2", text: "A trust account practice shall keep proper accounting records of all trust monies received and paid.", source: "manual", coverage: cov({ legal: {} }) }
         ]
       },
       {
         id: uid("std"), family: "PPRA Rules", code: "PPRA Rules",
         title: "Property Practitioners Regulatory Authority Rules",
         paragraphs: [
-          { id: uid("para"), number: "12.1", text: "A property practitioner shall open and maintain a separate trust account for trust monies received.", source: "manual", coverage: cov({ property: { status: "covered", wpReference: "TA-1", wpExtract: "Trust Account Register confirms a dedicated PPRA trust account is maintained separately from business funds." } }) },
-          { id: uid("para"), number: "12.2", text: "A property practitioner shall account to every person for trust monies received on that person's behalf.", source: "manual", coverage: cov({ property: { status: "notAddressed" } }) }
+          { id: uid("para"), number: "12.1", text: "A property practitioner shall open and maintain a separate trust account for trust monies received.", source: "manual", coverage: cov({ property: { wpReference: "TA-1", wpExtract: "Trust Account Register confirms a dedicated PPRA trust account is maintained separately from business funds." } }) },
+          { id: uid("para"), number: "12.2", text: "A property practitioner shall account to every person for trust monies received on that person's behalf.", source: "manual", coverage: cov({ property: {} }) }
         ]
       },
       {
         id: uid("std"), family: "ISRS 4400", code: "ISRS 4400 (Revised)",
         title: "Agreed-Upon Procedures Engagements",
         paragraphs: [
-          { id: uid("para"), number: "4400.14", text: "Agree the terms of the engagement with the engaging party.", source: "manual", coverage: cov({ aup: { status: "covered", wpReference: "AUP-1", wpExtract: "AUP Engagement Letter template — terms agreed and signed by the engaging party prior to commencement." } }) },
-          { id: uid("para"), number: "4400.25", text: "Perform the agreed-upon procedures and use the evidence obtained as the basis for the findings.", source: "manual", coverage: cov({ aup: { status: "covered" } }) },
-          { id: uid("para"), number: "4400.40", text: "Report factual findings in accordance with the terms of engagement.", source: "manual", coverage: cov({ aup: { status: "needsUpdate" } }) }
+          { id: uid("para"), number: "4400.14", text: "Agree the terms of the engagement with the engaging party.", source: "manual", coverage: cov({ aup: { wpReference: "AUP-1", wpExtract: "AUP Engagement Letter template — terms agreed and signed by the engaging party prior to commencement." } }) },
+          { id: uid("para"), number: "4400.25", text: "Perform the agreed-upon procedures and use the evidence obtained as the basis for the findings.", source: "manual", coverage: cov({ aup: {} }) },
+          { id: uid("para"), number: "4400.40", text: "Report factual findings in accordance with the terms of engagement.", source: "manual", coverage: cov({ aup: {} }) }
         ]
       },
       {
         id: uid("std"), family: "ISRS 4410", code: "ISRS 4410 (Revised)",
         title: "Compilation Engagements",
         paragraphs: [
-          { id: uid("para"), number: "4410.20", text: "Agree the terms of the compilation engagement with management.", source: "manual", coverage: cov({ compilation: { status: "covered", wpReference: "C-1", wpExtract: "Compilation Engagement Letter template — terms agreed with management prior to commencement." } }) },
-          { id: uid("para"), number: "4410.24", text: "Compile the financial information using the records, documents, explanations and other information provided by management.", source: "manual", coverage: cov({ compilation: { status: "needsUpdate" } }) },
-          { id: uid("para"), number: "4410.40", text: "Include an appropriate description of the practitioner's responsibility in the compilation report.", source: "manual", coverage: cov({ compilation: { status: "notAddressed" } }) }
+          { id: uid("para"), number: "4410.20", text: "Agree the terms of the compilation engagement with management.", source: "manual", coverage: cov({ compilation: { wpReference: "C-1", wpExtract: "Compilation Engagement Letter template — terms agreed with management prior to commencement." } }) },
+          { id: uid("para"), number: "4410.24", text: "Compile the financial information using the records, documents, explanations and other information provided by management.", source: "manual", coverage: cov({ compilation: {} }) },
+          { id: uid("para"), number: "4410.40", text: "Include an appropriate description of the practitioner's responsibility in the compilation report.", source: "manual", coverage: cov({ compilation: {} }) }
         ]
       },
       {
         id: uid("std"), family: "ISRE 2400", code: "ISRE 2400 (Revised)",
         title: "Engagements to Review Historical Financial Statements",
         paragraphs: [
-          { id: uid("para"), number: "2400.30", text: "Understand the entity to identify areas where material misstatements are likely to arise.", source: "manual", coverage: cov({ reviewplus: { status: "covered", wpReference: "R-1", wpExtract: "Review WP 1 — Entity Understanding Checklist covering nature of business, related parties and accounting policies." } }) },
-          { id: uid("para"), number: "2400.50", text: "Design and perform inquiry and analytical procedures to address identified risk areas.", source: "manual", coverage: cov({ reviewplus: { status: "needsUpdate" } }) },
-          { id: uid("para"), number: "2400.71", text: "Form a conclusion on whether anything has come to attention indicating the financial statements are materially misstated.", source: "manual", coverage: cov({ reviewplus: { status: "notAddressed" } }) }
+          { id: uid("para"), number: "2400.30", text: "Understand the entity to identify areas where material misstatements are likely to arise.", source: "manual", coverage: cov({ reviewplus: { wpReference: "R-1", wpExtract: "Review WP 1 — Entity Understanding Checklist covering nature of business, related parties and accounting policies." } }) },
+          { id: uid("para"), number: "2400.50", text: "Design and perform inquiry and analytical procedures to address identified risk areas.", source: "manual", coverage: cov({ reviewplus: {} }) },
+          { id: uid("para"), number: "2400.71", text: "Form a conclusion on whether anything has come to attention indicating the financial statements are materially misstated.", source: "manual", coverage: cov({ reviewplus: {} }) }
         ]
       }
     ];
@@ -938,7 +943,7 @@
     standardCollapse: {},
     paraExpanded: {},
     childrenExpanded: {},
-    editing: { methodologyId: null, standardId: null, paragraphId: null }
+    editing: { methodologyId: null, standardId: null }
   };
   var STANDARD_COLLAPSE_THRESHOLD = 5;
 
@@ -1065,13 +1070,24 @@
     return null;
   }
 
-  function logChange(action, entityType, label, summary) {
+  // `extra` carries the structured before/after fields for a paragraph-comparison change
+  // (old/new text, old/new number) — the change-history report (Export CSV) needs these as
+  // discrete columns, not just baked into the free-text summary.
+  function logChange(action, entityType, label, summary, extra) {
     if (!data) return;
     if (!Array.isArray(data.auditLog)) data.auditLog = [];
-    data.auditLog.unshift({
+    var entry = {
       id: uid("log"), timestamp: new Date().toISOString(), user: identityName(),
       pcName: identity ? identity.pcName : "Unknown", action: action, entityType: entityType, label: label, summary: summary
-    });
+    };
+    if (extra) {
+      entry.paragraphRef = extra.paragraphRef || null;
+      entry.oldNumber = extra.oldNumber || null;
+      entry.newNumber = extra.newNumber || null;
+      entry.oldText = extra.oldText || null;
+      entry.newText = extra.newText || null;
+    }
+    data.auditLog.unshift(entry);
   }
 
   // ---------- Derived helpers ----------
@@ -1099,7 +1115,7 @@
     return true;
   }
   function computeCounts(methodologyId, familyFilter) {
-    var counts = { covered: 0, needsUpdate: 0, notAddressed: 0, notSure: 0, na: 0 };
+    var counts = { matched: 0, updateBody: 0, newParagraph: 0, renumbered: 0, removed: 0, notSure: 0, na: 0, bookmark: 0 };
     data.standards.forEach(function (std) {
       if (familyFilter && std.family !== familyFilter) return;
       if (!isStandardApplicable(std, methodologyId)) return;
@@ -1107,10 +1123,13 @@
     });
     return counts;
   }
+  // The dashboard bar now reads "how much of the tracker is in sync with the last handbook
+  // import" — % Matched — rather than a manual compliance judgment. N/A paragraphs are excluded
+  // from the denominator (not applicable to this methodology at all).
   function coveragePercent(counts) {
-    var applicable = counts.covered + counts.needsUpdate + counts.notAddressed + counts.notSure;
+    var applicable = counts.matched + counts.updateBody + counts.newParagraph + counts.renumbered + counts.removed + counts.notSure + counts.bookmark;
     if (applicable === 0) return null;
-    return Math.round(((counts.covered + counts.needsUpdate * 0.5) / applicable) * 100);
+    return Math.round((counts.matched / applicable) * 100);
   }
   // The families relevant to whichever methodology is currently active in Coverage Review —
   // drives both the sidebar family list and the Coverage Review family filter, so neither ever
@@ -1253,8 +1272,8 @@
           '<div class="hbar-track"><div class="hbar-fill" style="width:' + (pct || 0) + "%; background:" + catColor(meth.colorIndex) + ';"></div></div>' +
           '<div class="hbar-pct">' + (pct === null ? "–" : pct + "%") + "</div></div>";
       }).join("");
-      panel.innerHTML = "<h3>" + escapeHtml(meth.name) + " — " + (overallPct === null ? "–" : overallPct + "%") + "</h3>" +
-        '<div class="fp-sub">' + escapeHtml(families.join(", ")) + "</div>" + rows;
+      panel.innerHTML = "<h3>" + escapeHtml(meth.name) + " — " + (overallPct === null ? "–" : overallPct + "% Matched") + "</h3>" +
+        '<div class="fp-sub">' + escapeHtml(families.join(", ")) + " · % of tracked paragraphs confirmed in sync with the last handbook PDF import</div>" + rows;
       panels.appendChild(panel);
     });
   }
@@ -1325,6 +1344,21 @@
           '<button class="icon-btn" data-del-std="' + std.id + '" title="Delete standard">✕</button>' +
         "</span>" : "");
       container.appendChild(head);
+
+      // "New" flags (found in the latest import but not yet in the tracker) have no existing
+      // paragraph row to attach a badge to — surface them here instead, right under the
+      // standard heading, so they're still visible on Coverage Review rather than only in
+      // Standards Review.
+      var newFlagsForStd = (data.pendingFlags || []).filter(function (f) { return f.status === "open" && f.type === "new" && f.standardId === std.id && !f.alreadyApplied; });
+      if (newFlagsForStd.length) {
+        var newPanel = document.createElement("div");
+        newPanel.className = "new-flag-panel";
+        newPanel.innerHTML = "<strong>" + newFlagsForStd.length + " paragraph(s) found in the latest import, not yet in the tracker:</strong>" + newFlagsForStd.map(renderFlagRow).join("");
+        container.appendChild(newPanel);
+        newPanel.querySelectorAll("[data-apply-flag]").forEach(function (b) { b.addEventListener("click", function () { applyFlag(b.getAttribute("data-apply-flag"), "apply"); }); });
+        newPanel.querySelectorAll("[data-dismiss-flag]").forEach(function (b) { b.addEventListener("click", function () { applyFlag(b.getAttribute("data-dismiss-flag"), "dismiss"); }); });
+      }
+
       if (!isCollapsed) {
         // A real collapsible tree: top-level paragraphs (25) show as one row each, with
         // sub-paragraphs (25(a)..25(d)) only added to the DOM once their parent's tree-toggle
@@ -1347,7 +1381,7 @@
         renderCoverageView();
       });
     });
-    container.querySelectorAll("[data-add-para-to]").forEach(function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); openParagraphModal(b.getAttribute("data-add-para-to"), null); }); });
+    container.querySelectorAll("[data-add-para-to]").forEach(function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); openParagraphModal(b.getAttribute("data-add-para-to")); }); });
     container.querySelectorAll("[data-edit-std]").forEach(function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); openStandardModal(b.getAttribute("data-edit-std")); }); });
     container.querySelectorAll("[data-del-std]").forEach(function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); deleteStandard(b.getAttribute("data-del-std")); }); });
     wireParagraphCardEvents(container);
@@ -1402,14 +1436,17 @@
       ? '<span class="tree-toggle" data-toggle-children="' + p.id + '">' + (childrenOpen ? "▾" : "▸") + "</span>"
       : '<span class="tree-toggle-spacer"></span>';
 
+    var flagBadgeInline = pendingFlag ? flagBadgeHtml(pendingFlag.type, ' data-jump-to-flag-inline="' + p.id + '"') : "";
+
     var row = document.createElement("div");
     row.className = "para-row-collapsed";
     row.setAttribute("data-toggle-para", p.id);
     row.innerHTML =
       treeToggleHtml +
       '<span class="para-ref no-case">' + escapeHtml(formatParaNumber(p.number)) + "</span>" +
-      '<span class="para-preview">' + escapeHtml(p.text) + "</span>" +
+      '<span class="para-preview">' + officialTextHtml(p) + "</span>" +
       sourceBadgeHtml +
+      flagBadgeInline +
       '<span class="status-dot-pill"><span class="status-dot status-dot--' + cov.status + '"></span>' + STATUS[cov.status].label + "</span>";
     item.appendChild(row);
 
@@ -1423,21 +1460,13 @@
       item.appendChild(prov);
     }
 
-    if (isExpanded) item.appendChild(renderParagraphDetail(p, meth, cov, pendingFlag));
+    if (isExpanded) item.appendChild(renderParagraphDetail(std, p, meth, cov, pendingFlag));
     return item;
   }
 
-  function renderParagraphDetail(p, meth, cov, pendingFlag) {
+  function renderParagraphDetail(std, p, meth, cov, pendingFlag) {
     var detail = document.createElement("div");
     detail.className = "review-card";
-
-    var overlapHtml;
-    if (cov.wpExtract) {
-      var overlap = textOverlapPct(p.text, cov.wpExtract);
-      overlapHtml = overlap === null ? "" : '<div class="overlap-hint">~' + overlap + "% word overlap with standard text (rough guide only)</div>";
-    } else {
-      overlapHtml = '<div class="overlap-hint">No WP extract captured yet.</div>';
-    }
 
     var canEditCoverage = can("reviewer");
     var canManageStructure = can("senior");
@@ -1454,8 +1483,24 @@
 
     var flagAlertHtml = "";
     if (pendingFlag) {
-      var flagMsg = pendingFlag.type === "changed" ? "Wording changed in the latest PDF import" : "Not found in the latest PDF import";
-      flagAlertHtml = '<div class="flag-alert" data-jump-to-flag="' + pendingFlag.type + '">⚠ ' + flagMsg + " — click to review in Standards Review</div>";
+      flagAlertHtml = '<div class="flag-alert-panel"><div class="flag-alert-head">' + flagBadgeHtml(pendingFlag.type) + " flagged from the latest " + (pendingFlag.source === "excel" ? "Excel" : "PDF") + " import</div>" + flagBodyHtml(pendingFlag) + "</div>";
+    }
+
+    // Where the OFFICIAL TEXT itself came from — the handbook/edition it was imported from
+    // (for PDF-sourced paragraphs), or a plain provenance label otherwise.
+    var sourceLine;
+    if (p.sourceDoc) sourceLine = "Source: " + escapeHtml(p.sourceDoc) + (p.sourceImportedAt ? " · imported " + new Date(p.sourceImportedAt).toLocaleDateString() : "");
+    else if (p.source === "excel") sourceLine = "Source: Excel WP mapping import";
+    else if (p.source === "pdf") sourceLine = "Source: PDF import";
+    else sourceLine = "Source: Manual entry";
+
+    var wpComparisonHtml;
+    if (!p.text) {
+      wpComparisonHtml = '<div class="overlap-hint">Import the handbook PDF first to compare this against the official text.</div>';
+    } else if (cov.wpExtract) {
+      wpComparisonHtml = '<div class="wp-diff-label">Word-for-word comparison vs. official text</div><div class="diff-block">' + renderWordDiff(p.text, cov.wpExtract) + "</div>";
+    } else {
+      wpComparisonHtml = '<div class="overlap-hint">No WP extract captured yet.</div>';
     }
 
     var tickMarks = cov.tickMarks || emptyTickMarks();
@@ -1466,15 +1511,17 @@
 
     detail.innerHTML = flagAlertHtml +
       '<div class="review-col"><h4>Official standard text</h4>' +
-        '<div class="review-text">' + escapeHtml(p.text) + "</div>" +
-        (canManageStructure ? '<div class="cell-actions"><button class="icon-btn" data-edit-para="' + p.id + '">✎ Edit</button><button class="icon-btn" data-del-para="' + p.id + '">✕ Delete</button></div>' : "") +
+        '<div class="review-para-ref no-case">' + escapeHtml(formatParaNumber(p.number)) + "</div>" +
+        '<div class="review-text">' + officialTextHtml(p) + "</div>" +
+        '<div class="readonly-note" style="margin-top:2px;">Read-only — only updated by accepting a change from a PDF import.' + (canManageStructure ? ' <button class="icon-btn" data-del-para="' + p.id + '" style="margin-left:4px;">✕ Delete paragraph</button>' : "") + "</div>" +
+        '<div class="review-source-line">' + sourceLine + "</div>" +
       "</div>" +
       '<div class="review-col"><h4>Draftworx WP extract — ' + escapeHtml(meth.name) + "</h4>" +
         '<input type="text" class="review-textarea" style="min-height:auto; padding:6px 8px;" data-wpref-field placeholder="WP reference (e.g. 10.02)" value="' + escapeAttr(cov.wpReference || "") + '"' + ro + ">" +
         '<textarea class="review-textarea" data-wp-field placeholder="Paste or type the working paper procedure/extract that addresses this paragraph..."' + ro + ">" + escapeHtml(cov.wpExtract || "") + "</textarea>" +
-        overlapHtml +
+        wpComparisonHtml +
       "</div>" +
-      '<div class="review-col"><h4>Status &amp; comparison</h4>' +
+      '<div class="review-col"><h4>' + escapeHtml(std.code) + " · " + escapeHtml(meth.name) + " — Status &amp; Comparison</h4>" +
         '<div class="status-pills">' + statusPillsHtml + "</div>" +
         tickMarksHtml +
         '<textarea class="review-textarea" data-notes-field placeholder="Comparison notes, reviewer commentary, evidence reference..."' + ro + ">" + escapeHtml(cov.notes || "") + "</textarea>" +
@@ -1502,6 +1549,16 @@
         withScrollPreserved(renderCoverageView);
       });
     });
+    // The flag badge on a collapsed row always OPENS the card (never toggles it closed) so
+    // clicking it reliably reveals the comparison panel, even if the row happens to already
+    // be expanded for some other reason.
+    container.querySelectorAll("[data-jump-to-flag-inline]").forEach(function (badge) {
+      badge.addEventListener("click", function (e) {
+        e.stopPropagation();
+        state.paraExpanded[badge.getAttribute("data-jump-to-flag-inline")] = true;
+        withScrollPreserved(renderCoverageView);
+      });
+    });
     container.querySelectorAll(".review-card").forEach(function (card) {
       var paraId = card.closest(".para-item").getAttribute("data-para-id");
       card.querySelectorAll("[data-set-status]").forEach(function (btn) {
@@ -1516,13 +1573,9 @@
       card.querySelectorAll("[data-tick-key]").forEach(function (cb) {
         cb.addEventListener("change", function () { saveTickMark(paraId, state.activeMethodologyId, cb.getAttribute("data-tick-key"), cb.checked); });
       });
-      var jumpBtn = card.querySelector("[data-jump-to-flag]");
-      if (jumpBtn) jumpBtn.addEventListener("click", function () {
-        state.reviewFilter.type = jumpBtn.getAttribute("data-jump-to-flag");
-        switchToView("review");
-      });
+      card.querySelectorAll("[data-apply-flag]").forEach(function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); applyFlag(b.getAttribute("data-apply-flag"), "apply"); }); });
+      card.querySelectorAll("[data-dismiss-flag]").forEach(function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); applyFlag(b.getAttribute("data-dismiss-flag"), "dismiss"); }); });
     });
-    container.querySelectorAll("[data-edit-para]").forEach(function (b) { b.addEventListener("click", function () { openParagraphModal(null, b.getAttribute("data-edit-para")); }); });
     container.querySelectorAll("[data-del-para]").forEach(function (b) { b.addEventListener("click", function () { deleteParagraph(b.getAttribute("data-del-para")); }); });
   }
 
@@ -1651,9 +1704,11 @@
   }
 
   // ---------- CRUD: Paragraphs ----------
-  function openParagraphModal(standardId, paragraphId) {
+  // Official Standard Text is read-only once a paragraph exists (point 3) — this modal only
+  // ever creates a brand-new paragraph (e.g. bootstrap content before any PDF import); editing
+  // an existing paragraph's text/number only ever happens by accepting a PDF-import flag.
+  function openParagraphModal(standardId) {
     if (data.standards.length === 0) { alert("Add a standard first before adding paragraphs."); return; }
-    state.editing.paragraphId = paragraphId || null;
     var dlg = document.getElementById("dlg-paragraph");
     var select = document.getElementById("f-paragraph-standard");
     select.innerHTML = "";
@@ -1662,17 +1717,10 @@
       opt.value = s.id; opt.textContent = s.code;
       select.appendChild(opt);
     });
-    var existing = paragraphId ? findParagraph(paragraphId) : null;
-    document.getElementById("dlg-paragraph-title").textContent = existing ? "Edit paragraph" : "Add paragraph";
-    if (existing) {
-      select.value = existing.std.id;
-      document.getElementById("f-paragraph-number").value = existing.para.number;
-      document.getElementById("f-paragraph-text").value = existing.para.text;
-    } else {
-      if (standardId) select.value = standardId;
-      document.getElementById("f-paragraph-number").value = "";
-      document.getElementById("f-paragraph-text").value = "";
-    }
+    document.getElementById("dlg-paragraph-title").textContent = "Add paragraph";
+    if (standardId) select.value = standardId;
+    document.getElementById("f-paragraph-number").value = "";
+    document.getElementById("f-paragraph-text").value = "";
     dlg.showModal();
   }
   function saveParagraph() {
@@ -1682,24 +1730,11 @@
     if (!number || !text) return;
     var std = data.standards.find(function (s) { return s.id === standardId; });
     if (!std) return;
-    if (state.editing.paragraphId) {
-      var existing = findParagraph(state.editing.paragraphId);
-      if (existing) {
-        existing.para.number = number; existing.para.text = text;
-        if (existing.std.id !== standardId) {
-          existing.std.paragraphs = existing.std.paragraphs.filter(function (p) { return p.id !== existing.para.id; });
-          std.paragraphs.push(existing.para);
-        }
-        sortParagraphs(std);
-        logChange("update", "paragraph", std.code + " " + number, "Updated paragraph text/number");
-      }
-    } else {
-      var coverage = {};
-      data.methodologies.forEach(function (m) { coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
-      std.paragraphs.push({ id: uid("para"), number: number, text: text, source: "manual", coverage: coverage });
-      sortParagraphs(std);
-      logChange("create", "paragraph", std.code + " " + number, "Added paragraph " + number);
-    }
+    var coverage = {};
+    data.methodologies.forEach(function (m) { coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
+    std.paragraphs.push({ id: uid("para"), number: number, text: text, source: "manual", coverage: coverage });
+    sortParagraphs(std);
+    logChange("create", "paragraph", std.code + " " + number, "Added paragraph " + number);
     document.getElementById("dlg-paragraph").close();
     renderAll();
   }
@@ -1739,11 +1774,32 @@
     entries.forEach(function (e) {
       var tr = document.createElement("tr");
       tr.className = "para-row";
+      var changeCell = escapeHtml(e.summary);
+      if (e.oldNumber && e.newNumber && e.oldNumber !== e.newNumber) changeCell += '<br><span style="color:var(--text-muted); font-size:11px;">Number: ' + escapeHtml(e.oldNumber) + " → " + escapeHtml(e.newNumber) + "</span>";
+      if (e.oldText || e.newText) changeCell += '<br><span style="color:var(--text-muted); font-size:11px;">Full before/after text is in the CSV export.</span>';
       tr.innerHTML = "<td>" + new Date(e.timestamp).toLocaleString() + "</td>" +
         "<td>" + escapeHtml(e.user) + '<br><span style="color:var(--text-muted); font-size:11px;">' + escapeHtml(e.pcName || "") + "</span></td>" +
-        "<td>" + escapeHtml(e.entityType) + "</td>" + "<td>" + escapeHtml(e.label) + "</td>" + "<td>" + escapeHtml(e.summary) + "</td>";
+        "<td>" + escapeHtml(e.entityType) + "</td>" + "<td>" + escapeHtml(e.label) + "</td>" + "<td>" + changeCell + "</td>";
       body.appendChild(tr);
     });
+  }
+  function exportAuditCsv() {
+    var entries = (data.auditLog || []).slice();
+    var headers = ["Date", "User", "PC", "Action", "Type", "Paragraph Ref", "Old Number", "New Number", "Item", "Summary", "Old Text", "New Text"];
+    function csvCell(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
+    var rows = [headers.map(csvCell).join(",")];
+    entries.forEach(function (e) {
+      rows.push([
+        new Date(e.timestamp).toLocaleString(), e.user, e.pcName || "", e.action, e.entityType,
+        e.paragraphRef || "", e.oldNumber || "", e.newNumber || "", e.label, e.summary, e.oldText || "", e.newText || ""
+      ].map(csvCell).join(","));
+    });
+    var blob = new Blob([rows.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = "change-history-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // ---------- Settings: users ----------
@@ -1842,13 +1898,59 @@
     if (currentLine) lines.push(currentLine);
     return lines.join("\n");
   }
+  // A standard's header text (e.g. "ISA 315") almost always appears MORE than once in a real,
+  // multi-standard handbook — a table of contents entry, running headers/footers, and
+  // cross-references from other chapters, in addition to its own chapter heading. Blindly using
+  // the FIRST occurrence (as this used to) grabs whichever of those comes earliest — usually the
+  // table of contents — and then extracts "paragraphs" out of that instead of the real chapter.
+  // Pick whichever occurrence has the most numbered-paragraph markers immediately after it
+  // instead: a real chapter opening is dense with them, a TOC line or cross-reference isn't.
+  // A page-footer/header number ("23." alone on its own line, repeated down the page, often
+  // next to a running header/footer phrase like a document title) matches the same marker shape
+  // just as readily as a real paragraph number does, so neither a raw count of matches nor a
+  // simple character-length gap can tell them apart — a repeated filler phrase can be just as
+  // long as a short real sentence. Require actual sentence-like content: several distinct
+  // words, not one short repeated label. The window is kept short (not spanning thousands of
+  // characters) so it can't accidentally bridge into a LATER, unrelated standard's real content
+  // and mistake that for this one's. Shared by section-boundary picking below and by new-standard
+  // discovery, since both are answering the same question: "is this really a chapter opening?"
+  function markerQualityAt(fullText, idx) {
+    var PROBE_LEN = 1200;
+    var probe = fullText.substring(idx, idx + PROBE_LEN);
+    var re = /(?:\r?\n|^)\s*\d{1,3}\.\s+/g;
+    var positions = [], mm;
+    while ((mm = re.exec(probe))) positions.push(mm.index + mm[0].length);
+    var quality = 0;
+    for (var i = 0; i < positions.length; i++) {
+      var gapEnd = (i + 1 < positions.length) ? positions[i + 1] : probe.length;
+      var wordCount = normalizeWs(probe.substring(positions[i], gapEnd)).split(" ").filter(Boolean).length;
+      if (wordCount >= 8) quality++;
+    }
+    return quality;
+  }
   function buildExtractionSections(fullText) {
     var lowerText = fullText.toLowerCase();
+    var SIBLING_WINDOW = 200;
+    var allHeaders = data.standards.map(function (s) { return s.code.replace(/\s*\(.*?\)\s*$/, "").trim().toLowerCase(); });
+    // A table of contents (or an index/cross-reference list) names several standards in quick
+    // succession — a real chapter heading is followed by that STANDARD'S OWN content, not by
+    // another standard's name. An occurrence with a sibling header nearby is almost certainly
+    // a listing, not the real chapter, regardless of what markerQualityAt happens to see beyond it.
+    function hasSiblingHeaderNearby(idx, ownHeaderLower) {
+      var probe = lowerText.substring(idx + ownHeaderLower.length, idx + ownHeaderLower.length + SIBLING_WINDOW);
+      return allHeaders.some(function (h) { return h !== ownHeaderLower && probe.indexOf(h) !== -1; });
+    }
     var sections = [];
     data.standards.forEach(function (std) {
       var header = std.code.replace(/\s*\(.*?\)\s*$/, "").trim();
-      var idx = lowerText.indexOf(header.toLowerCase());
-      if (idx !== -1) sections.push({ std: std, index: idx, header: header });
+      var headerLower = header.toLowerCase();
+      var bestIdx = -1, bestScore = -Infinity, searchFrom = 0, idx;
+      while ((idx = lowerText.indexOf(headerLower, searchFrom)) !== -1) {
+        var score = markerQualityAt(fullText, idx) - (hasSiblingHeaderNearby(idx, headerLower) ? 1000 : 0);
+        if (score > bestScore) { bestScore = score; bestIdx = idx; }
+        searchFrom = idx + headerLower.length;
+      }
+      if (bestIdx !== -1) sections.push({ std: std, index: bestIdx, header: header });
     });
     sections.sort(function (a, b) { return a.index - b.index; });
     sections.forEach(function (sec, i) {
@@ -1856,6 +1958,32 @@
       sec.text = fullText.substring(sec.index, end);
     });
     return sections;
+  }
+  // A standard that was deleted (or never added) has no std.code for buildExtractionSections to
+  // search for in the first place, so it would silently never be found — scan the raw PDF text
+  // for standard-code-shaped strings (ISA 315, ISRE 2400, LPC Rules, ...) independently of
+  // what's currently in the tracker, and create the standard when one genuinely has real
+  // requirement-paragraph content following it (not just a passing cross-reference).
+  var STANDARD_CODE_SCAN_RE = /(?:ISA|ISAE|ISRS|ISRE)\s*\d{3,4}(?:\s*\([^)]{0,40}\))?|(?:LPC|PPRA)\s+Rules/gi;
+  function discoverNewStandardsInPdf(fullText) {
+    var re = new RegExp(STANDARD_CODE_SCAN_RE.source, "gi");
+    var seen = {}, m;
+    while ((m = re.exec(fullText))) {
+      var refInfo = parseStandardReference(m[0]);
+      if (!refInfo) continue;
+      var key = refInfo.prefix + " " + refInfo.num;
+      var score = markerQualityAt(fullText, m.index);
+      if (!seen[key] || score > seen[key].score) seen[key] = { score: score, code: normalizeWs(m[0]), refInfo: refInfo };
+    }
+    var createdStds = [];
+    Object.keys(seen).forEach(function (key) {
+      var cand = seen[key];
+      if (cand.score < 3) return; // a real chapter has many qualifying paragraphs nearby, not just one or two
+      var before = data.standards.length;
+      var std = findOrCreateStandard(cand.refInfo, cand.code);
+      if (data.standards.length > before) createdStds.push(std);
+    });
+    return createdStds;
   }
   // Some IAASB standards' numbered paragraphs don't start as "requirements" from 1 — earlier
   // ones are scope/introduction. Record a family's known first-requirement number here as we
@@ -1916,8 +2044,15 @@
     var result = [];
     for (var i = 0; i < items.length; i++) {
       var endPos = (i + 1 < items.length) ? items[i + 1].markerStart : body.length;
-      var chunk = normalizeWs(body.substring(items[i].textStart, endPos)).slice(0, 600);
-      if (chunk) result.push({ number: items[i].ref, text: chunk });
+      var chunk = normalizeWs(body.substring(items[i].textStart, endPos));
+      // A real paragraph or sub-paragraph is always at least a short sentence. A running
+      // header/footer repeated on every page (a document title, "Page 12", a standard number
+      // used as a page stamp) can still be several words long, so the bar has to sit above that,
+      // not just above a single bare word — 8 matches the same threshold used to pick a
+      // standard's real section in buildExtractionSections, for the same reason. Without this,
+      // a large real PDF can produce hundreds of garbage "paragraphs" that silently overwrite
+      // real ones with near-empty, repeated filler text.
+      if (chunk && chunk.split(" ").filter(Boolean).length >= 8) result.push({ number: items[i].ref, text: chunk });
     }
     return result;
   }
@@ -1963,94 +2098,196 @@
     }
     return found;
   }
+  // A paragraph is matched to the PDF purely by NUMBER — never by keyword content. Beyond a
+  // plain number match/no-match, a "missing" (tracker-only) and a "new" (PDF-only) item that
+  // share essentially the same wording are almost certainly the SAME requirement moved to a
+  // different number in this handbook edition, not one paragraph removed and an unrelated one
+  // added — those get paired up as RENUMBERED instead of separate flags.
+  // Drives BOTH the review-queue flags AND the automated per-paragraph comparison status
+  // (Matched/Update Body/Renumbered/Removed) — every paragraph in a standard the PDF actually
+  // covers ends up in exactly one bucket, purely from a NUMBER match plus (for renumbering) an
+  // exact CONTENT match; nothing here depends on keyword text like "shall".
   function computeFlags(fullText) {
     var sections = buildExtractionSections(fullText);
     var notFoundStandards = data.standards.filter(function (std) { return !sections.some(function (s) { return s.std.id === std.id; }); });
     var flags = [];
+    var statusUpdates = []; // [{ paragraphId, autoStatus }] — applied to every methodology that can see this paragraph
     sections.forEach(function (sec) {
       var extracted = extractParagraphsFromSection(sec);
       var extractedByNumber = {};
       extracted.forEach(function (e) { extractedByNumber[e.number] = e; });
+
+      var missingCandidates = [], changedList = [];
       sec.std.paragraphs.forEach(function (p) {
         var match = extractedByNumber[p.number];
-        if (!match) flags.push({ id: uid("flag"), type: "missing", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: p.id, number: p.number, oldText: p.text, newText: null, status: "open" });
-        else {
-          var a = normalizeWs(p.text).toLowerCase(), b = normalizeWs(match.text).toLowerCase();
-          if (a !== b && b.indexOf(a) === -1 && a.indexOf(b) === -1) {
-            flags.push({ id: uid("flag"), type: "changed", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: p.id, number: p.number, oldText: p.text, newText: match.text, status: "open" });
+        if (!match) { missingCandidates.push(p); return; }
+        var a = normalizeWs(p.text).toLowerCase(), b = normalizeWs(match.text).toLowerCase();
+        // An empty stored text (e.g. a placeholder paragraph created by Excel before the PDF
+        // was ever imported) is trivially "contained in" any string — that's not a real match,
+        // it's a paragraph that has never had its official text populated. Always flag it.
+        if (!a && b) changedList.push({ para: p, match: match });
+        else if (a !== b && b.indexOf(a) === -1 && a.indexOf(b) === -1) changedList.push({ para: p, match: match });
+        else statusUpdates.push({ paragraphId: p.id, autoStatus: "matched" });
+      });
+      var newCandidates = extracted.filter(function (e) { return !sec.std.paragraphs.some(function (p) { return p.number === e.number; }); });
+
+      // Renumber detection: a "missing" paragraph and a "new" paragraph that share essentially
+      // the same CONTENT are the same requirement moved to a different number, not one removed
+      // and an unrelated one added — pair them up by exact normalized text match.
+      var usedNew = {};
+      missingCandidates = missingCandidates.filter(function (p) {
+        var normOld = normalizeWs(p.text).toLowerCase();
+        if (!normOld) { statusUpdates.push({ paragraphId: p.id, autoStatus: "removed" }); return true; }
+        for (var i = 0; i < newCandidates.length; i++) {
+          if (usedNew[i]) continue;
+          if (normalizeWs(newCandidates[i].text).toLowerCase() === normOld) {
+            usedNew[i] = true;
+            flags.push({ id: uid("flag"), type: "renumbered", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: p.id, number: newCandidates[i].number, oldNumber: p.number, oldText: p.text, newText: newCandidates[i].text, status: "open" });
+            statusUpdates.push({ paragraphId: p.id, autoStatus: "renumbered" });
+            return false;
           }
         }
+        statusUpdates.push({ paragraphId: p.id, autoStatus: "removed" });
+        return true;
       });
-      extracted.forEach(function (e) {
-        var exists = sec.std.paragraphs.some(function (p) { return p.number === e.number; });
-        if (!exists) flags.push({ id: uid("flag"), type: "new", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: null, number: e.number, oldText: null, newText: e.text, status: "open" });
+      newCandidates = newCandidates.filter(function (_, i) { return !usedNew[i]; });
+
+      changedList.forEach(function (c) {
+        flags.push({ id: uid("flag"), type: "changed", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: c.para.id, number: c.para.number, oldText: c.para.text, newText: c.match.text, status: "open" });
+        statusUpdates.push({ paragraphId: c.para.id, autoStatus: "updateBody" });
+      });
+      missingCandidates.forEach(function (p) {
+        flags.push({ id: uid("flag"), type: "missing", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: p.id, number: p.number, oldText: p.text, newText: null, status: "open" });
+      });
+      newCandidates.forEach(function (e) {
+        flags.push({ id: uid("flag"), type: "new", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: null, number: e.number, oldText: null, newText: e.text, status: "open" });
       });
     });
-    return { flags: flags, notFoundStandards: notFoundStandards };
+    return { flags: flags, notFoundStandards: notFoundStandards, statusUpdates: statusUpdates };
   }
+  // Auto-computed states never overwrite a reviewer's deliberate N/A or Bookmark call — those
+  // are the only two states meant to be sticky across re-imports.
+  function applyAutoStatus(paragraphId, autoStatus) {
+    var found = findParagraph(paragraphId);
+    if (!found) return;
+    var relevantMethods = data.methodologies.filter(function (m) { return (m.allowedFamilies || []).indexOf(found.std.family) !== -1; });
+    relevantMethods.forEach(function (m) {
+      var cov = ensureCoverageEntry(found.para, m.id);
+      if (cov.status !== "na" && cov.status !== "bookmark") cov.status = autoStatus;
+    });
+  }
+  // "Accept" updates the tracker and records exactly what changed (old/new text, old/new
+  // number) in the change-history log. "Dismiss" leaves the tracker's data untouched — the
+  // comparison status keeps reflecting the real discrepancy, only the review-queue badge for
+  // it is cleared (a fresh PDF/Excel import will raise it again if it's still true next time).
   function applyFlag(flagId, action) {
-    var flag = data.pendingFlags.find(function (f) { return f.id === flagId; });
+    var flag = (data.pendingFlags || []).find(function (f) { return f.id === flagId; });
     if (!flag) return;
+    var handbookName = flag.handbookName || (data.lastImport && data.lastImport.handbookName) || null;
+    var originLabel = flag.source === "excel" ? "Excel" : "PDF";
     if (action === "apply") {
       if (flag.type === "changed") {
         var found = findParagraph(flag.paragraphId);
-        if (found) { found.para.text = flag.newText; logChange("update", "paragraph", flag.standardCode + " " + flag.number, "Updated paragraph text from PDF import to match handbook wording."); }
+        if (found) {
+          var oldText = found.para.text;
+          found.para.text = flag.newText;
+          if (flag.source === "pdf" && handbookName) { found.para.sourceDoc = handbookName; found.para.sourceImportedAt = new Date().toISOString(); }
+          applyAutoStatus(flag.paragraphId, "matched");
+          logChange("update", "paragraph", flag.standardCode + " " + flag.number, "Accepted an Update Body change from " + originLabel + " import — paragraph text updated to match handbook wording.",
+            { paragraphRef: flag.number, oldText: oldText, newText: flag.newText });
+        }
+      } else if (flag.type === "renumbered") {
+        var foundR = findParagraph(flag.paragraphId);
+        if (foundR) {
+          var oldNumber = foundR.para.number;
+          foundR.para.number = flag.number;
+          if (flag.source === "pdf" && handbookName) { foundR.para.sourceDoc = handbookName; foundR.para.sourceImportedAt = new Date().toISOString(); }
+          sortParagraphs(foundR.std);
+          applyAutoStatus(foundR.para.id, "matched");
+          logChange("update", "paragraph", flag.standardCode + " " + oldNumber + " → " + flag.number, "Accepted a Renumbered change from " + originLabel + " import — paragraph number updated (text unchanged).",
+            { paragraphRef: flag.number, oldNumber: oldNumber, newNumber: flag.number });
+        }
       } else if (flag.type === "new") {
         var std = data.standards.find(function (s) { return s.id === flag.standardId; });
         if (std) {
           var coverage = {};
-          data.methodologies.forEach(function (m) { coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
-          std.paragraphs.push({ id: uid("para"), number: flag.number, text: flag.newText, source: "pdf", coverage: coverage });
+          data.methodologies.forEach(function (m) { coverage[m.id] = { status: "newParagraph", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
+          var newPara = { id: uid("para"), number: flag.number, text: flag.newText, source: flag.source === "excel" ? "excel" : "pdf", coverage: coverage };
+          if (flag.source === "pdf" && handbookName) { newPara.sourceDoc = handbookName; newPara.sourceImportedAt = new Date().toISOString(); }
+          std.paragraphs.push(newPara);
           sortParagraphs(std);
-          logChange("create", "paragraph", flag.standardCode + " " + flag.number, "Added paragraph from PDF import.");
+          logChange("create", "paragraph", flag.standardCode + " " + flag.number, "Accepted a New Paragraph found in " + originLabel + " import — added to the tracker.",
+            { paragraphRef: flag.number, newText: flag.newText, newNumber: flag.number });
         }
       } else if (flag.type === "missing") {
         if (!confirm('Remove paragraph ' + flag.number + " (" + flag.standardCode + ') from the tracker? This cannot be undone.')) return;
         var foundM = findParagraph(flag.paragraphId);
         if (foundM) {
           foundM.std.paragraphs = foundM.std.paragraphs.filter(function (p) { return p.id !== foundM.para.id; });
-          logChange("delete", "paragraph", flag.standardCode + " " + flag.number, "Removed paragraph — not found as a \"shall\" requirement in the latest PDF import (approved by reviewer).");
+          logChange("delete", "paragraph", flag.standardCode + " " + flag.number, "Accepted a Removed change — its number was not found in the latest " + originLabel + " import, deleted from the tracker.",
+            { paragraphRef: flag.number, oldText: flag.oldText });
         }
       }
       flag.status = "resolved";
     } else {
       flag.status = "dismissed";
-      logChange("update", "flag", flag.standardCode + " " + flag.number, "Dismissed a " + flag.type + " flag from PDF import review.");
+      var flagStatusKey = flag.type === "changed" ? "updateBody" : flag.type === "missing" ? "removed" : flag.type === "new" ? "newParagraph" : flag.type;
+      logChange("update", "flag", flag.standardCode + " " + flag.number, "Dismissed a " + STATUS[flagStatusKey].label + " flag from " + originLabel + " import review — tracker data left unchanged.",
+        { paragraphRef: flag.number, oldNumber: flag.oldNumber, oldText: flag.oldText, newText: flag.newText });
     }
     persist();
     renderReviewView(); renderNotifyBanner(); renderCoverageView(); renderDashboard();
   }
   function flagCounts(openFlags) {
-    var c = { all: openFlags.length, "new": 0, changed: 0, missing: 0 };
+    var c = { all: openFlags.length, "new": 0, changed: 0, renumbered: 0, missing: 0 };
     openFlags.forEach(function (f) { c[f.type] = (c[f.type] || 0) + 1; });
     return c;
   }
-  function renderFlagRow(f) {
-    var badge = f.type === "new" ? '<span class="flag-badge flag-new">● New</span>' : f.type === "changed" ? '<span class="flag-badge flag-changed">◐ Changed</span>' : '<span class="flag-badge flag-missing">– Removed</span>';
+  function flagBadgeHtml(type, extraAttrs) {
+    extraAttrs = extraAttrs || "";
+    if (type === "new") return '<span class="flag-badge flag-new"' + extraAttrs + '>✚ New Paragraph</span>';
+    if (type === "changed") return '<span class="flag-badge flag-changed"' + extraAttrs + '>◐ Update Body</span>';
+    if (type === "renumbered") return '<span class="flag-badge flag-renumbered"' + extraAttrs + '>⇄ Renumbered</span>';
+    return '<span class="flag-badge flag-missing"' + extraAttrs + '>✕ Removed</span>';
+  }
+  function flagBodyHtml(f) {
     var canResolve = can("senior");
-    var body = "";
+    var originLabel = f.source === "excel" ? "Excel WP mapping" : "PDF";
     if (f.type === "changed") {
       var diff = renderSideBySideDiff(f.oldText, f.newText);
-      body = '<div class="diff-columns">' +
+      return '<div class="diff-columns">' +
           '<div><div class="diff-col-label">Currently stored</div><div class="diff-block">' + diff.left + "</div></div>" +
-          '<div><div class="diff-col-label">Found in PDF</div><div class="diff-block">' + diff.right + "</div></div>" +
+          '<div><div class="diff-col-label">Found in ' + escapeHtml(originLabel) + '</div><div class="diff-block">' + diff.right + "</div></div>" +
         "</div>" +
-        '<div class="readonly-note"><span class="diff-del" style="padding:0 2px;">strikethrough</span> = removed, <span class="diff-ins" style="padding:0 2px;">underline</span> = added.</div>' +
-        (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Apply PDF text</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>' : "");
-    } else if (f.type === "new") {
-      body = '<div class="diff-block"><strong>Suggested new paragraph text (from PDF):</strong><br>' + escapeHtml(f.newText) + "</div>" +
-        (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Add as new paragraph</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>' : "");
-    } else {
-      body = '<div class="diff-block"><strong>Currently stored (this paragraph number was not found in the PDF):</strong><br>' + escapeHtml(f.oldText) + "</div>" +
-        '<div class="readonly-note">May have been renumbered, superseded, or missed by extraction — review before removing.</div>' +
-        (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn danger" data-apply-flag="' + f.id + '">Remove from tracker</button><button class="btn" data-dismiss-flag="' + f.id + '">Keep (no change)</button></div>' : "");
+        '<div class="readonly-note"><span class="diff-del" style="padding:0 2px;">strikethrough</span> = removed, <span class="diff-ins" style="padding:0 2px;">highlight</span> = added.</div>' +
+        (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Accept</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>' : "");
     }
-    return '<div class="flag-row"><div class="flag-number">' + escapeHtml(formatParaNumber(f.number)) + " " + badge + "</div>" + body + "</div>";
+    if (f.type === "renumbered") {
+      return '<div class="diff-block"><strong>' + escapeHtml(formatParaNumber(f.oldNumber)) + " → " + escapeHtml(formatParaNumber(f.number)) + ":</strong><br>" + escapeHtml(f.newText) + "</div>" +
+        '<div class="readonly-note">Same wording found under a different paragraph number in the latest ' + escapeHtml(originLabel) + " import.</div>" +
+        (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Accept (renumber to ' + escapeHtml(formatParaNumber(f.number)) + ')</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>' : "");
+    }
+    if (f.type === "new" && f.alreadyApplied) {
+      return '<div class="diff-block"><strong>Added automatically from ' + escapeHtml(originLabel) + " — please confirm it's correct:</strong><br>" + escapeHtml(f.newText) + "</div>" +
+        (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn" data-dismiss-flag="' + f.id + '">Acknowledge</button></div>' : "");
+    }
+    if (f.type === "new") {
+      return '<div class="diff-block"><strong>Suggested new paragraph text (from ' + escapeHtml(originLabel) + '):</strong><br>' + escapeHtml(f.newText) + "</div>" +
+        (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Accept (add to tracker)</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>' : "");
+    }
+    return '<div class="diff-block"><strong>Currently stored (this paragraph number was not found in the latest ' + escapeHtml(originLabel) + ' import):</strong><br>' + escapeHtml(f.oldText) + "</div>" +
+      '<div class="readonly-note">May have been renumbered, superseded, or missed by extraction — review before removing.</div>' +
+      (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn danger" data-apply-flag="' + f.id + '">Accept (delete from tracker)</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss (keep as-is)</button></div>' : "");
+  }
+  function renderFlagRow(f) {
+    return '<div class="flag-row"><div class="flag-number">' + escapeHtml(formatParaNumber(f.number)) + " " + flagBadgeHtml(f.type) + "</div>" + flagBodyHtml(f) + "</div>";
   }
   function renderReviewView() {
     var infoEl = document.getElementById("last-import-info");
     if (data.lastImport) {
-      infoEl.innerHTML = "Last imported <strong>" + escapeHtml(data.lastImport.fileName) + "</strong> on " + new Date(data.lastImport.importedAt).toLocaleString() +
+      infoEl.innerHTML = "Last imported <strong>" + escapeHtml(data.lastImport.fileName) + "</strong>" +
+        (data.lastImport.handbookName ? " (" + escapeHtml(data.lastImport.handbookName) + ")" : "") +
+        " on " + new Date(data.lastImport.importedAt).toLocaleString() +
         " by " + escapeHtml(data.lastImport.importedBy) + " (" + data.lastImport.pageCount + " pages)." +
         (data.lastImport.notFoundStandards && data.lastImport.notFoundStandards.length ? "<br>Not found in this PDF: " + escapeHtml(data.lastImport.notFoundStandards.join(", ")) : "");
     } else infoEl.textContent = "No standards PDF has been imported yet.";
@@ -2058,7 +2295,7 @@
     var openFlags = (data.pendingFlags || []).filter(function (f) { return f.status === "open"; });
     var counts = flagCounts(openFlags);
     var pillsEl = document.getElementById("review-type-pills");
-    var types = [["all", "All"], ["new", "New"], ["changed", "Changed"], ["missing", "Removed"]];
+    var types = [["all", "All"], ["new", "New"], ["changed", "Changed"], ["renumbered", "Renumbered"], ["missing", "Removed"]];
     pillsEl.innerHTML = types.map(function (t) {
       return '<button class="pill-btn' + (state.reviewFilter.type === t[0] ? " active" : "") + '" data-set-type="' + t[0] + '">' + t[1] + " (" + (counts[t[0]] || 0) + ")</button>";
     }).join("");
@@ -2102,13 +2339,13 @@
   }
   function renderNotifyBanner() {
     var banner = document.getElementById("notify-banner");
+    // Only an Excel WP-mapping import ever raises a flag now — PDF import writes Official
+    // Standard Text directly with no review queue — so data.lastImport (always a PDF record)
+    // is never the right thing to cite here.
     var openCount = (data.pendingFlags || []).filter(function (f) { return f.status === "open"; }).length;
     if (openCount > 0 && !state.bannerDismissed) {
-      var li = data.lastImport;
       banner.style.display = "flex";
-      banner.innerHTML = "<span>⚠ " + openCount + " difference(s) flagged from your last standards import" +
-        (li ? ' ("' + escapeHtml(li.fileName) + '", ' + new Date(li.importedAt).toLocaleDateString() + ")" : "") +
-        ' are still unresolved.</span><span class="spacer"></span>' +
+      banner.innerHTML = "<span>⚠ " + openCount + " difference(s) flagged from your last Excel WP mapping import are still unresolved.</span><span class=\"spacer\"></span>" +
         '<button class="btn primary" id="banner-review-btn">Review now</button>' +
         '<button class="icon-btn" id="banner-dismiss-btn" title="Dismiss">&times;</button>';
       document.getElementById("banner-review-btn").addEventListener("click", function () { switchToView("review"); });
@@ -2143,15 +2380,79 @@
         var content = await page.getTextContent();
         fullText += pageItemsToText(content.items) + "\n";
       }
-      progressText.textContent = "Comparing against stored standards...";
-      var result = computeFlags(fullText);
-      data.pendingFlags = result.flags;
-      data.lastImport = { fileName: file.name, importedAt: new Date().toISOString(), importedBy: identityName(), pageCount: pdf.numPages, notFoundStandards: result.notFoundStandards.map(function (s) { return s.code; }) };
-      state.bannerDismissed = false;
-      state.reviewRevealed = {};
-      logChange("import", "standards", file.name, 'Imported standards PDF "' + file.name + '" (' + pdf.numPages + " pages) — " + result.flags.length + " difference(s) flagged.");
+      progressText.textContent = "Populating Official Standard Text...";
+      var handbookName = normalizeWs(document.getElementById("f-pdf-handbook-name").value) || file.name;
+      var importedAt = new Date().toISOString();
+      // A standard has to already exist for buildExtractionSections to know to look for it — if
+      // it was deleted (or never added), scan the raw text for its code independently first.
+      var newlyCreatedStandards = discoverNewStandardsInPdf(fullText);
+      // The PDF import has exactly one job: write the handbook's own wording into Official
+      // Standard Text for every paragraph number it contains, creating the paragraph if it
+      // doesn't exist yet. No diffing against whatever was there before, no flags, no review
+      // queue — the PDF is the trusted source for this column, so it's applied directly.
+      // Comparing that text against the Excel-sourced WP extract is a separate step, done later.
+      var sections = buildExtractionSections(fullText);
+      var notFoundStandards = data.standards.filter(function (std) { return !sections.some(function (s) { return s.std.id === std.id; }); });
+      var createdCount = 0, updatedCount = 0;
+      var touchedStandards = []; // for the diagnostic log + so we can jump to a methodology that can actually see the result
+      sections.forEach(function (sec) {
+        var stdCreated = 0, stdUpdated = 0;
+        extractParagraphsFromSection(sec).forEach(function (e) {
+          var existing = sec.std.paragraphs.find(function (p) { return p.number === e.number; });
+          if (existing) {
+            existing.text = e.text;
+            existing.source = "pdf";
+            existing.sourceDoc = handbookName;
+            existing.sourceImportedAt = importedAt;
+            updatedCount++; stdUpdated++;
+          } else {
+            var coverage = {};
+            data.methodologies.forEach(function (m) { coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
+            sec.std.paragraphs.push({ id: uid("para"), number: e.number, text: e.text, source: "pdf", sourceDoc: handbookName, sourceImportedAt: importedAt, coverage: coverage });
+            createdCount++; stdCreated++;
+          }
+        });
+        sortParagraphs(sec.std);
+        if (stdCreated || stdUpdated) touchedStandards.push({ std: sec.std, created: stdCreated, updated: stdUpdated });
+      });
+      data.lastImport = { fileName: file.name, handbookName: handbookName, importedAt: importedAt, importedBy: identityName(), pageCount: pdf.numPages, notFoundStandards: notFoundStandards.map(function (s) { return s.code; }), createdCount: createdCount, updatedCount: updatedCount, createdStandards: newlyCreatedStandards.map(function (s) { return s.code; }) };
+      logChange("import", "standards", file.name, 'Imported standards PDF "' + file.name + '" (' + handbookName + ", " + pdf.numPages + " pages) — populated Official Standard Text for " + createdCount + " new and " + updatedCount + " existing paragraph(s)." +
+        (newlyCreatedStandards.length ? " Added " + newlyCreatedStandards.length + " new standard(s) found in the PDF but not yet in the tracker: " + newlyCreatedStandards.map(function (s) { return s.code + " (" + s.family + ")"; }).join(", ") + "." : ""));
+
+      // Diagnostic: exactly what got written and where, so a "nothing" report can be checked
+      // against the actual saved data rather than guessed at.
+      if (newlyCreatedStandards.length) console.log("[PDF import] new standards created from the PDF text (weren't in the tracker before):", newlyCreatedStandards.map(function (s) { return s.code + " -> family " + s.family; }));
+      console.log("[PDF import] handbook:", handbookName, "| pages:", pdf.numPages, "| created:", createdCount, "| updated:", updatedCount);
+      console.log("[PDF import] standards touched:", touchedStandards.map(function (t) { return t.std.code + " (family " + t.std.family + "): +" + t.created + " new, " + t.updated + " updated, " + t.std.paragraphs.length + " total paragraphs now"; }));
+      console.log("[PDF import] sample of saved paragraphs:", touchedStandards.slice(0, 3).map(function (t) {
+        return { standard: t.std.code, sample: t.std.paragraphs.slice(0, 3).map(function (p) { return { number: p.number, textPreview: (p.text || "").slice(0, 80), sourceDoc: p.sourceDoc }; }) };
+      }));
+      if (notFoundStandards.length) console.log("[PDF import] standards NOT found in this PDF (header text never matched):", notFoundStandards.map(function (s) { return s.code; }));
+
+      // A big import can touch standards outside whichever methodology tab happens to be
+      // active, and any leftover family/status/search filter can hide every one of the
+      // paragraphs just written — both would make a real, successful import look like nothing
+      // happened. Clear the filters, and jump to a methodology that can actually see the result
+      // if the current one can't.
+      state.familyFilter = "all"; state.statusFilter = "all"; state.search = "";
+      document.getElementById("filter-family").value = "all";
+      document.getElementById("filter-status").value = "all";
+      document.getElementById("search-input").value = "";
+      var touchedFamilies = touchedStandards.map(function (t) { return t.std.family; });
+      var activeMeth = data.methodologies.find(function (m) { return m.id === state.activeMethodologyId; });
+      var activeMethCanSeeResult = activeMeth && touchedFamilies.some(function (fam) { return (activeMeth.allowedFamilies || []).indexOf(fam) !== -1; });
+      if (!activeMethCanSeeResult) {
+        var candidateMeth = data.methodologies.find(function (m) { return touchedFamilies.some(function (fam) { return (m.allowedFamilies || []).indexOf(fam) !== -1; }); });
+        if (candidateMeth) state.activeMethodologyId = candidateMeth.id;
+      }
       persist();
-      renderReviewView(); renderNotifyBanner(); renderAuditView();
+      renderCoverageView(); renderDashboard(); renderAuditView();
+      if (createdCount || updatedCount) switchToView("coverage");
+      alert("Imported " + handbookName + ": " + createdCount + " new paragraph(s) created, " + updatedCount + " existing paragraph(s) updated with the handbook's official text." +
+        (newlyCreatedStandards.length ? " Added " + newlyCreatedStandards.length + " new standard(s) found in the PDF: " + newlyCreatedStandards.map(function (s) { return s.code; }).join(", ") + " — double-check the family/title on each (Coverage Review > ✎ Edit standard)." : "") +
+        (touchedStandards.length ? " Standards touched: " + touchedStandards.map(function (t) { return t.std.code; }).join(", ") + "." : " No matching standard headers were found in this PDF, so nothing could be written — check the standard codes in Coverage Review match the handbook's wording.") +
+        (notFoundStandards.length ? " Not found in this PDF: " + notFoundStandards.map(function (s) { return s.code; }).join(", ") + "." : "") +
+        " Full details (per-standard counts and a text sample) were printed to the browser console.");
     } catch (err) { alert("Could not process that PDF: " + err.message); }
     finally { btn.disabled = false; progressWrap.style.display = "none"; }
   }
@@ -2250,6 +2551,16 @@
     }
     return -1;
   }
+  // The guided workflow is PDF first (populates official text) then Excel (populates the WP
+  // extract) — this checks whether that's actually happened yet for the methodology's own
+  // standard families, so we can nudge the user rather than silently leave text blank.
+  function familiesHavePdfText(methodologyId) {
+    var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
+    if (!meth) return true;
+    var relevantStds = data.standards.filter(function (s) { return (meth.allowedFamilies || []).indexOf(s.family) !== -1; });
+    if (!relevantStds.length) return true;
+    return relevantStds.some(function (s) { return s.paragraphs.some(function (p) { return !!p.sourceDoc; }); });
+  }
   function openExcelImportModal(workbook) {
     var sheetNames = workbook.SheetNames;
     var sheetWrap = document.getElementById("excel-sheet-wrap");
@@ -2275,6 +2586,10 @@
     var methSel = document.getElementById("f-excel-methodology");
     methSel.innerHTML = data.methodologies.map(function (m) { return '<option value="' + escapeAttr(m.id) + '">' + escapeHtml(m.name) + "</option>"; }).join("");
     if (state.activeMethodologyId) methSel.value = state.activeMethodologyId;
+    var orderNoteEl = document.getElementById("excel-order-note");
+    function refreshOrderNote() { orderNoteEl.style.display = familiesHavePdfText(methSel.value) ? "none" : ""; }
+    methSel.onchange = refreshOrderNote;
+    refreshOrderNote();
 
     var importBtn = document.getElementById("confirm-excel-import-btn");
     var missingEl = document.getElementById("excel-missing-columns");
@@ -2308,6 +2623,8 @@
   function applyExcelImport(allRows, colMap, methodologyId, worksheet) {
     var createdStandards = 0, createdParagraphs = 0, updated = 0, skipped = 0;
     var colorChecked = 0, colorMismatch = 0;
+    var newlyCreated = []; // { std, para } — paragraphs this file added, for an informational "new" flag
+    var touchedByStd = {}; // std.id -> { paraNumber: true } — every number this file actually covered
     var state = { standard: null, main: null, letter: null, roman: null, subletter: null, subsub: null };
     function cellVal(row, idx) { return idx != null ? normalizeWs(row[idx]) : ""; }
 
@@ -2359,9 +2676,10 @@
       var std = findOrCreateStandard(refInfo, state.standard);
       if (data.standards.length > stdCountBefore) createdStandards++;
       var number = composeParaNumber(refInfo.num, bareNumber);
+      (touchedByStd[std.id] = touchedByStd[std.id] || {})[number] = true;
       var paraCountBefore = std.paragraphs.length;
       var para = findOrCreateParagraph(std, number, officialTextCell);
-      if (std.paragraphs.length > paraCountBefore) createdParagraphs++;
+      if (std.paragraphs.length > paraCountBefore) { createdParagraphs++; newlyCreated.push({ std: std, para: para }); }
       var cov = ensureCoverageEntry(para, methodologyId);
       if (wpExtractCell) cov.wpExtract = wpExtractCell;
       if (wpReferenceCell) cov.wpReference = wpReferenceCell;
@@ -2374,14 +2692,37 @@
       updated++;
     }
 
+    // Flag anything on either side of this import that doesn't line up: a paragraph already in
+    // the tracker (for a standard this file actually covers) that no row in this file touched,
+    // and — the other direction — every paragraph this file just added, so it gets one visible
+    // review pass even though it was applied immediately (Excel is the source of truth for WP
+    // extract text, so unlike PDF "new" paragraphs these aren't held back for manual approval).
+    var excelFlags = [];
+    Object.keys(touchedByStd).forEach(function (stdId) {
+      var std = data.standards.find(function (s) { return s.id === stdId; });
+      if (!std) return;
+      std.paragraphs.forEach(function (p) {
+        if (!touchedByStd[stdId][p.number]) {
+          excelFlags.push({ id: uid("flag"), type: "missing", standardId: std.id, standardCode: std.code, paragraphId: p.id, number: p.number, oldText: p.text, newText: null, status: "open", source: "excel" });
+        }
+      });
+    });
+    newlyCreated.forEach(function (item) {
+      excelFlags.push({ id: uid("flag"), type: "new", standardId: item.std.id, standardCode: item.std.code, paragraphId: item.para.id, number: item.para.number, oldText: null, newText: item.para.text, status: "open", source: "excel", alreadyApplied: true });
+    });
+    if (excelFlags.length) {
+      data.pendingFlags = (data.pendingFlags || []).filter(function (f) { return !(f.source === "excel" && touchedByStd[f.standardId]); }).concat(excelFlags);
+    }
+
     var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
     logChange("import", "coverage", meth ? meth.name : "", "Imported WP mapping from Excel — " + updated + " row(s) applied" +
       (createdStandards ? ", " + createdStandards + " new standard(s) (scoped to " + (meth ? meth.name : "this methodology") + " only)" : "") +
       (createdParagraphs ? ", " + createdParagraphs + " new paragraph(s)" : "") +
       (skipped ? ", " + skipped + " row(s) skipped" : "") +
-      (colorChecked ? "; colour check: " + (colorChecked - colorMismatch) + "/" + colorChecked + " row(s) matched their expected hierarchy colour" : "") + ".");
+      (colorChecked ? "; colour check: " + (colorChecked - colorMismatch) + "/" + colorChecked + " row(s) matched their expected hierarchy colour" : "") +
+      (excelFlags.length ? "; " + excelFlags.length + " difference(s) flagged for review" : "") + ".");
     persist();
-    return { updated: updated, createdStandards: createdStandards, createdParagraphs: createdParagraphs, skipped: skipped, colorChecked: colorChecked, colorMismatch: colorMismatch };
+    return { updated: updated, createdStandards: createdStandards, createdParagraphs: createdParagraphs, skipped: skipped, colorChecked: colorChecked, colorMismatch: colorMismatch, flagged: excelFlags.length };
   }
 
   function exportExcelTemplate() {
@@ -2572,7 +2913,7 @@
     document.getElementById("save-methodology-btn").addEventListener("click", saveMethodology);
     document.getElementById("add-standard-btn").addEventListener("click", function () { openStandardModal(null); });
     document.getElementById("save-standard-btn").addEventListener("click", saveStandard);
-    document.getElementById("add-paragraph-btn").addEventListener("click", function () { openParagraphModal(null, null); });
+    document.getElementById("add-paragraph-btn").addEventListener("click", function () { openParagraphModal(null); });
     document.getElementById("save-paragraph-btn").addEventListener("click", saveParagraph);
 
     document.querySelectorAll("[data-close]").forEach(function (b) { b.addEventListener("click", closeDialog); });
@@ -2624,6 +2965,10 @@
       if (!pendingExcelColMap || !pendingExcelRows) return;
       var methodologyId = document.getElementById("f-excel-methodology").value;
       if (!methodologyId) { alert("Please choose which methodology this Excel represents."); return; }
+      if (!familiesHavePdfText(methodologyId)) {
+        var proceed = confirm("Step 1 (import the handbook PDF) hasn't been done yet for this methodology's standards. The recommended order is PDF first, then Excel — otherwise the Official Standard Text will show a placeholder until you import the PDF.\n\nImport the Excel WP mapping anyway?");
+        if (!proceed) return;
+      }
       var result = applyExcelImport(pendingExcelRows, pendingExcelColMap, methodologyId, pendingExcelWorksheet);
       document.getElementById("dlg-excel-import").close();
       pendingExcelRows = null;
@@ -2640,16 +2985,17 @@
         (result.createdStandards ? ", " + result.createdStandards + " new standard(s) created (scoped to this methodology only — edit a standard to change which methodologies see it)" : "") +
         (result.createdParagraphs ? ", " + result.createdParagraphs + " new paragraph(s) created" : "") +
         (result.skipped ? ", " + result.skipped + " row(s) skipped (missing standard reference or main paragraph number)" : "") +
-        (result.colorChecked ? ". Colour check: " + (result.colorChecked - result.colorMismatch) + " of " + result.colorChecked + " coloured row(s) matched their expected hierarchy tier" + (result.colorMismatch ? " — " + result.colorMismatch + " row(s) didn't match, worth double-checking" : "") : "") + ".");
+        (result.colorChecked ? ". Colour check: " + (result.colorChecked - result.colorMismatch) + " of " + result.colorChecked + " coloured row(s) matched their expected hierarchy tier" + (result.colorMismatch ? " — " + result.colorMismatch + " row(s) didn't match, worth double-checking" : "") : "") +
+        (result.flagged ? ". " + result.flagged + " difference(s) flagged for review — look for the badges on Coverage Review." : "") + ".");
     });
 
     document.getElementById("dismiss-all-missing-btn").addEventListener("click", function () {
       if (!confirm("Keep all Removed paragraphs as-is? This just dismisses those flags — no paragraphs are deleted.")) return;
       var missing = data.pendingFlags.filter(function (f) { return f.status === "open" && f.type === "missing"; });
       missing.forEach(function (f) { f.status = "dismissed"; });
-      logChange("update", "flag", "Bulk dismiss", "Kept " + missing.length + " Removed-flagged paragraph(s) as-is (no PDF match found).");
+      logChange("update", "flag", "Bulk dismiss", "Kept " + missing.length + " Removed-flagged paragraph(s) as-is (no PDF/Excel match found).");
       persist();
-      renderReviewView(); renderNotifyBanner();
+      renderReviewView(); renderNotifyBanner(); renderCoverageView();
     });
 
     document.getElementById("clear-all-flags-btn").addEventListener("click", function () {
@@ -2660,7 +3006,7 @@
       state.bannerDismissed = false;
       logChange("update", "flag", "Cleared all flags", "Cleared " + count + " flag(s) and the last import record.");
       persist();
-      renderReviewView(); renderNotifyBanner();
+      renderReviewView(); renderNotifyBanner(); renderCoverageView();
     });
 
     document.getElementById("clear-audit-btn").addEventListener("click", function () {
@@ -2672,27 +3018,13 @@
       renderAuditView();
     });
 
+    document.getElementById("export-audit-csv-btn").addEventListener("click", exportAuditCsv);
     document.getElementById("audit-filter-user").addEventListener("change", function (e) { state.auditFilters.user = e.target.value; renderAuditView(); });
     document.getElementById("audit-filter-type").addEventListener("change", function (e) { state.auditFilters.entityType = e.target.value; renderAuditView(); });
     document.getElementById("audit-search").addEventListener("input", function (e) { state.auditFilters.search = e.target.value.trim(); renderAuditView(); });
 
     document.getElementById("add-user-btn").addEventListener("click", function () { openUserModal(null); });
     document.getElementById("save-user-btn").addEventListener("click", saveUser);
-
-    var themeBtn = document.getElementById("theme-toggle");
-    function applyTheme(theme) {
-      if (theme === "light" || theme === "dark") document.documentElement.setAttribute("data-theme", theme);
-      else document.documentElement.removeAttribute("data-theme");
-      themeBtn.textContent = theme === "dark" ? "☀" : "☽";
-    }
-    var savedTheme = localStorage.getItem(THEME_KEY) || "auto";
-    applyTheme(savedTheme);
-    themeBtn.addEventListener("click", function () {
-      var current = localStorage.getItem(THEME_KEY) || "auto";
-      var next = current === "dark" ? "light" : current === "light" ? "auto" : "dark";
-      localStorage.setItem(THEME_KEY, next);
-      applyTheme(next);
-    });
 
     renderAll();
     applyGlobalRolePermissions();
