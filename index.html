@@ -241,10 +241,21 @@
      flag, accepting just applies the reviewed outcome) — keep it the same blue primary style
      everywhere inside these cards, never the red/danger treatment used for delete elsewhere. */
   .compare-card .btn[data-apply-flag] { background: var(--cat-1); border-color: var(--cat-1); color: #fff; }
+  /* A resolved comparison stays on the card permanently (see latestChangeLogEntryFor) instead of
+     vanishing once decided — this banner is the only thing that changes from the live/pending
+     view, so the outcome (and who/when) is obvious at a glance without losing the before/after. */
+  .resolved-flag-banner { font-size: 12px; font-weight: 600; padding: 4px 0; }
+  .resolved-flag-banner--accepted { color: var(--status-matched-text, #16a34a); }
+  .resolved-flag-banner--dismissed { color: var(--text-muted); }
   .no-case { text-transform: none; }
   .review-text { font-size: 13px; color: var(--text-primary); white-space: pre-wrap; flex: 1; }
   .official-text-placeholder { color: var(--text-muted); font-style: italic; }
   .import-step-badge { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--cat-1); color: #fff; font-size: 11px; font-weight: 700; margin-right: 8px; flex-shrink: 0; }
+  .pdf-import-steps { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 4px; }
+  .pdf-import-step { flex: 1 1 320px; min-width: 260px; border: 1px solid var(--border); border-radius: 10px; padding: 14px; background: var(--surface-1); }
+  .pdf-import-step h4 { margin: 0 0 8px; font-size: 13px; display: flex; align-items: center; }
+  .pdf-step-badge { display: inline-flex; align-items: center; justify-content: center; padding: 2px 9px; border-radius: 999px; background: var(--cat-1); color: #fff; font-size: 11px; font-weight: 700; margin-right: 8px; flex-shrink: 0; }
+  .pdf-step-badge--2 { background: var(--status-updatebody, #d97706); }
   .import-order-note { font-size: 12px; color: var(--cat-1); margin: -4px 0 12px; }
   .review-textarea { width: 100%; min-height: 84px; border: 1px solid var(--border); background: var(--surface-1); border-radius: 6px; padding: 8px; font-size: 13px; resize: vertical; }
   .status-pills { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -283,7 +294,6 @@
   .diff-block { white-space: pre-wrap; font-size: 13px; line-height: 1.5; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; margin: 6px 0; max-height: 200px; overflow-y: auto; }
   .diff-del { color: #b91c1c; text-decoration: line-through; background: rgba(239,68,68,0.12); border-radius: 2px; }
   .diff-ins { color: #15803d; background: rgba(34,197,94,0.12); border-radius: 2px; }
-  .diff-col-label { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-bottom: 4px; }
 
   .progress-track { height: 8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin: 10px 0 6px; }
   .progress-fill { height: 100%; background: var(--cat-1); transition: width .15s; }
@@ -314,7 +324,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-view="dashboard">Dashboard</button>
       <button class="tab-btn" data-view="coverage">Coverage Review</button>
-      <button class="tab-btn" data-view="review">Standards Review</button>
+      <button class="tab-btn" data-view="review">Import & Compare</button>
       <button class="tab-btn" data-view="audit">Audit Trail</button>
       <button class="tab-btn" data-view="settings">Settings</button>
     </div>
@@ -367,7 +377,7 @@
             <option value="updateBody">Update Body</option>
             <option value="newParagraph">New Paragraph</option>
             <option value="renumbered">Renumbered</option>
-            <option value="removed">Removed</option>
+            <option value="removed">Not Found</option>
             <option value="notSure">Not Sure</option>
             <option value="na">N/A</option>
             <option value="bookmark">Bookmark</option>
@@ -392,20 +402,30 @@
 
       <section class="view" id="view-review">
         <div class="page-head">
-          <h2>Standards Review</h2>
-          <p>The first handbook PDF import for a standard sets its baseline Official Standard Text directly, no review step. Importing a newer edition of that PDF later compares it against the existing baseline paragraph by paragraph, and you Accept or Dismiss each difference. Excel WP mapping import works independently, populating the WP Extract column.</p>
+          <h2>Import & Compare</h2>
+          <p>Import the IRBA/IAASB handbook PDF and the Excel WP mapping file here, and review any flagged differences between handbook versions. The first handbook PDF import for a standard sets its baseline Official Standard Text directly, no review step. Importing a newer edition of that PDF later compares it against the existing baseline paragraph by paragraph, and you Accept or Dismiss each difference. Excel WP mapping import works independently, populating the WP Extract column.</p>
         </div>
         <div class="family-panel">
           <h3><span class="import-step-badge">1</span>Import the IRBA/IAASB handbook (PDF)</h3>
-          <div class="fp-sub">First import for a standard: reads numbered requirement paragraphs (not explanatory/application material) straight out of the PDF and writes them into Official Standard Text on Coverage Review as the baseline &mdash; applied immediately, no review queue. Importing again later (e.g. a new handbook edition) compares the new text against that baseline instead of overwriting it &mdash; each difference (Update Body / Renumbered / Removed / New Paragraph) is flagged for you to Accept or Dismiss, shown both below and inline on Coverage Review. Accepting replaces the baseline and keeps the old version in that paragraph's history.</div>
+          <div class="fp-sub">Two separate imports, done once each per handbook edition: first set the baseline, then later compare a new edition against it. A paragraph number that's gone missing on comparison is flagged as Not Found for manual review only — it's never deleted automatically. Accepting a flagged difference replaces the baseline and keeps the old version in that paragraph's history.</div>
           <div class="readonly-note" id="last-import-info" style="margin-bottom:14px;">No standards PDF has been imported yet.</div>
-          <div class="field" style="max-width:360px; margin-bottom:10px;">
+          <div class="field" style="max-width:360px; margin-bottom:14px;">
             <label>Handbook name / edition (shown as the source on each paragraph)</label>
             <input type="text" id="f-pdf-handbook-name" placeholder="e.g. IAASB 2025 Handbook Volume 4">
           </div>
-          <div>
-            <button class="btn primary" id="import-pdf-btn">Import Standards PDF</button>
-            <input type="file" id="import-pdf-file" accept="application/pdf" hidden>
+          <div class="pdf-import-steps">
+            <div class="pdf-import-step">
+              <h4><span class="pdf-step-badge">Step 1</span>Set baseline</h4>
+              <div class="fp-sub">Use this the FIRST time you import a handbook for a standard. Reads numbered requirement paragraphs (not explanatory/application material) straight out of the PDF and writes them into Official Standard Text on Coverage Review as the locked baseline &mdash; applied immediately, no review queue. Standards that already have a baseline are left untouched by this button &mdash; use Step 2 for those.</div>
+              <button class="btn primary" id="import-pdf-baseline-btn">Import Baseline PDF</button>
+              <input type="file" id="import-pdf-baseline-file" accept="application/pdf" hidden>
+            </div>
+            <div class="pdf-import-step">
+              <h4><span class="pdf-step-badge pdf-step-badge--2">Step 2</span>Compare new version</h4>
+              <div class="fp-sub">Use this once a newer handbook edition is released. Compares the new PDF against the existing baseline paragraph by paragraph and flags every difference (Update Body / Renumbered / New Paragraph / Not Found) for you to Accept or Dismiss on Coverage Review or below &mdash; nothing is overwritten until you Accept. Standards with no baseline yet are skipped by this button &mdash; use Step 1 for those first.</div>
+              <button class="btn primary" id="import-pdf-newversion-btn">Import New Version PDF</button>
+              <input type="file" id="import-pdf-newversion-file" accept="application/pdf" hidden>
+            </div>
           </div>
           <div id="import-progress" style="display:none;">
             <div class="progress-track"><div class="progress-fill" id="import-progress-fill" style="width:0%"></div></div>
@@ -422,8 +442,9 @@
         <h2 style="font-size:14px; margin: 22px 0 10px;">Flagged differences (from PDF comparison)</h2>
         <div class="pill-row" id="review-type-pills"></div>
         <div style="margin-bottom:10px; display:flex; gap:8px;">
-          <button class="btn" id="dismiss-all-missing-btn" style="display:none;">Keep all Removed paragraphs</button>
+          <button class="btn" id="dismiss-all-missing-btn" style="display:none;">Acknowledge all Not Found paragraphs</button>
           <button class="btn danger" id="clear-all-flags-btn" style="display:none;">Clear All Flags</button>
+          <button class="btn" id="export-change-report-btn">Export Change Report</button>
         </div>
         <div class="empty-state" id="no-flags-msg">No pending differences. Import a handbook PDF to check for changes.</div>
         <div id="flags-container"></div>
@@ -645,7 +666,7 @@
     updateBody:   { label: "Update Body",   icon: "◐", varName: "--status-updatebody" },
     newParagraph: { label: "New Paragraph", icon: "✚", varName: "--status-newparagraph" },
     renumbered:   { label: "Renumbered",    icon: "⇄", varName: "--status-renumbered" },
-    removed:      { label: "Removed",       icon: "✕", varName: "--status-removed" },
+    removed:      { label: "Not Found",     icon: "✕", varName: "--status-removed" },
     notSure:      { label: "Not Sure",      icon: "?", varName: "--status-notsure" },
     na:           { label: "N/A",           icon: "–", varName: "--status-na" },
     bookmark:     { label: "Bookmark",      icon: "⚑", varName: "--status-bookmark" }
@@ -949,7 +970,7 @@
       }
     ];
 
-    return { methodologies: methodologies, standards: standards, nextColorIndex: methodologies.length, users: [], auditLog: [], pendingFlags: [], lastImport: null };
+    return { methodologies: methodologies, standards: standards, nextColorIndex: methodologies.length, users: [], auditLog: [], pendingFlags: [], changeLog: [], lastImport: null };
   }
 
   // ---------- State ----------
@@ -990,6 +1011,7 @@
     }
     if (!Array.isArray(d.auditLog)) d.auditLog = [];
     if (!Array.isArray(d.pendingFlags)) d.pendingFlags = [];
+    if (!Array.isArray(d.changeLog)) d.changeLog = [];
     if (typeof d.lastImport === "undefined") d.lastImport = null;
     if (!Array.isArray(d.users)) d.users = [];
     d.users.forEach(function (u, idx) {
@@ -1448,6 +1470,7 @@
   function renderParagraphCard(std, p, meth, depth, hasChildren, childrenOpen) {
     var cov = p.coverage[meth.id] || { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
     var pendingFlag = (data.pendingFlags || []).find(function (fl) { return fl.status === "open" && fl.paragraphId === p.id; });
+    var resolvedChange = pendingFlag ? null : latestChangeLogEntryFor(p.id);
     var isExpanded = state.paraExpanded.hasOwnProperty(p.id) ? state.paraExpanded[p.id] : !!pendingFlag;
 
     var item = document.createElement("div");
@@ -1487,11 +1510,11 @@
       item.appendChild(prov);
     }
 
-    if (isExpanded) item.appendChild(renderParagraphDetail(std, p, meth, cov, pendingFlag));
+    if (isExpanded) item.appendChild(renderParagraphDetail(std, p, meth, cov, pendingFlag, resolvedChange));
     return item;
   }
 
-  function renderParagraphDetail(std, p, meth, cov, pendingFlag) {
+  function renderParagraphDetail(std, p, meth, cov, pendingFlag, resolvedChange) {
     var detail = document.createElement("div");
     detail.className = "review-card";
 
@@ -1516,26 +1539,49 @@
     else if (p.source === "pdf") sourceLine = "Source: PDF import";
     else sourceLine = "Source: Manual entry";
 
-    // The toggle only ever appears when there's an actual new-version difference to review —
-    // with nothing pending, WP Compliance is the only mode and there's nothing to switch to.
-    var hasNewVersion = !!pendingFlag;
-    var mode = hasNewVersion ? (state.paraCompareMode.hasOwnProperty(p.id) ? state.paraCompareMode[p.id] : "compare") : "wp";
+    // The toggle always shows — Handbook Compare is useful even on a Matched paragraph (to see
+    // baseline vs. the latest import side by side and confirm nothing changed), not just when
+    // there's a live or resolved difference to act on. Only the DEFAULT mode depends on status:
+    // an outcome that needs attention (Update Body/Renumbered/New/Not Found) opens straight into
+    // Handbook Compare; anything settled (Matched) or not yet comparison-driven (Not Sure/N/A/
+    // Bookmark) opens into WP Compliance instead. A manual toggle click always overrides this.
+    var comparisonRecord = pendingFlag || resolvedChange;
+    var COMPARE_DEFAULT_STATUSES = { updateBody: true, renumbered: true, newParagraph: true, removed: true };
+    var defaultMode = COMPARE_DEFAULT_STATUSES[cov.status] ? "compare" : "wp";
+    var mode = state.paraCompareMode.hasOwnProperty(p.id) ? state.paraCompareMode[p.id] : defaultMode;
 
-    var toggleHtml = hasNewVersion
-      ? '<div class="mode-toggle">' +
-          '<button class="mode-toggle-btn' + (mode === "compare" ? " active" : "") + '" data-set-compare-mode="compare" data-para-id="' + p.id + '">Handbook Compare</button>' +
-          '<button class="mode-toggle-btn' + (mode === "wp" ? " active" : "") + '" data-set-compare-mode="wp" data-para-id="' + p.id + '">WP Compliance</button>' +
-        "</div>"
-      : "";
+    var toggleHtml = '<div class="mode-toggle">' +
+        '<button class="mode-toggle-btn' + (mode === "compare" ? " active" : "") + '" data-set-compare-mode="compare" data-para-id="' + p.id + '">Handbook Compare</button>' +
+        '<button class="mode-toggle-btn' + (mode === "wp" ? " active" : "") + '" data-set-compare-mode="wp" data-para-id="' + p.id + '">WP Compliance</button>' +
+      "</div>";
 
     var columnsHtml;
-    if (mode === "compare" && hasNewVersion) {
+    if (mode === "compare") {
       var baselineSourceSub = p.sourceDoc
         ? escapeHtml(p.sourceDoc) + (p.sourceImportedAt ? " · imported " + new Date(p.sourceImportedAt).toLocaleDateString() : "")
         : (p.source === "excel" ? "Excel WP mapping import" : p.source === "pdf" ? "PDF import" : "Manual entry");
-      var newVersionSourceSub = pendingFlag.source === "excel"
-        ? "Excel WP mapping import"
-        : escapeHtml(pendingFlag.handbookName || "PDF import") + (pendingFlag.importedAt ? " · imported " + new Date(pendingFlag.importedAt).toLocaleDateString() : "");
+      var newVersionSourceSub, newVersionBody;
+      if (pendingFlag) {
+        newVersionSourceSub = pendingFlag.source === "excel"
+          ? "Excel WP mapping import"
+          : escapeHtml(pendingFlag.handbookName || "PDF import") + (pendingFlag.importedAt ? " · imported " + new Date(pendingFlag.importedAt).toLocaleDateString() : "");
+        newVersionBody = flagBodyHtml(pendingFlag);
+      } else if (resolvedChange) {
+        newVersionSourceSub = resolvedChange.source === "excel"
+          ? "Excel WP mapping import"
+          : escapeHtml(resolvedChange.handbookName || "PDF import") + (resolvedChange.importedAt ? " · imported " + new Date(resolvedChange.importedAt).toLocaleDateString() : "");
+        newVersionBody = resolvedChangeBodyHtml(resolvedChange);
+      } else if (data.lastImport && data.lastImport.handbookName) {
+        // No open or past flag for this paragraph, but a PDF import has run — it was checked and
+        // found identical (that's exactly what "Matched" means), so show it as such rather than
+        // implying nothing was ever compared.
+        newVersionSourceSub = escapeHtml(data.lastImport.handbookName) + (data.lastImport.importedAt ? " · imported " + new Date(data.lastImport.importedAt).toLocaleDateString() : "");
+        newVersionBody = '<div class="review-text" spellcheck="false">' + officialTextHtml(p) + "</div>" +
+          '<div class="readonly-note">No differences found in the latest import — matches the baseline exactly.</div>';
+      } else {
+        newVersionSourceSub = "No PDF import yet";
+        newVersionBody = '<div class="readonly-note">Import the handbook PDF (Import &amp; Compare) to compare this paragraph against a handbook edition.</div>';
+      }
       columnsHtml = '<div class="compare-columns compare-columns--cards">' +
           '<div class="compare-card compare-card--baseline">' +
             '<div class="compare-card-header">Baseline Official Text <span class="compare-card-header-sub">— ' + baselineSourceSub + "</span></div>" +
@@ -1543,7 +1589,7 @@
           "</div>" +
           '<div class="compare-card compare-card--new">' +
             '<div class="compare-card-header">New Version <span class="compare-card-header-sub">— ' + newVersionSourceSub + "</span></div>" +
-            flagBodyHtml(pendingFlag) +
+            newVersionBody +
           "</div>" +
         "</div>";
     } else {
@@ -1862,6 +1908,29 @@
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
+  // Every Accept/Dismiss decision made on a handbook comparison flag, from data.changeLog — this
+  // is the durable record (unlike pendingFlags, which gets wiped on the next PDF import), so it's
+  // the only reliable source for a full before/after report of handbook-version differences.
+  var CHANGE_TYPE_LABELS = { changed: "Update Body", renumbered: "Renumbered", "new": "New Paragraph", missing: "Not Found" };
+  function exportChangeReportCsv() {
+    var entries = (data.changeLog || []).slice().sort(function (a, b) { return new Date(a.resolvedAt) - new Date(b.resolvedAt); });
+    var headers = ["Standard", "Paragraph Reference", "Change Type", "Action", "Old Text", "New Text", "Handbook Version", "Date", "User"];
+    function csvCell(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
+    var rows = [headers.map(csvCell).join(",")];
+    entries.forEach(function (e) {
+      var ref = formatParaNumber(e.number) + (e.type === "renumbered" && e.oldNumber !== e.number ? " (was " + formatParaNumber(e.oldNumber) + ")" : "");
+      rows.push([
+        e.standardCode || "", ref, CHANGE_TYPE_LABELS[e.type] || e.type, e.action === "accepted" ? "Accepted" : "Dismissed",
+        e.oldText || "", e.newText || "", e.handbookName || "", e.resolvedAt ? new Date(e.resolvedAt).toLocaleString() : "", e.resolvedBy || ""
+      ].map(csvCell).join(","));
+    });
+    var blob = new Blob([rows.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = "change-report-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 
   // ---------- Settings: users ----------
   function renderSettingsView() {
@@ -2049,7 +2118,16 @@
   // Some IAASB standards' numbered paragraphs don't start as "requirements" from 1 — earlier
   // ones are scope/introduction. Record a family's known first-requirement number here as we
   // learn it; a family not listed defaults to no cutoff (starts from paragraph 1).
-  var REQUIREMENTS_START_PARA = { "ISRE 2400": 17 };
+  var REQUIREMENTS_START_PARA = { "ISRE 2400": 18 };
+  // A "Definitions" paragraph (and its lettered sub-paragraphs) reads like "'X' means Y" or
+  // "'X' has the meaning attributed to it in..." — it's explaining terminology, not imposing a
+  // requirement, so it should never be tracked as one even if its number would otherwise
+  // qualify. A paragraph that mixes a definition with an actual obligation ("...and the
+  // practitioner shall...") is kept — the "shall" means there's a real requirement in there too.
+  function looksLikeDefinitionOnly(text) {
+    if (/\bshall\b/i.test(text)) return false;
+    return /\bhas the meaning\b/i.test(text) || /\bmeans\b/i.test(text);
+  }
 
   // Only single letters ("a".."z") ever appear as markers in these standards, so plain
   // charCode+1 covers every real case — no need to handle multi-letter overflow (aa, ab, ...).
@@ -2113,7 +2191,7 @@
       // standard's real section in buildExtractionSections, for the same reason. Without this,
       // a large real PDF can produce hundreds of garbage "paragraphs" that silently overwrite
       // real ones with near-empty, repeated filler text.
-      if (chunk && chunk.split(" ").filter(Boolean).length >= 8) result.push({ number: items[i].ref, text: chunk });
+      if (chunk && chunk.split(" ").filter(Boolean).length >= 8 && !looksLikeDefinitionOnly(chunk)) result.push({ number: items[i].ref, text: chunk });
     }
     return result;
   }
@@ -2245,13 +2323,17 @@
     if (!flag) return;
     var handbookName = flag.handbookName || (data.lastImport && data.lastImport.handbookName) || null;
     var originLabel = flag.source === "excel" ? "Excel" : "PDF";
+    // "New" flags start with no paragraphId (the paragraph doesn't exist yet) — once Accept
+    // creates it, the change-log entry needs to point at that real id so the resolved card can
+    // still be found and shown on THAT paragraph afterwards, not lost with nothing to attach to.
+    var resolvedParagraphId = flag.paragraphId;
     if (action === "apply") {
       if (flag.type === "changed") {
         var found = findParagraph(flag.paragraphId);
         if (found) {
           var oldText = found.para.text;
           if (!found.para.history) found.para.history = [];
-          found.para.history.push({ number: found.para.number, text: oldText, sourceDoc: found.para.sourceDoc || null, sourceImportedAt: found.para.sourceImportedAt || null, replacedAt: new Date().toISOString(), replacedBy: identityName() });
+          found.para.history.push({ oldNumber: found.para.number, newNumber: found.para.number, oldText: oldText, newText: flag.newText, handbook: handbookName, changedAt: new Date().toISOString(), changedBy: identityName() });
           found.para.text = flag.newText;
           if (flag.source === "pdf" && handbookName) { found.para.sourceDoc = handbookName; found.para.sourceImportedAt = new Date().toISOString(); }
           applyAutoStatus(flag.paragraphId, "matched");
@@ -2262,8 +2344,9 @@
         var foundR = findParagraph(flag.paragraphId);
         if (foundR) {
           var oldNumber = foundR.para.number;
+          var oldTextR = foundR.para.text;
           if (!foundR.para.history) foundR.para.history = [];
-          foundR.para.history.push({ number: oldNumber, text: foundR.para.text, sourceDoc: foundR.para.sourceDoc || null, sourceImportedAt: foundR.para.sourceImportedAt || null, replacedAt: new Date().toISOString(), replacedBy: identityName() });
+          foundR.para.history.push({ oldNumber: oldNumber, newNumber: flag.number, oldText: oldTextR, newText: flag.newText, handbook: handbookName, changedAt: new Date().toISOString(), changedBy: identityName() });
           foundR.para.number = flag.number;
           if (flag.source === "pdf" && handbookName) { foundR.para.sourceDoc = handbookName; foundR.para.sourceImportedAt = new Date().toISOString(); }
           sortParagraphs(foundR.std);
@@ -2280,18 +2363,15 @@
           if (flag.source === "pdf" && handbookName) { newPara.sourceDoc = handbookName; newPara.sourceImportedAt = new Date().toISOString(); }
           std.paragraphs.push(newPara);
           sortParagraphs(std);
+          resolvedParagraphId = newPara.id;
           logChange("create", "paragraph", flag.standardCode + " " + flag.number, "Accepted a New Paragraph found in " + originLabel + " import — added to the tracker.",
             { paragraphRef: flag.number, newText: flag.newText, newNumber: flag.number });
         }
-      } else if (flag.type === "missing") {
-        if (!confirm('Remove paragraph ' + flag.number + " (" + flag.standardCode + ') from the tracker? This cannot be undone.')) return;
-        var foundM = findParagraph(flag.paragraphId);
-        if (foundM) {
-          foundM.std.paragraphs = foundM.std.paragraphs.filter(function (p) { return p.id !== foundM.para.id; });
-          logChange("delete", "paragraph", flag.standardCode + " " + flag.number, "Accepted a Removed change — its number was not found in the latest " + originLabel + " import, deleted from the tracker.",
-            { paragraphRef: flag.number, oldText: flag.oldText });
-        }
       }
+      // Deliberately no "missing"/Not Found branch here — that flag type only ever offers
+      // Dismiss (Acknowledge). A paragraph number absent from the latest import is never
+      // auto-deleted; it's surfaced for manual review and can only be removed via the explicit
+      // "Delete paragraph" action on the paragraph card itself, a separate deliberate step.
       flag.status = "resolved";
     } else {
       flag.status = "dismissed";
@@ -2299,8 +2379,41 @@
       logChange("update", "flag", flag.standardCode + " " + flag.number, "Dismissed a " + STATUS[flagStatusKey].label + " flag from " + originLabel + " import review — tracker data left unchanged.",
         { paragraphRef: flag.number, oldNumber: flag.oldNumber, oldText: flag.oldText, newText: flag.newText });
     }
+    // A resolved flag stops being "open" and would otherwise vanish from the comparison card the
+    // moment this renders again — and pendingFlags itself gets wiped wholesale on the next PDF
+    // import (see the filter in importPdfFile). This durable log is what lets the card still show
+    // "Accepted"/"Dismissed" with the full before/after afterwards, and is also the source for
+    // the Export Change Report button — neither purpose can rely on pendingFlags surviving.
+    if (!Array.isArray(data.changeLog)) data.changeLog = [];
+    data.changeLog.push({
+      id: uid("chg"),
+      paragraphId: resolvedParagraphId,
+      standardId: flag.standardId,
+      standardCode: flag.standardCode,
+      type: flag.type,
+      action: action === "apply" ? "accepted" : "dismissed",
+      number: flag.number,
+      oldNumber: flag.oldNumber != null ? flag.oldNumber : flag.number,
+      oldText: flag.oldText,
+      newText: flag.newText,
+      handbookName: handbookName,
+      source: flag.source,
+      importedAt: flag.importedAt || null,
+      resolvedAt: new Date().toISOString(),
+      resolvedBy: identityName()
+    });
     persist();
     renderReviewView(); renderNotifyBanner(); renderCoverageView(); renderDashboard();
+  }
+  // Most recent accepted/dismissed change for a paragraph, so its comparison card can keep
+  // showing the outcome after the pending flag that produced it is long gone (resolved flags
+  // are removed from the working queue, but never from this log).
+  function latestChangeLogEntryFor(paragraphId) {
+    if (!paragraphId) return null;
+    var entries = (data.changeLog || []).filter(function (c) { return c.paragraphId === paragraphId; });
+    if (!entries.length) return null;
+    entries.sort(function (a, b) { return new Date(b.resolvedAt) - new Date(a.resolvedAt); });
+    return entries[0];
   }
   function flagCounts(openFlags) {
     var c = { all: openFlags.length, "new": 0, changed: 0, renumbered: 0, missing: 0 };
@@ -2312,13 +2425,13 @@
     if (type === "new") return '<span class="flag-badge flag-new"' + extraAttrs + '>✚ New Paragraph</span>';
     if (type === "changed") return '<span class="flag-badge flag-changed"' + extraAttrs + '>◐ Update Body</span>';
     if (type === "renumbered") return '<span class="flag-badge flag-renumbered"' + extraAttrs + '>⇄ Renumbered</span>';
-    return '<span class="flag-badge flag-missing"' + extraAttrs + '>✕ Removed</span>';
+    return '<span class="flag-badge flag-missing"' + extraAttrs + '>✕ Not Found</span>';
   }
   function flagBodyHtml(f) {
     var canResolve = can("senior");
     var originLabel = f.source === "excel" ? "Excel WP mapping" : "PDF";
     if (f.type === "changed") {
-      return '<div class="diff-col-label">New version (from ' + escapeHtml(originLabel) + ")</div><div class=\"diff-block\" spellcheck=\"false\">" + renderWordDiff(f.oldText, f.newText) + "</div>" +
+      return '<div class="diff-block" spellcheck="false">' + renderWordDiff(f.oldText, f.newText) + "</div>" +
         '<div class="readonly-note"><span class="diff-del" style="padding:0 2px;">strikethrough</span> = removed, <span class="diff-ins" style="padding:0 2px;">highlight</span> = added.</div>' +
         (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Accept</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>' : "");
     }
@@ -2335,9 +2448,40 @@
       return '<div class="diff-block" spellcheck="false"><strong>Suggested new paragraph text (from ' + escapeHtml(originLabel) + '):</strong><br>' + escapeHtml(f.newText) + "</div>" +
         (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Accept (add to tracker)</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>' : "");
     }
-    return '<div class="diff-block" spellcheck="false"><strong>Currently stored (this paragraph number was not found in the latest ' + escapeHtml(originLabel) + ' import):</strong><br>' + escapeHtml(f.oldText) + "</div>" +
-      '<div class="readonly-note">May have been renumbered, superseded, or missed by extraction — review before removing.</div>' +
-      (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn danger" data-apply-flag="' + f.id + '">Accept (delete from tracker)</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss (keep as-is)</button></div>' : "");
+    // "Not Found" never offers to delete — a paragraph number missing from the latest import
+    // may just have been renumbered, superseded, or missed by extraction, so removing it
+    // automatically would be a data-loss risk. It's surfaced here for manual review only;
+    // deleting it (if that's genuinely the right call) is always a separate, deliberate action
+    // via "Delete paragraph" on the card itself, never something this flag triggers.
+    return '<div class="diff-block" spellcheck="false"><strong>Not Found — Review Manually:</strong><br>' + escapeHtml(f.oldText) + "</div>" +
+      '<div class="readonly-note">This paragraph number was not found in the latest ' + escapeHtml(originLabel) + " import. It has NOT been removed — review it manually (it may have been renumbered, superseded, or simply missed by extraction) and act on it yourself if needed.</div>" +
+      (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn" data-dismiss-flag="' + f.id + '">Acknowledge</button></div>' : "");
+  }
+  // Once a flag is Accepted or Dismissed it's gone from the working queue (and PDF-sourced flags
+  // are wiped outright on the next import) — this renders the SAME card content from the durable
+  // changeLog entry instead, so the comparison stays visible with a clear resolved marker rather
+  // than just disappearing the moment the decision is made.
+  function resolvedChangeBodyHtml(rc) {
+    var accepted = rc.action === "accepted";
+    var originLabel = rc.source === "excel" ? "Excel WP mapping" : "PDF";
+    var banner = '<div class="resolved-flag-banner resolved-flag-banner--' + (accepted ? "accepted" : "dismissed") + '">' +
+      (accepted ? "✓ Accepted" : "○ Dismissed") + " by " + escapeHtml(rc.resolvedBy || "Unknown") +
+      (rc.resolvedAt ? " · " + new Date(rc.resolvedAt).toLocaleString() : "") + "</div>";
+    var body;
+    if (rc.type === "changed") {
+      body = '<div class="diff-block" spellcheck="false">' + renderWordDiff(rc.oldText, rc.newText) + "</div>" +
+        '<div class="readonly-note"><span class="diff-del" style="padding:0 2px;">strikethrough</span> = removed, <span class="diff-ins" style="padding:0 2px;">highlight</span> = added' + (accepted ? " (now the baseline)." : " — not applied, baseline unchanged.") + "</div>";
+    } else if (rc.type === "renumbered") {
+      body = '<div class="diff-block" spellcheck="false"><strong>' + escapeHtml(formatParaNumber(rc.oldNumber)) + " → " + escapeHtml(formatParaNumber(rc.number)) + ":</strong><br>" + escapeHtml(rc.newText) + "</div>" +
+        '<div class="readonly-note">Same wording found under a different paragraph number in the ' + escapeHtml(originLabel) + " import." + (accepted ? " Renumbered accordingly." : " Not applied — number unchanged.") + "</div>";
+    } else if (rc.type === "new") {
+      body = '<div class="diff-block" spellcheck="false"><strong>New paragraph text (from ' + escapeHtml(originLabel) + '):</strong><br>' + escapeHtml(rc.newText) + "</div>" +
+        (accepted ? "" : '<div class="readonly-note">Not added to the tracker.</div>');
+    } else {
+      body = '<div class="diff-block" spellcheck="false"><strong>Not Found in that ' + escapeHtml(originLabel) + " import:</strong><br>" + escapeHtml(rc.oldText) + "</div>" +
+        '<div class="readonly-note">Acknowledged — the paragraph was left exactly as it was.</div>';
+    }
+    return banner + body;
   }
   function renderFlagRow(f) {
     return '<div class="flag-row"><div class="flag-number">' + escapeHtml(formatParaNumber(f.number)) + " " + flagBadgeHtml(f.type) + "</div>" + flagBodyHtml(f) + "</div>";
@@ -2355,7 +2499,7 @@
     var openFlags = (data.pendingFlags || []).filter(function (f) { return f.status === "open"; });
     var counts = flagCounts(openFlags);
     var pillsEl = document.getElementById("review-type-pills");
-    var types = [["all", "All"], ["new", "New"], ["changed", "Changed"], ["renumbered", "Renumbered"], ["missing", "Removed"]];
+    var types = [["all", "All"], ["new", "New"], ["changed", "Changed"], ["renumbered", "Renumbered"], ["missing", "Not Found"]];
     pillsEl.innerHTML = types.map(function (t) {
       return '<button class="pill-btn' + (state.reviewFilter.type === t[0] ? " active" : "") + '" data-set-type="' + t[0] + '">' + t[1] + " (" + (counts[t[0]] || 0) + ")</button>";
     }).join("");
@@ -2363,8 +2507,10 @@
 
     document.getElementById("dismiss-all-missing-btn").style.display = (counts.missing > 0 && can("senior")) ? "" : "none";
     document.getElementById("clear-all-flags-btn").style.display = ((data.pendingFlags || []).length > 0 && can("admin")) ? "" : "none";
-    var importPdfBtn = document.getElementById("import-pdf-btn");
-    if (importPdfBtn) importPdfBtn.style.display = can("senior") ? "" : "none";
+    var importPdfBaselineBtn = document.getElementById("import-pdf-baseline-btn");
+    if (importPdfBaselineBtn) importPdfBaselineBtn.style.display = can("senior") ? "" : "none";
+    var importPdfNewVersionBtn = document.getElementById("import-pdf-newversion-btn");
+    if (importPdfNewVersionBtn) importPdfNewVersionBtn.style.display = can("senior") ? "" : "none";
     var importExcelBtn = document.getElementById("import-excel-btn");
     if (importExcelBtn) importExcelBtn.style.display = can("senior") ? "" : "none";
     var downloadTemplateBtn = document.getElementById("download-excel-template-btn");
@@ -2418,13 +2564,15 @@
       new Promise(function (_, reject) { setTimeout(function () { reject(new Error(message)); }, ms); })
     ]);
   }
-  async function importPdfFile(file) {
+  async function importPdfFile(file, mode) {
     if (typeof pdfjsLib === "undefined") { alert("The PDF engine failed to load (this feature needs an internet connection to fetch pdf.js from its CDN). Please check your connection and try again."); return; }
     var progressWrap = document.getElementById("import-progress");
     var progressFill = document.getElementById("import-progress-fill");
     var progressText = document.getElementById("import-progress-text");
-    var btn = document.getElementById("import-pdf-btn");
-    btn.disabled = true; progressWrap.style.display = "block"; progressFill.style.width = "0%"; progressText.textContent = "Reading file...";
+    var baselineBtn = document.getElementById("import-pdf-baseline-btn");
+    var newVersionBtn = document.getElementById("import-pdf-newversion-btn");
+    baselineBtn.disabled = true; newVersionBtn.disabled = true;
+    progressWrap.style.display = "block"; progressFill.style.width = "0%"; progressText.textContent = "Reading file...";
     try {
       var buf = await file.arrayBuffer();
       progressText.textContent = "Opening PDF...";
@@ -2450,16 +2598,18 @@
       var notFoundStandards = data.standards.filter(function (std) { return !sections.some(function (s) { return s.std.id === std.id; }); });
       var createdCount = 0, updatedCount = 0, flaggedCount = 0;
       var touchedStandards = []; // for the diagnostic log + so we can jump to a methodology that can actually see the result
+      var skippedStandards = []; // standards found in the PDF but skipped because this button's step didn't apply to them
       var newPdfFlags = [];
       sections.forEach(function (sec) {
-        var extracted = extractParagraphsFromSection(sec);
-        // A standard with NO paragraph carrying a sourceDoc yet has never had a PDF baseline —
-        // this import establishes it directly, the same way a brand-new standard would be
-        // populated. Once a baseline exists, a later import is a NEW VERSION: nothing gets
-        // overwritten automatically, every difference is proposed as a flag for the reviewer to
-        // Accept (which then updates the baseline and files the old version in that paragraph's
-        // history) or Dismiss (leaves the baseline exactly as it was).
+        // A standard with NO paragraph carrying a sourceDoc yet has never had a PDF baseline.
+        // Which button was clicked decides which standards this import is even allowed to touch —
+        // Step 1 (baseline) only ever sets up standards that don't have one yet, and Step 2
+        // (compare) only ever compares against a baseline that already exists. This keeps each
+        // button's behaviour exactly what its label promises, instead of silently auto-detecting.
         var hasBaseline = sec.std.paragraphs.some(function (p) { return !!p.sourceDoc; });
+        if (mode === "baseline" && hasBaseline) { skippedStandards.push({ std: sec.std, reason: "already has a baseline — use Step 2 to compare a new version" }); return; }
+        if (mode === "newVersion" && !hasBaseline) { skippedStandards.push({ std: sec.std, reason: "no baseline yet — use Step 1 first" }); return; }
+        var extracted = extractParagraphsFromSection(sec);
         var stdCreated = 0, stdUpdated = 0, stdFlagged = 0;
         if (!hasBaseline) {
           extracted.forEach(function (e) {
@@ -2498,10 +2648,10 @@
       // A fresh PDF import's comparison fully supersedes whatever the previous PDF import
       // flagged, but must not clobber still-open flags raised by an Excel WP-mapping import.
       data.pendingFlags = (data.pendingFlags || []).filter(function (f) { return f.source && f.source !== "pdf"; }).concat(newPdfFlags);
-      data.lastImport = { fileName: file.name, handbookName: handbookName, importedAt: importedAt, importedBy: identityName(), pageCount: pdf.numPages, notFoundStandards: notFoundStandards.map(function (s) { return s.code; }), createdCount: createdCount, updatedCount: updatedCount, flaggedCount: flaggedCount, createdStandards: newlyCreatedStandards.map(function (s) { return s.code; }) };
+      data.lastImport = { fileName: file.name, handbookName: handbookName, mode: mode, importedAt: importedAt, importedBy: identityName(), pageCount: pdf.numPages, notFoundStandards: notFoundStandards.map(function (s) { return s.code; }), createdCount: createdCount, updatedCount: updatedCount, flaggedCount: flaggedCount, createdStandards: newlyCreatedStandards.map(function (s) { return s.code; }) };
       state.bannerDismissed = false;
       state.reviewRevealed = {};
-      logChange("import", "standards", file.name, 'Imported standards PDF "' + file.name + '" (' + handbookName + ", " + pdf.numPages + " pages) — baselined " + createdCount + " new and " + updatedCount + " existing paragraph(s); flagged " + flaggedCount + " difference(s) against the existing baseline for review." +
+      logChange("import", "standards", file.name, (mode === "baseline" ? "Baseline" : "New version") + ' import — standards PDF "' + file.name + '" (' + handbookName + ", " + pdf.numPages + " pages) — baselined " + createdCount + " new and " + updatedCount + " existing paragraph(s); flagged " + flaggedCount + " difference(s) against the existing baseline for review." +
         (newlyCreatedStandards.length ? " Added " + newlyCreatedStandards.length + " new standard(s) found in the PDF but not yet in the tracker: " + newlyCreatedStandards.map(function (s) { return s.code + " (" + s.family + ")"; }).join(", ") + "." : ""));
 
       // Diagnostic: exactly what got written and where, so a "nothing" report can be checked
@@ -2513,6 +2663,7 @@
         return { standard: t.std.code, sample: t.std.paragraphs.slice(0, 3).map(function (p) { return { number: p.number, textPreview: (p.text || "").slice(0, 80), sourceDoc: p.sourceDoc }; }) };
       }));
       if (notFoundStandards.length) console.log("[PDF import] standards NOT found in this PDF (header text never matched):", notFoundStandards.map(function (s) { return s.code; }));
+      if (skippedStandards.length) console.log("[PDF import] standards skipped for this step (" + mode + "):", skippedStandards.map(function (s) { return s.std.code + " — " + s.reason; }));
 
       // A big import can touch standards outside whichever methodology tab happens to be
       // active, and any leftover family/status/search filter can hide every one of the
@@ -2533,14 +2684,15 @@
       persist();
       renderCoverageView(); renderDashboard(); renderAuditView(); renderReviewView(); renderNotifyBanner();
       if (createdCount || updatedCount || flaggedCount) switchToView("coverage");
-      alert("Imported " + handbookName + ": " + createdCount + " new paragraph(s) baselined, " + updatedCount + " existing baseline paragraph(s) updated (first import for that standard)." +
-        (flaggedCount ? " " + flaggedCount + " difference(s) flagged against the existing baseline — review and Accept/Dismiss each on Coverage Review (or Standards Review)." : "") +
+      alert((mode === "baseline" ? "Baseline import — " : "New version comparison — ") + handbookName + ": " + createdCount + " new paragraph(s) baselined, " + updatedCount + " existing baseline paragraph(s) updated." +
+        (flaggedCount ? " " + flaggedCount + " difference(s) flagged against the existing baseline — review and Accept/Dismiss each on Coverage Review (or Import & Compare)." : "") +
         (newlyCreatedStandards.length ? " Added " + newlyCreatedStandards.length + " new standard(s) found in the PDF: " + newlyCreatedStandards.map(function (s) { return s.code; }).join(", ") + " — double-check the family/title on each (Coverage Review > ✎ Edit standard)." : "") +
         (touchedStandards.length ? " Standards touched: " + touchedStandards.map(function (t) { return t.std.code; }).join(", ") + "." : " No matching standard headers were found in this PDF, so nothing could be written — check the standard codes in Coverage Review match the handbook's wording.") +
+        (skippedStandards.length ? " Skipped (" + (mode === "baseline" ? "already baselined" : "no baseline yet") + "): " + skippedStandards.map(function (s) { return s.std.code; }).join(", ") + "." : "") +
         (notFoundStandards.length ? " Not found in this PDF: " + notFoundStandards.map(function (s) { return s.code; }).join(", ") + "." : "") +
         " Full details (per-standard counts and a text sample) were printed to the browser console.");
     } catch (err) { alert("Could not process that PDF: " + err.message); }
-    finally { btn.disabled = false; progressWrap.style.display = "none"; }
+    finally { baselineBtn.disabled = false; newVersionBtn.disabled = false; progressWrap.style.display = "none"; }
   }
 
   // ---------- Excel WP mapping import ----------
@@ -2818,7 +2970,7 @@
       [],
       ["This file has two sheets:"],
       ["1. Instructions (this sheet)"],
-      ["2. WP Mapping — fill this in with your data, one row per paragraph, then import it via Standards Review > Import WP Mapping (Excel)"],
+      ["2. WP Mapping — fill this in with your data, one row per paragraph, then import it via Import & Compare > Import WP Mapping (Excel)"],
       [],
       ["Column", "Required?", "Format / notes"],
       ["Standard Reference", "Required", 'Starts with ISA, ISAE, ISRS, ISRE, LPC or PPRA plus the standard number, e.g. "ISA 315", "ISAE 3000", "ISRS 4400", "ISRS 4410", "ISRE 2400", "LPC Rules", "PPRA Rules".'],
@@ -3030,8 +3182,10 @@
       renderAll();
     });
 
-    document.getElementById("import-pdf-btn").addEventListener("click", function () { document.getElementById("import-pdf-file").click(); });
-    document.getElementById("import-pdf-file").addEventListener("change", function (e) { if (e.target.files[0]) importPdfFile(e.target.files[0]); e.target.value = ""; });
+    document.getElementById("import-pdf-baseline-btn").addEventListener("click", function () { document.getElementById("import-pdf-baseline-file").click(); });
+    document.getElementById("import-pdf-baseline-file").addEventListener("change", function (e) { if (e.target.files[0]) importPdfFile(e.target.files[0], "baseline"); e.target.value = ""; });
+    document.getElementById("import-pdf-newversion-btn").addEventListener("click", function () { document.getElementById("import-pdf-newversion-file").click(); });
+    document.getElementById("import-pdf-newversion-file").addEventListener("change", function (e) { if (e.target.files[0]) importPdfFile(e.target.files[0], "newVersion"); e.target.value = ""; });
 
     document.getElementById("import-excel-btn").addEventListener("click", function () { document.getElementById("import-excel-file").click(); });
     document.getElementById("download-excel-template-btn").addEventListener("click", exportExcelTemplate);
@@ -3076,10 +3230,10 @@
     });
 
     document.getElementById("dismiss-all-missing-btn").addEventListener("click", function () {
-      if (!confirm("Keep all Removed paragraphs as-is? This just dismisses those flags — no paragraphs are deleted.")) return;
+      if (!confirm("Acknowledge all Not Found paragraphs? This just clears those flags for review — no paragraphs are ever deleted by this.")) return;
       var missing = data.pendingFlags.filter(function (f) { return f.status === "open" && f.type === "missing"; });
       missing.forEach(function (f) { f.status = "dismissed"; });
-      logChange("update", "flag", "Bulk dismiss", "Kept " + missing.length + " Removed-flagged paragraph(s) as-is (no PDF/Excel match found).");
+      logChange("update", "flag", "Bulk acknowledge", "Acknowledged " + missing.length + " Not Found paragraph(s) as reviewed (no match found in the latest import; nothing was deleted).");
       persist();
       renderReviewView(); renderNotifyBanner(); renderCoverageView();
     });
@@ -3105,6 +3259,7 @@
     });
 
     document.getElementById("export-audit-csv-btn").addEventListener("click", exportAuditCsv);
+    document.getElementById("export-change-report-btn").addEventListener("click", exportChangeReportCsv);
     document.getElementById("audit-filter-user").addEventListener("change", function (e) { state.auditFilters.user = e.target.value; renderAuditView(); });
     document.getElementById("audit-filter-type").addEventListener("change", function (e) { state.auditFilters.entityType = e.target.value; renderAuditView(); });
     document.getElementById("audit-search").addEventListener("input", function (e) { state.auditFilters.search = e.target.value.trim(); renderAuditView(); });
