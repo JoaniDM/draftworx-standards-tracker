@@ -142,6 +142,13 @@
 
   .filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
   .filter-bar select, .filter-bar input[type=text] { border: 1px solid var(--border); background: var(--surface-1); border-radius: var(--radius); padding: 6px 10px; font-size: 13px; }
+  /* Coverage Review's filter bar carries two independently-acting status filters (handbook
+     comparison vs. WP coverage) — a bordered surface plus a small label over each dropdown
+     makes it read as one clear filter panel instead of two anonymous selects lost in the row. */
+  .filter-bar--prominent { align-items: flex-end; background: var(--surface-1); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; }
+  .filter-group { display: flex; flex-direction: column; gap: 3px; }
+  .filter-group label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+  .filter-bar--prominent select { min-width: 170px; }
 
   .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
   .pill-btn { border: 1px solid var(--border); background: var(--surface-1); border-radius: 999px; padding: 6px 14px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
@@ -215,22 +222,19 @@
   .status-dot--notSure { background: var(--status-notsure); }
   .status-dot--na { background: var(--status-na); }
   .status-dot--bookmark { background: var(--status-bookmark); }
+  .status-dot--wp-covered { background: var(--status-matched); }
+  .status-dot--wp-partial { background: var(--status-updatebody); }
+  .status-dot--wp-notMapped { background: var(--status-notsure); }
+  .status-dot--wp-review { background: var(--status-removed); }
 
   .review-card { border-top: 1px solid var(--border); background: var(--surface-1); }
-  .mode-toggle { display: flex; gap: 6px; padding: 12px 16px 0; }
-  .mode-toggle-btn { border: 1px solid var(--border); background: var(--surface-1); padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; }
-  .mode-toggle-btn.active { background: var(--cat-1); border-color: var(--cat-1); color: #fff; }
-  .compare-columns { display: grid; grid-template-columns: 1fr 1fr; }
-  .compare-col { padding: 14px 16px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
-  .compare-col:last-child { border-right: none; background: var(--surface-2); }
   .status-section { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border); }
-  .compare-col h4, .status-section h4 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); }
-  /* Handbook Compare mode: two matching cards side by side, distinguished only by a subtle
-     background tint (very light blue = the current accepted baseline, very light amber = the
-     new version pending review) — same white border and radius on both, so they read as equals. */
-  .compare-columns--cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px 16px; background: var(--surface-page); }
+  .status-section h4 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); }
+  /* New Version is a banner ABOVE the 3-way comparison — only present at all when a newer PDF
+     import has actually produced a live or past-decided difference against the baseline; a
+     Matched paragraph with nothing to compare gets no banner. */
+  .compare-stack { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; background: var(--surface-page); }
   .compare-card { border: 1px solid #fff; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
-  .compare-card--baseline { background: #f0f7ff; }
   .compare-card--new { background: #fffbf0; }
   .compare-card-header { font-size: 12px; font-weight: 600; color: var(--text-primary); }
   .compare-card-header-sub { font-weight: 400; color: var(--text-muted); }
@@ -247,6 +251,21 @@
   .resolved-flag-banner { font-size: 12px; font-weight: 600; padding: 4px 0; }
   .resolved-flag-banner--accepted { color: var(--status-matched-text, #16a34a); }
   .resolved-flag-banner--dismissed { color: var(--text-muted); }
+  .not-mapped-warning { font-size: 12px; font-weight: 700; color: var(--status-removed-text, #dc2626); }
+  .wp-status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); }
+  /* The always-visible 3-way comparison: baseline (from PDF) | the standard's text as captured
+     at the time the Excel WP mapping was done | the current Draftworx WP procedure — side by
+     side specifically so a stale WP mapping (standard changed since it was mapped) is visible
+     at a glance, which a stacked layout would hide. */
+  .compare-triple { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding: 14px 16px; background: var(--surface-page); }
+  .compare-triple .compare-card--baseline { background: #f0f7ff; }
+  .compare-triple .compare-card--historic { background: #fff7ed; }
+  .compare-triple .compare-card--excel { background: #f7f5ff; }
+  .standard-changed-note { font-size: 12px; font-weight: 600; color: var(--status-updatebody-text, #b45309); }
+  .standard-unchanged-note { font-size: 12px; font-weight: 600; color: var(--status-matched-text, #16a34a); }
+  @media (max-width: 980px) {
+    .compare-triple { grid-template-columns: 1fr; }
+  }
   .no-case { text-transform: none; }
   .review-text { font-size: 13px; color: var(--text-primary); white-space: pre-wrap; flex: 1; }
   .official-text-placeholder { color: var(--text-muted); font-style: italic; }
@@ -274,12 +293,6 @@
   .tick-marks-grid { display: flex; flex-wrap: wrap; gap: 6px 12px; }
   .tick-mark-item { display: flex; align-items: center; gap: 5px; font-size: 12px; }
   .tick-mark-item input { margin: 0; }
-  @media (max-width: 980px) {
-    .compare-columns { grid-template-columns: 1fr; }
-    .compare-col { border-right: none; border-bottom: 1px solid var(--border); }
-    .compare-col:last-child { border-bottom: none; }
-    .compare-columns--cards { grid-template-columns: 1fr; }
-  }
 
   .flag-row { padding: 12px 0; border-top: 1px solid var(--border); }
   .flag-row:first-of-type { border-top: none; }
@@ -367,21 +380,37 @@
           <h2>Coverage Review</h2>
           <p>Compare the official standard text (from the handbook PDF) against the Draftworx WP extract (from Excel) for <strong id="coverage-active-meth-name"></strong> — status is set automatically from that comparison.</p>
         </div>
-        <div class="filter-bar">
-          <select id="filter-family">
-            <option value="all">All families</option>
-          </select>
-          <select id="filter-status">
-            <option value="all">All statuses</option>
-            <option value="matched">Matched</option>
-            <option value="updateBody">Update Body</option>
-            <option value="newParagraph">New Paragraph</option>
-            <option value="renumbered">Renumbered</option>
-            <option value="removed">Not Found</option>
-            <option value="notSure">Not Sure</option>
-            <option value="na">N/A</option>
-            <option value="bookmark">Bookmark</option>
-          </select>
+        <div class="filter-bar filter-bar--prominent">
+          <div class="filter-group">
+            <label for="filter-family">Family</label>
+            <select id="filter-family">
+              <option value="all">All families</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="filter-status">Handbook comparison status</label>
+            <select id="filter-status">
+              <option value="all">All statuses</option>
+              <option value="matched">Matched</option>
+              <option value="updateBody">Update Body</option>
+              <option value="newParagraph">New Paragraph</option>
+              <option value="renumbered">Renumbered</option>
+              <option value="removed">Not Found</option>
+              <option value="notSure">Not Sure</option>
+              <option value="na">N/A</option>
+              <option value="bookmark">Bookmark</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="filter-wp-status">WP coverage status</label>
+            <select id="filter-wp-status">
+              <option value="all">All coverage</option>
+              <option value="covered">Covered</option>
+              <option value="partial">Partial</option>
+              <option value="review">Low Coverage</option>
+              <option value="notMapped">Not Mapped</option>
+            </select>
+          </div>
           <div class="spacer"></div>
           <button class="btn" id="add-standard-btn">+ Add standard</button>
           <button class="btn" id="add-paragraph-btn">+ Add paragraph</button>
@@ -732,6 +761,25 @@
     var union = Object.keys(unionSet).length;
     return union ? Math.round((intersection / union) * 100) : null;
   }
+  // Second, independent badge for the collapsed row: the handbook-comparison status (Matched/
+  // Update Body/...) says whether the OFFICIAL TEXT is up to date — it says nothing about
+  // whether the WP extract actually covers that text. This is the WP-side equivalent, driven by
+  // the same word-overlap % already used inside WP Compliance mode, so both signals are visible
+  // at a glance without expanding the card.
+  var WP_MAP_STATUS = {
+    covered:   { label: "Covered",    icon: "✓" },
+    partial:   { label: "Partial",    icon: "◐" },
+    notMapped: { label: "Not Mapped", icon: "–" },
+    review:    { label: "Low Coverage", icon: "!" }
+  };
+  function wpMappingStatus(p, cov) {
+    if (!cov.wpExtract) return "notMapped";
+    var pct = textOverlapPct(p.text, cov.wpExtract);
+    if (pct === null) return "review";
+    if (pct >= 60) return "covered";
+    if (pct >= 20) return "partial";
+    return "review";
+  }
   function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
   }
@@ -981,6 +1029,7 @@
     view: "dashboard",
     familyFilter: "all",
     statusFilter: "all",
+    wpStatusFilter: "all",
     search: "",
     activeMethodologyId: null,
     bannerDismissed: false,
@@ -990,7 +1039,6 @@
     standardCollapse: {},
     paraExpanded: {},
     childrenExpanded: {},
-    paraCompareMode: {},
     editing: { methodologyId: null, standardId: null }
   };
   var STANDARD_COLLAPSE_THRESHOLD = 5;
@@ -1045,6 +1093,7 @@
           var c = p.coverage[mid];
           if (typeof c.wpExtract === "undefined") c.wpExtract = "";
           if (typeof c.wpReference === "undefined") c.wpReference = "";
+          if (typeof c.historicStandardText === "undefined") c.historicStandardText = "";
           if (typeof c.updatedBy === "undefined") c.updatedBy = null;
           if (typeof c.source === "undefined") c.source = null;
           if (!c.tickMarks || typeof c.tickMarks !== "object") c.tickMarks = emptyTickMarks();
@@ -1149,12 +1198,23 @@
     var c = para.coverage[methodologyId];
     return c ? c.status : "notSure";
   }
+  // "Not Mapped"/"Low Coverage"/"Partial"/"Covered" are WP_MAP_STATUS keys (WP-extract coverage
+  // of the official text), not STATUS keys (handbook-comparison outcome) — the single dropdown
+  // covers both classification systems, so which one a selected value checks against depends on
+  // which set it belongs to.
   function matchesFilters(std, para) {
     if (!isStandardApplicable(std, state.activeMethodologyId)) return false;
     if (state.familyFilter !== "all" && std.family !== state.familyFilter) return false;
     if (state.statusFilter !== "all") {
       var s = getStatus(para, state.activeMethodologyId);
       if (s !== state.statusFilter) return false;
+    }
+    // Independent of the handbook-comparison filter above — a paragraph can be filtered by
+    // EITHER, or both at once (e.g. Update Body + Low Coverage together), since they answer two
+    // different questions: is the official text current, and does the WP extract cover it.
+    if (state.wpStatusFilter !== "all") {
+      var cov = para.coverage[state.activeMethodologyId] || { wpExtract: "" };
+      if (wpMappingStatus(para, cov) !== state.wpStatusFilter) return false;
     }
     if (state.search) {
       var q = state.search.toLowerCase();
@@ -1199,6 +1259,37 @@
   }
   function sortParagraphs(std) {
     std.paragraphs.sort(function (a, b) { return compareParaNumbers(a.number, b.number); });
+  }
+  // A sub-paragraph like "2400.48.c.v" only ever renders nested under "2400.48" (see
+  // buildParaTree's ancestor walk) if that ancestor number actually exists as a paragraph — PDF
+  // extraction can add a sub-item like this on its own (e.g. its main paragraph's lead-in text
+  // was too short to pass the noise filter and never got tracked) with nothing to group it
+  // under. This creates any missing ancestor as a bare placeholder heading first, so the
+  // hierarchy stays intact instead of the sub-paragraph showing up as a stray top-level row.
+  // Placeholder headings default to "N/A" (excluded from coverage %) since they aren't a real
+  // requirement — just structure — until real text/status is filled in for them separately.
+  function ensureAncestorParagraphs(std, number) {
+    var parts = number.split(".");
+    var createdNumbers = [];
+    for (var len = 2; len < parts.length; len++) {
+      var candidate = parts.slice(0, len).join(".");
+      if (!std.paragraphs.some(function (p) { return p.number === candidate; })) {
+        var coverage = {};
+        // Strict standard-to-methodology mapping: never create a coverage entry for a
+        // methodology this standard's family doesn't belong to in the first place.
+        data.methodologies.forEach(function (m) {
+          if ((m.allowedFamilies || []).indexOf(std.family) === -1) return;
+          coverage[m.id] = { status: "na", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
+        });
+        std.paragraphs.push({ id: uid("para"), number: candidate, text: "", source: "manual", coverage: coverage });
+        createdNumbers.push(candidate);
+      }
+    }
+    if (createdNumbers.length) {
+      sortParagraphs(std);
+      logChange("create", "paragraph", std.code + " " + createdNumbers.join(", "), "Auto-created missing parent heading(s) so " + number + " has somewhere to nest under.");
+    }
+    return createdNumbers;
   }
   function withScrollPreserved(fn) {
     var el = document.querySelector("main.content");
@@ -1372,7 +1463,7 @@
     document.getElementById("coverage-collapse-summary").textContent = matchingStandards.length + " standard" + (matchingStandards.length === 1 ? "" : "s") +
       (defaultCollapsed ? " (collapsed by default — click a heading, or Expand all, to see paragraphs)" : "");
 
-    var filterActive = !!state.search || state.statusFilter !== "all";
+    var filterActive = !!state.search || state.statusFilter !== "all" || state.wpStatusFilter !== "all";
 
     matchingStandards.forEach(function (entry) {
       var std = entry.std, matchingParas = entry.matchingParas;
@@ -1468,7 +1559,7 @@
   // flag start expanded automatically so the user notices them. If it has sub-paragraphs, a
   // separate tree-toggle chevron reveals/hides them independently of the detail view.
   function renderParagraphCard(std, p, meth, depth, hasChildren, childrenOpen) {
-    var cov = p.coverage[meth.id] || { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
+    var cov = p.coverage[meth.id] || { status: "notSure", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
     var pendingFlag = (data.pendingFlags || []).find(function (fl) { return fl.status === "open" && fl.paragraphId === p.id; });
     var resolvedChange = pendingFlag ? null : latestChangeLogEntryFor(p.id);
     var isExpanded = state.paraExpanded.hasOwnProperty(p.id) ? state.paraExpanded[p.id] : !!pendingFlag;
@@ -1488,6 +1579,10 @@
 
     var flagBadgeInline = pendingFlag ? flagBadgeHtml(pendingFlag.type, ' data-jump-to-flag-inline="' + p.id + '"') : "";
 
+    var wpMapKey = wpMappingStatus(p, cov);
+    var wpMapBadgeHtml = '<span class="status-dot-pill" title="WP extract coverage of the official text">' +
+      '<span class="status-dot status-dot--wp-' + wpMapKey + '"></span>' + WP_MAP_STATUS[wpMapKey].label + "</span>";
+
     var row = document.createElement("div");
     row.className = "para-row-collapsed";
     row.setAttribute("data-toggle-para", p.id);
@@ -1497,7 +1592,8 @@
       '<span class="para-row-spacer"></span>' +
       sourceBadgeHtml +
       flagBadgeInline +
-      '<span class="status-dot-pill"><span class="status-dot status-dot--' + cov.status + '"></span>' + STATUS[cov.status].label + "</span>";
+      wpMapBadgeHtml +
+      '<span class="status-dot-pill" title="Handbook comparison status"><span class="status-dot status-dot--' + cov.status + '"></span>' + STATUS[cov.status].label + "</span>";
     item.appendChild(row);
 
     // Where the WP-extract/status data itself came from, visible without expanding the card.
@@ -1531,88 +1627,77 @@
     var savedCaption = cov.updatedAt ? ("Last updated by " + escapeHtml(cov.updatedBy || "Unknown") + " · " + new Date(cov.updatedAt).toLocaleString()) : "Not yet reviewed for this methodology.";
     var ro = canEditCoverage ? "" : " disabled";
 
-    // Where the OFFICIAL TEXT itself came from — the handbook/edition it was imported from
-    // (for PDF-sourced paragraphs), or a plain provenance label otherwise.
-    var sourceLine;
-    if (p.sourceDoc) sourceLine = "Source: " + escapeHtml(p.sourceDoc) + (p.sourceImportedAt ? " · imported " + new Date(p.sourceImportedAt).toLocaleDateString() : "");
-    else if (p.source === "excel") sourceLine = "Source: Excel WP mapping import";
-    else if (p.source === "pdf") sourceLine = "Source: PDF import";
-    else sourceLine = "Source: Manual entry";
-
-    // The toggle always shows — Handbook Compare is useful even on a Matched paragraph (to see
-    // baseline vs. the latest import side by side and confirm nothing changed), not just when
-    // there's a live or resolved difference to act on. Only the DEFAULT mode depends on status:
-    // an outcome that needs attention (Update Body/Renumbered/New/Not Found) opens straight into
-    // Handbook Compare; anything settled (Matched) or not yet comparison-driven (Not Sure/N/A/
-    // Bookmark) opens into WP Compliance instead. A manual toggle click always overrides this.
+    // ---- New Version banner — only rendered when a newer PDF import has actually produced a
+    // live (pendingFlag) or past-decided (resolvedChange) difference against the baseline. A
+    // Matched paragraph with nothing to compare gets no banner at all; it sits ABOVE the 3-way
+    // comparison below rather than as one of its columns, since Accept/Dismiss is a decision to
+    // make, not a text to compare side by side. ----
     var comparisonRecord = pendingFlag || resolvedChange;
-    var COMPARE_DEFAULT_STATUSES = { updateBody: true, renumbered: true, newParagraph: true, removed: true };
-    var defaultMode = COMPARE_DEFAULT_STATUSES[cov.status] ? "compare" : "wp";
-    var mode = state.paraCompareMode.hasOwnProperty(p.id) ? state.paraCompareMode[p.id] : defaultMode;
+    var newVersionSectionHtml = "";
+    if (comparisonRecord) {
+      var newVersionSourceSub = comparisonRecord.source === "excel"
+        ? "Excel WP mapping import"
+        : escapeHtml(comparisonRecord.handbookName || "PDF import") + (comparisonRecord.importedAt ? " · imported " + new Date(comparisonRecord.importedAt).toLocaleDateString() : "");
+      var newVersionBody = pendingFlag ? flagBodyHtml(pendingFlag) : resolvedChangeBodyHtml(resolvedChange);
+      newVersionSectionHtml = '<div class="compare-stack" style="padding-bottom:0;"><div class="compare-card compare-card--new">' +
+          '<div class="compare-card-header">New Version <span class="compare-card-header-sub">— ' + newVersionSourceSub + "</span></div>" +
+          newVersionBody +
+        "</div></div>";
+    }
 
-    var toggleHtml = '<div class="mode-toggle">' +
-        '<button class="mode-toggle-btn' + (mode === "compare" ? " active" : "") + '" data-set-compare-mode="compare" data-para-id="' + p.id + '">Handbook Compare</button>' +
-        '<button class="mode-toggle-btn' + (mode === "wp" ? " active" : "") + '" data-set-compare-mode="wp" data-para-id="' + p.id + '">WP Compliance</button>' +
+    // ---- The always-visible 3-way comparison, side by side: current handbook baseline (PDF) |
+    // the standard's text as it read when the Excel WP mapping was last done | the current WP
+    // procedure Draftworx has for it. The middle and right columns are two INDEPENDENT
+    // snapshots — historicStandardText never changes once an Excel row set it (until a later
+    // Excel import overwrites it again), so comparing it against the baseline on the left is
+    // exactly what surfaces "the standard changed since this was mapped". ----
+    var baselineSourceSub = p.sourceDoc
+      ? escapeHtml(p.sourceDoc) + (p.sourceImportedAt ? " · imported " + new Date(p.sourceImportedAt).toLocaleDateString() : "")
+      : (p.source === "excel" ? "Excel WP mapping import" : p.source === "pdf" ? "PDF import" : "Manual entry");
+    var baselineColHtml = '<div class="compare-card compare-card--baseline">' +
+        '<div class="compare-card-header">Current Handbook Baseline <span class="compare-card-header-sub">— ' + baselineSourceSub + "</span></div>" +
+        '<div class="review-text" spellcheck="false">' + officialTextHtml(p) + "</div>" +
+        '<div class="readonly-note">Read-only — only updated by accepting a New Version difference above.' + (canManageStructure ? ' <button class="icon-btn" data-del-para="' + p.id + '" style="margin-left:4px;">✕ Delete paragraph</button>' : "") + "</div>" +
       "</div>";
 
-    var columnsHtml;
-    if (mode === "compare") {
-      var baselineSourceSub = p.sourceDoc
-        ? escapeHtml(p.sourceDoc) + (p.sourceImportedAt ? " · imported " + new Date(p.sourceImportedAt).toLocaleDateString() : "")
-        : (p.source === "excel" ? "Excel WP mapping import" : p.source === "pdf" ? "PDF import" : "Manual entry");
-      var newVersionSourceSub, newVersionBody;
-      if (pendingFlag) {
-        newVersionSourceSub = pendingFlag.source === "excel"
-          ? "Excel WP mapping import"
-          : escapeHtml(pendingFlag.handbookName || "PDF import") + (pendingFlag.importedAt ? " · imported " + new Date(pendingFlag.importedAt).toLocaleDateString() : "");
-        newVersionBody = flagBodyHtml(pendingFlag);
-      } else if (resolvedChange) {
-        newVersionSourceSub = resolvedChange.source === "excel"
-          ? "Excel WP mapping import"
-          : escapeHtml(resolvedChange.handbookName || "PDF import") + (resolvedChange.importedAt ? " · imported " + new Date(resolvedChange.importedAt).toLocaleDateString() : "");
-        newVersionBody = resolvedChangeBodyHtml(resolvedChange);
-      } else if (data.lastImport && data.lastImport.handbookName) {
-        // No open or past flag for this paragraph, but a PDF import has run — it was checked and
-        // found identical (that's exactly what "Matched" means), so show it as such rather than
-        // implying nothing was ever compared.
-        newVersionSourceSub = escapeHtml(data.lastImport.handbookName) + (data.lastImport.importedAt ? " · imported " + new Date(data.lastImport.importedAt).toLocaleDateString() : "");
-        newVersionBody = '<div class="review-text" spellcheck="false">' + officialTextHtml(p) + "</div>" +
-          '<div class="readonly-note">No differences found in the latest import — matches the baseline exactly.</div>';
-      } else {
-        newVersionSourceSub = "No PDF import yet";
-        newVersionBody = '<div class="readonly-note">Import the handbook PDF (Import &amp; Compare) to compare this paragraph against a handbook edition.</div>';
-      }
-      columnsHtml = '<div class="compare-columns compare-columns--cards">' +
-          '<div class="compare-card compare-card--baseline">' +
-            '<div class="compare-card-header">Baseline Official Text <span class="compare-card-header-sub">— ' + baselineSourceSub + "</span></div>" +
-            '<div class="review-text" spellcheck="false">' + officialTextHtml(p) + "</div>" +
-          "</div>" +
-          '<div class="compare-card compare-card--new">' +
-            '<div class="compare-card-header">New Version <span class="compare-card-header-sub">— ' + newVersionSourceSub + "</span></div>" +
-            newVersionBody +
-          "</div>" +
-        "</div>";
+    var historicText = cov.historicStandardText;
+    var historicBodyHtml, historicNoteHtml = "";
+    if (!historicText) {
+      historicBodyHtml = '<span class="official-text-placeholder">No historic text captured yet — this is set from the "Official Standard Text" column the next time an Excel WP mapping is imported for this paragraph.</span>';
     } else {
-      var overlapHtml;
-      if (!p.text) overlapHtml = '<div class="readonly-note">Import the handbook PDF first to compare this against the official text.</div>';
-      else if (cov.wpExtract) {
-        var overlapPct = textOverlapPct(p.text, cov.wpExtract);
-        overlapHtml = overlapPct === null ? "" : '<div class="readonly-note">~' + overlapPct + "% word overlap with the official text (rough guide only).</div>";
-      } else overlapHtml = '<div class="readonly-note">No WP extract captured yet.</div>';
-
-      columnsHtml = '<div class="compare-columns">' +
-          '<div class="compare-col"><h4>Current official text</h4>' +
-            '<div class="review-text" spellcheck="false">' + officialTextHtml(p) + "</div>" +
-            '<div class="readonly-note" style="margin-top:2px;">Read-only — only updated by accepting a new version from a PDF import.' + (canManageStructure ? ' <button class="icon-btn" data-del-para="' + p.id + '" style="margin-left:4px;">✕ Delete paragraph</button>' : "") + "</div>" +
-            '<div class="review-source-line">' + sourceLine + "</div>" +
-          "</div>" +
-          '<div class="compare-col"><h4>Draftworx WP extract — ' + escapeHtml(meth.name) + "</h4>" +
-            '<input type="text" class="review-textarea" spellcheck="false" style="min-height:auto; padding:6px 8px;" data-wpref-field placeholder="WP reference (e.g. 10.02)" value="' + escapeAttr(cov.wpReference || "") + '"' + ro + ">" +
-            '<textarea class="review-textarea" spellcheck="false" data-wp-field placeholder="Paste or type the working paper procedure/extract that addresses this paragraph..."' + ro + ">" + escapeHtml(cov.wpExtract || "") + "</textarea>" +
-            overlapHtml +
-          "</div>" +
-        "</div>";
+      historicBodyHtml = escapeHtml(historicText);
+      if (!p.text) {
+        historicNoteHtml = '<div class="readonly-note">No handbook baseline imported yet — can\'t confirm whether this has changed.</div>';
+      } else {
+        var histA = normalizeWs(historicText).toLowerCase(), baseB = normalizeWs(p.text).toLowerCase();
+        var histUnchanged = histA === baseB || baseB.indexOf(histA) !== -1 || histA.indexOf(baseB) !== -1;
+        historicNoteHtml = histUnchanged
+          ? '<div class="standard-unchanged-note">✓ Matches the current baseline — unchanged since this was mapped.</div>'
+          : '<div class="standard-changed-note">⚠ The standard has changed since this WP mapping was done — compare with the baseline on the left.</div>';
+      }
     }
+    var historicColHtml = '<div class="compare-card compare-card--historic">' +
+        '<div class="compare-card-header">Standard Text When Mapped <span class="compare-card-header-sub">— from Excel</span></div>' +
+        '<div class="review-text" spellcheck="false">' + historicBodyHtml + "</div>" +
+        historicNoteHtml +
+      "</div>";
+
+    var wpMapKey = wpMappingStatus(p, cov);
+    var excelCoverageHtml;
+    if (!p.text) excelCoverageHtml = '<div class="readonly-note">Import the handbook PDF first to compare this against the official text.</div>';
+    else if (!cov.wpExtract) excelCoverageHtml = '<div class="not-mapped-warning">⚠ Not mapped in Excel — no WP extract captured for this paragraph yet.</div>';
+    else {
+      var overlapPct = textOverlapPct(p.text, cov.wpExtract);
+      excelCoverageHtml = overlapPct === null ? "" : '<div class="readonly-note">~' + overlapPct + "% word overlap with the current baseline (rough guide only).</div>";
+    }
+    var wpExtractColHtml = '<div class="compare-card compare-card--excel">' +
+        '<div class="compare-card-header">Current WP Procedure <span class="compare-card-header-sub">— ' + escapeHtml(meth.name) + "</span></div>" +
+        '<span class="wp-status-pill"><span class="status-dot status-dot--wp-' + wpMapKey + '"></span>' + WP_MAP_STATUS[wpMapKey].label + "</span>" +
+        '<input type="text" class="review-textarea" spellcheck="false" style="min-height:auto; padding:6px 8px;" data-wpref-field placeholder="WP reference (e.g. 10.02)" value="' + escapeAttr(cov.wpReference || "") + '"' + ro + ">" +
+        '<textarea class="review-textarea" spellcheck="false" data-wp-field placeholder="Paste or type the working paper procedure/extract that addresses this paragraph..."' + ro + ">" + escapeHtml(cov.wpExtract || "") + "</textarea>" +
+        excelCoverageHtml +
+      "</div>";
+    var tripleHtml = '<div class="compare-triple">' + baselineColHtml + historicColHtml + wpExtractColHtml + "</div>";
 
     var tickMarks = cov.tickMarks || emptyTickMarks();
     var tickMarksHtml = '<div class="tick-marks-label">Expected compliance area (outside WP)</div><div class="tick-marks-grid">' +
@@ -1620,8 +1705,18 @@
         return '<label class="tick-mark-item"><input type="checkbox" data-tick-key="' + d.key + '"' + (tickMarks[d.key] ? " checked" : "") + ro + ">" + escapeHtml(d.label) + "</label>";
       }).join("") + "</div>";
 
-    detail.innerHTML = toggleHtml + columnsHtml +
+    // Two completely independent status indicators, side by side: the handbook-comparison
+    // outcome (editable via the pills below) and the WP-coverage outcome (purely derived from
+    // the overlap % above — there's nothing to click, it just reflects what's in section 3).
+    var statusBadgesHtml = '<div class="status-pills" style="margin-bottom:2px;">' +
+        '<span class="status-dot-pill" title="Handbook comparison status"><span class="status-dot status-dot--' + cov.status + '"></span>Handbook: ' + STATUS[cov.status].label + "</span>" +
+        '<span class="status-dot-pill" title="WP extract coverage of the official text"><span class="status-dot status-dot--wp-' + wpMapKey + '"></span>WP Coverage: ' + WP_MAP_STATUS[wpMapKey].label + "</span>" +
+      "</div>";
+
+    detail.innerHTML =
+      newVersionSectionHtml + tripleHtml +
       '<div class="status-section"><h4>' + escapeHtml(std.code) + " · " + escapeHtml(meth.name) + " — Status</h4>" +
+        statusBadgesHtml +
         '<div class="status-pills">' + statusPillsHtml + "</div>" +
         tickMarksHtml +
         '<textarea class="review-textarea" data-notes-field placeholder="Comparison notes, reviewer commentary, evidence reference..."' + ro + ">" + escapeHtml(cov.notes || "") + "</textarea>" +
@@ -1646,13 +1741,6 @@
         var pendingFlag = (data.pendingFlags || []).some(function (fl) { return fl.status === "open" && fl.paragraphId === id; });
         var current = state.paraExpanded.hasOwnProperty(id) ? state.paraExpanded[id] : pendingFlag;
         state.paraExpanded[id] = !current;
-        withScrollPreserved(renderCoverageView);
-      });
-    });
-    container.querySelectorAll("[data-set-compare-mode]").forEach(function (btn) {
-      btn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        state.paraCompareMode[btn.getAttribute("data-para-id")] = btn.getAttribute("data-set-compare-mode");
         withScrollPreserved(renderCoverageView);
       });
     });
@@ -1687,7 +1775,7 @@
   }
 
   function ensureCoverageEntry(para, methodologyId) {
-    if (!para.coverage[methodologyId]) para.coverage[methodologyId] = { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
+    if (!para.coverage[methodologyId]) para.coverage[methodologyId] = { status: "notSure", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
     return para.coverage[methodologyId];
   }
 
@@ -1837,8 +1925,9 @@
     if (!number || !text) return;
     var std = data.standards.find(function (s) { return s.id === standardId; });
     if (!std) return;
+    ensureAncestorParagraphs(std, number);
     var coverage = {};
-    data.methodologies.forEach(function (m) { coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
+    data.methodologies.forEach(function (m) { coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
     std.paragraphs.push({ id: uid("para"), number: number, text: text, source: "manual", coverage: coverage });
     sortParagraphs(std);
     logChange("create", "paragraph", std.code + " " + number, "Added paragraph " + number);
@@ -2058,25 +2147,30 @@
     }
     return quality;
   }
+  // A table of contents (or an index/cross-reference list) names several standards in quick
+  // succession — a real chapter heading is followed by that STANDARD'S OWN content, not by
+  // another standard's name. An occurrence with a sibling header nearby is almost certainly a
+  // listing or a passing cross-reference, not the real chapter, regardless of what
+  // markerQualityAt happens to see beyond it. Shared by section-boundary picking (an existing
+  // standard's best occurrence) AND new-standard discovery (a candidate scanned out of raw
+  // text) — a mention of one standard's number sitting inside ANOTHER standard's own paragraph
+  // text is exactly the case both need to reject, e.g. "...as described in ISRE 2410..." inside
+  // real ISRE 2400 prose must never be scored as if it were ISRE 2410's own chapter opening.
+  var SIBLING_HEADER_WINDOW = 200;
+  function hasSiblingHeaderNearby(lowerText, allHeaders, idx, ownHeaderLower, ownHeaderLen) {
+    var probe = lowerText.substring(idx + ownHeaderLen, idx + ownHeaderLen + SIBLING_HEADER_WINDOW);
+    return allHeaders.some(function (h) { return h !== ownHeaderLower && probe.indexOf(h) !== -1; });
+  }
   function buildExtractionSections(fullText) {
     var lowerText = fullText.toLowerCase();
-    var SIBLING_WINDOW = 200;
     var allHeaders = data.standards.map(function (s) { return s.code.replace(/\s*\(.*?\)\s*$/, "").trim().toLowerCase(); });
-    // A table of contents (or an index/cross-reference list) names several standards in quick
-    // succession — a real chapter heading is followed by that STANDARD'S OWN content, not by
-    // another standard's name. An occurrence with a sibling header nearby is almost certainly
-    // a listing, not the real chapter, regardless of what markerQualityAt happens to see beyond it.
-    function hasSiblingHeaderNearby(idx, ownHeaderLower) {
-      var probe = lowerText.substring(idx + ownHeaderLower.length, idx + ownHeaderLower.length + SIBLING_WINDOW);
-      return allHeaders.some(function (h) { return h !== ownHeaderLower && probe.indexOf(h) !== -1; });
-    }
     var sections = [];
     data.standards.forEach(function (std) {
       var header = std.code.replace(/\s*\(.*?\)\s*$/, "").trim();
       var headerLower = header.toLowerCase();
       var bestIdx = -1, bestScore = -Infinity, searchFrom = 0, idx;
       while ((idx = lowerText.indexOf(headerLower, searchFrom)) !== -1) {
-        var score = markerQualityAt(fullText, idx) - (hasSiblingHeaderNearby(idx, headerLower) ? 1000 : 0);
+        var score = markerQualityAt(fullText, idx) - (hasSiblingHeaderNearby(lowerText, allHeaders, idx, headerLower, headerLower.length) ? 1000 : 0);
         if (score > bestScore) { bestScore = score; bestIdx = idx; }
         searchFrom = idx + headerLower.length;
       }
@@ -2096,13 +2190,16 @@
   // requirement-paragraph content following it (not just a passing cross-reference).
   var STANDARD_CODE_SCAN_RE = /(?:ISA|ISAE|ISRS|ISRE)\s*\d{3,4}(?:\s*\([^)]{0,40}\))?|(?:LPC|PPRA)\s+Rules/gi;
   function discoverNewStandardsInPdf(fullText) {
+    var lowerText = fullText.toLowerCase();
+    var allHeaders = data.standards.map(function (s) { return s.code.replace(/\s*\(.*?\)\s*$/, "").trim().toLowerCase(); });
     var re = new RegExp(STANDARD_CODE_SCAN_RE.source, "gi");
     var seen = {}, m;
     while ((m = re.exec(fullText))) {
       var refInfo = parseStandardReference(m[0]);
       if (!refInfo) continue;
       var key = refInfo.prefix + " " + refInfo.num;
-      var score = markerQualityAt(fullText, m.index);
+      var ownHeaderLower = m[0].toLowerCase();
+      var score = markerQualityAt(fullText, m.index) - (hasSiblingHeaderNearby(lowerText, allHeaders, m.index, ownHeaderLower, ownHeaderLower.length) ? 1000 : 0);
       if (!seen[key] || score > seen[key].score) seen[key] = { score: score, code: normalizeWs(m[0]), refInfo: refInfo };
     }
     var createdStds = [];
@@ -2357,8 +2454,15 @@
       } else if (flag.type === "new") {
         var std = data.standards.find(function (s) { return s.id === flag.standardId; });
         if (std) {
+          ensureAncestorParagraphs(std, flag.number);
           var coverage = {};
-          data.methodologies.forEach(function (m) { coverage[m.id] = { status: "newParagraph", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
+          // Strict standard-to-methodology mapping: only methodologies this standard's family
+          // actually belongs to get a coverage entry — a paragraph accepted from a PDF import
+          // must never be tracked against a methodology it has no business being in.
+          data.methodologies.forEach(function (m) {
+            if ((m.allowedFamilies || []).indexOf(std.family) === -1) return;
+            coverage[m.id] = { status: "newParagraph", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
+          });
           var newPara = { id: uid("para"), number: flag.number, text: flag.newText, source: flag.source === "excel" ? "excel" : "pdf", coverage: coverage };
           if (flag.source === "pdf" && handbookName) { newPara.sourceDoc = handbookName; newPara.sourceImportedAt = new Date().toISOString(); }
           std.paragraphs.push(newPara);
@@ -2402,8 +2506,15 @@
       resolvedAt: new Date().toISOString(),
       resolvedBy: identityName()
     });
+    // The card the user was just looking at must stay open and in place — collapsing it or
+    // jumping the scroll position the moment they resolve a flag is exactly what this is
+    // guarding against. Pin it explicitly open rather than relying on "has an open flag" (which
+    // is now false) to decide the default expand state.
+    if (resolvedParagraphId) state.paraExpanded[resolvedParagraphId] = true;
     persist();
-    renderReviewView(); renderNotifyBanner(); renderCoverageView(); renderDashboard();
+    withScrollPreserved(function () {
+      renderReviewView(); renderNotifyBanner(); renderCoverageView(); renderDashboard();
+    });
   }
   // Most recent accepted/dismissed change for a paragraph, so its comparison card can keep
   // showing the outcome after the pending flag that produced it is long gone (resolved flags
@@ -2621,8 +2732,16 @@
               existing.sourceImportedAt = importedAt;
               updatedCount++; stdUpdated++;
             } else {
+              ensureAncestorParagraphs(sec.std, e.number);
               var coverage = {};
-              data.methodologies.forEach(function (m) { coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
+              // Strict standard-to-methodology mapping: e.g. an ISA paragraph only ever gets a
+              // coverage entry for RAC, never for Review+/Compilation/AUP/etc. — a methodology
+              // whose allowedFamilies doesn't include this standard's family has no business
+              // tracking it at all, so a PDF import must never write data for it.
+              data.methodologies.forEach(function (m) {
+                if ((m.allowedFamilies || []).indexOf(sec.std.family) === -1) return;
+                coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
+              });
               sec.std.paragraphs.push({ id: uid("para"), number: e.number, text: e.text, source: "pdf", sourceDoc: handbookName, sourceImportedAt: importedAt, coverage: coverage });
               createdCount++; stdCreated++;
             }
@@ -2670,9 +2789,10 @@
       // paragraphs just written — both would make a real, successful import look like nothing
       // happened. Clear the filters, and jump to a methodology that can actually see the result
       // if the current one can't.
-      state.familyFilter = "all"; state.statusFilter = "all"; state.search = "";
+      state.familyFilter = "all"; state.statusFilter = "all"; state.wpStatusFilter = "all"; state.search = "";
       document.getElementById("filter-family").value = "all";
       document.getElementById("filter-status").value = "all";
+      document.getElementById("filter-wp-status").value = "all";
       document.getElementById("search-input").value = "";
       var touchedFamilies = touchedStandards.map(function (t) { return t.std.family; });
       var activeMeth = data.methodologies.find(function (m) { return m.id === state.activeMethodologyId; });
@@ -2746,12 +2866,21 @@
     var prefix = m[1].toUpperCase();
     var num = m[2] || "";
     var family;
+    // "ISA" and the two Rules bodies are deliberately modelled as ONE umbrella family covering
+    // every standard/rule number under that body — any ISA number belongs there. ISRE and ISRS
+    // are NOT umbrella families here: this app only ever tracks ISRE 2400 and ISRS 4400/4410
+    // specifically, so a genuinely different number under those prefixes (e.g. ISRE 2410, a real
+    // but unsupported IAASB standard) must resolve to no family at all — never silently fall
+    // back onto ISRE 2400/ISRS 4400. Without this, a plain cross-reference to ISRE 2410 sitting
+    // inside ISRE 2400's OWN paragraph text (extremely common in standards' prose) gets treated
+    // as a real standard to create/import, and its "paragraphs" get misattributed to ISRE 2400.
     if (prefix === "ISA") family = "ISA";
     else if (prefix === "ISAE") family = "ISAE 3000";
-    else if (prefix === "ISRS") family = num.indexOf("4410") === 0 ? "ISRS 4410" : "ISRS 4400";
-    else if (prefix === "ISRE") family = "ISRE 2400";
+    else if (prefix === "ISRS") family = num.indexOf("4410") === 0 ? "ISRS 4410" : (num.indexOf("4400") === 0 ? "ISRS 4400" : null);
+    else if (prefix === "ISRE") family = num.indexOf("2400") === 0 ? "ISRE 2400" : null;
     else if (prefix === "LPC") family = "LPC Rules";
     else family = "PPRA Rules";
+    if (!family) return null;
     return { prefix: prefix, num: num, family: family };
   }
   function composeParaNumber(core, bare) {
@@ -2775,7 +2904,7 @@
       return existing;
     }
     var coverage = {};
-    data.methodologies.forEach(function (m) { coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
+    data.methodologies.forEach(function (m) { coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null }; });
     var p = { id: uid("para"), number: number, text: officialText || "", source: "excel", coverage: coverage };
     std.paragraphs.push(p);
     sortParagraphs(std);
@@ -2858,9 +2987,21 @@
     document.getElementById("dlg-excel-import").showModal();
   }
 
+  // PDF extraction always lowercases lettered/roman sub-markers (see extractSubParagraphs'
+  // token.toLowerCase()), so a paragraph number like "2400.48.c.v" is the tracker's canonical
+  // form. An Excel cell for the same sub-level is free-typed by a person — "C", "(c)", " c " are
+  // all the same paragraph to a reviewer, but a case-sensitive exact-string match on p.number
+  // would treat "2400.48.C.V" as a completely different, brand-new paragraph and silently create
+  // a duplicate instead of matching the existing PDF-baselined one. This is almost certainly the
+  // "matching issue" — normalize before it ever reaches the comparison.
+  function normalizeSubToken(s) {
+    return String(s || "").trim().replace(/^\(+|\)+$/g, "").toLowerCase();
+  }
   function applyExcelImport(allRows, colMap, methodologyId, worksheet) {
     var createdStandards = 0, createdParagraphs = 0, updated = 0, skipped = 0;
     var colorChecked = 0, colorMismatch = 0;
+    var matchedExisting = 0, matchedWithBaselineText = 0, matchedNoBaselineText = 0;
+    var unmatchedNumbers = []; // numbers with no existing paragraph — a brand-new one had to be created
     var newlyCreated = []; // { std, para } — paragraphs this file added, for an informational "new" flag
     var touchedByStd = {}; // std.id -> { paraNumber: true } — every number this file actually covered
     var state = { standard: null, main: null, letter: null, roman: null, subletter: null, subsub: null };
@@ -2886,10 +3027,10 @@
 
       if (standardCell) { state.standard = standardCell; state.main = state.letter = state.roman = state.subletter = state.subsub = null; }
       if (mainCell) { state.main = mainCell; state.letter = state.roman = state.subletter = state.subsub = null; }
-      if (letterCell) { state.letter = letterCell; state.roman = state.subletter = state.subsub = null; }
-      if (romanCell) { state.roman = romanCell; state.subletter = state.subsub = null; }
-      if (subletterCell) { state.subletter = subletterCell; state.subsub = null; }
-      if (subsubCell) { state.subsub = subsubCell; }
+      if (letterCell) { state.letter = normalizeSubToken(letterCell); state.roman = state.subletter = state.subsub = null; }
+      if (romanCell) { state.roman = normalizeSubToken(romanCell); state.subletter = state.subsub = null; }
+      if (subletterCell) { state.subletter = normalizeSubToken(subletterCell); state.subsub = null; }
+      if (subsubCell) { state.subsub = normalizeSubToken(subsubCell); }
 
       if (!state.standard || !state.main) { skipped++; continue; }
       var refInfo = parseStandardReference(state.standard);
@@ -2917,10 +3058,21 @@
       (touchedByStd[std.id] = touchedByStd[std.id] || {})[number] = true;
       var paraCountBefore = std.paragraphs.length;
       var para = findOrCreateParagraph(std, number, officialTextCell);
-      if (std.paragraphs.length > paraCountBefore) { createdParagraphs++; newlyCreated.push({ std: std, para: para }); }
+      if (std.paragraphs.length > paraCountBefore) {
+        createdParagraphs++; unmatchedNumbers.push(std.code + " " + number); newlyCreated.push({ std: std, para: para });
+      } else {
+        matchedExisting++;
+        if (para.sourceDoc) matchedWithBaselineText++; else matchedNoBaselineText++;
+      }
       var cov = ensureCoverageEntry(para, methodologyId);
       if (wpExtractCell) cov.wpExtract = wpExtractCell;
       if (wpReferenceCell) cov.wpReference = wpReferenceCell;
+      // Separate from p.text (the PDF-baselined official text, which this Excel column only ever
+      // backfills once when a paragraph has none yet — see findOrCreateParagraph). This is a
+      // per-methodology SNAPSHOT of what the Excel file itself says the standard read at the time
+      // it was mapped, kept even after the PDF baseline moves on, so a reviewer can see whether
+      // the standard has since changed since this WP mapping was last done.
+      if (officialTextCell) cov.historicStandardText = officialTextCell;
       if (commentCell) cov.notes = cov.notes ? cov.notes + "\n" + commentCell : commentCell;
       if (!cov.tickMarks) cov.tickMarks = emptyTickMarks();
       TICK_MARK_DEFS.forEach(function (d) { if (tickCells[d.key]) cov.tickMarks[d.key] = true; });
@@ -2952,15 +3104,31 @@
       data.pendingFlags = (data.pendingFlags || []).filter(function (f) { return !(f.source === "excel" && touchedByStd[f.standardId]); }).concat(excelFlags);
     }
 
+    // The direct answer to "is the Excel data actually matching to paragraphs by reference
+    // number": every row either landed on an EXISTING paragraph (matched — and matchedWithBaseline
+    // further says whether that paragraph already had locked PDF text, vs. one Excel is the only
+    // source for so far) or found no existing number and created a brand-new paragraph
+    // (unmatched). A high unmatched count against standards that already have a PDF baseline is
+    // the signal that numbers aren't lining up — printed in full here rather than just a total,
+    // since the mismatching numbers themselves are what you'd actually need to go fix.
+    console.log("[Excel import] rows processed: " + (updated + skipped) + " | matched existing paragraph: " + matchedExisting +
+      " (" + matchedWithBaselineText + " with a PDF baseline already, " + matchedNoBaselineText + " without) | unmatched — new paragraph created: " + createdParagraphs + " | skipped (no standard/main number): " + skipped);
+    if (unmatchedNumbers.length) console.log("[Excel import] unmatched reference numbers (no existing paragraph found, so one was created):", unmatchedNumbers);
+
     var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
-    logChange("import", "coverage", meth ? meth.name : "", "Imported WP mapping from Excel — " + updated + " row(s) applied" +
+    logChange("import", "coverage", meth ? meth.name : "", "Imported WP mapping from Excel — " + updated + " row(s) applied, " + matchedExisting + " matched to an existing paragraph by reference number" +
+      (createdParagraphs ? ", " + createdParagraphs + " unmatched (no existing paragraph — created new)" : "") +
       (createdStandards ? ", " + createdStandards + " new standard(s) (scoped to " + (meth ? meth.name : "this methodology") + " only)" : "") +
-      (createdParagraphs ? ", " + createdParagraphs + " new paragraph(s)" : "") +
       (skipped ? ", " + skipped + " row(s) skipped" : "") +
       (colorChecked ? "; colour check: " + (colorChecked - colorMismatch) + "/" + colorChecked + " row(s) matched their expected hierarchy colour" : "") +
       (excelFlags.length ? "; " + excelFlags.length + " difference(s) flagged for review" : "") + ".");
     persist();
-    return { updated: updated, createdStandards: createdStandards, createdParagraphs: createdParagraphs, skipped: skipped, colorChecked: colorChecked, colorMismatch: colorMismatch, flagged: excelFlags.length };
+    return {
+      updated: updated, createdStandards: createdStandards, createdParagraphs: createdParagraphs, skipped: skipped,
+      colorChecked: colorChecked, colorMismatch: colorMismatch, flagged: excelFlags.length,
+      matchedExisting: matchedExisting, matchedWithBaselineText: matchedWithBaselineText, matchedNoBaselineText: matchedNoBaselineText,
+      unmatchedNumbers: unmatchedNumbers
+    };
   }
 
   function exportExcelTemplate() {
@@ -3131,6 +3299,7 @@
 
     document.getElementById("filter-family").addEventListener("change", function (e) { state.familyFilter = e.target.value; renderSidebar(); renderCoverageView(); });
     document.getElementById("filter-status").addEventListener("change", function (e) { state.statusFilter = e.target.value; renderCoverageView(); });
+    document.getElementById("filter-wp-status").addEventListener("change", function (e) { state.wpStatusFilter = e.target.value; renderCoverageView(); });
     document.getElementById("search-input").addEventListener("input", function (e) { state.search = e.target.value.trim(); renderCoverageView(); });
     document.getElementById("expand-all-std-btn").addEventListener("click", function () {
       data.standards.forEach(function (std) {
@@ -3215,18 +3384,21 @@
       pendingExcelWorksheet = null;
       pendingExcelColMap = null;
       state.activeMethodologyId = methodologyId;
-      state.familyFilter = "all"; state.statusFilter = "all"; state.search = "";
+      state.familyFilter = "all"; state.statusFilter = "all"; state.wpStatusFilter = "all"; state.search = "";
       document.getElementById("filter-family").value = "all";
       document.getElementById("filter-status").value = "all";
+      document.getElementById("filter-wp-status").value = "all";
       document.getElementById("search-input").value = "";
       renderAll();
       switchToView("coverage");
-      alert("Import complete: " + result.updated + " row(s) applied" +
-        (result.createdStandards ? ", " + result.createdStandards + " new standard(s) created (scoped to this methodology only — edit a standard to change which methodologies see it)" : "") +
-        (result.createdParagraphs ? ", " + result.createdParagraphs + " new paragraph(s) created" : "") +
-        (result.skipped ? ", " + result.skipped + " row(s) skipped (missing standard reference or main paragraph number)" : "") +
-        (result.colorChecked ? ". Colour check: " + (result.colorChecked - result.colorMismatch) + " of " + result.colorChecked + " coloured row(s) matched their expected hierarchy tier" + (result.colorMismatch ? " — " + result.colorMismatch + " row(s) didn't match, worth double-checking" : "") : "") +
-        (result.flagged ? ". " + result.flagged + " difference(s) flagged for review — look for the badges on Coverage Review." : "") + ".");
+      alert("Import complete: " + result.updated + " row(s) applied.\n" +
+        "Matched by reference number to an existing paragraph: " + result.matchedExisting + " (" + result.matchedWithBaselineText + " with a PDF baseline already imported, " + result.matchedNoBaselineText + " with no baseline text yet)." +
+        (result.createdParagraphs ? "\nUnmatched — no existing paragraph found for that number, so " + result.createdParagraphs + " new paragraph(s) were created instead." : "\nAll rows matched an existing paragraph — none had to be created.") +
+        (result.createdStandards ? " " + result.createdStandards + " new standard(s) were also created (scoped to this methodology only — edit a standard to change which methodologies see it)." : "") +
+        (result.skipped ? "\n" + result.skipped + " row(s) skipped (missing standard reference or main paragraph number)." : "") +
+        (result.colorChecked ? "\nColour check: " + (result.colorChecked - result.colorMismatch) + " of " + result.colorChecked + " coloured row(s) matched their expected hierarchy tier" + (result.colorMismatch ? " — " + result.colorMismatch + " row(s) didn't match, worth double-checking" : "") + "." : "") +
+        (result.flagged ? "\n" + result.flagged + " difference(s) flagged for review — look for the badges on Coverage Review." : "") +
+        "\nFull details (including any unmatched reference numbers) were printed to the browser console.");
     });
 
     document.getElementById("dismiss-all-missing-btn").addEventListener("click", function () {
