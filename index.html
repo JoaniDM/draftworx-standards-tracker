@@ -252,6 +252,13 @@
   .resolved-flag-banner--accepted { color: var(--status-matched-text, #16a34a); }
   .resolved-flag-banner--dismissed { color: var(--text-muted); }
   .not-mapped-warning { font-size: 12px; font-weight: 700; color: var(--status-removed-text, #dc2626); }
+  /* One-line "what kind of change is this" summary above every diff — the diff/renumber text
+     below still carries the detail, this is just the at-a-glance label. */
+  .change-summary-line { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 2px; }
+  .change-summary-line--changed { color: var(--status-updatebody-text); }
+  .change-summary-line--renumbered { color: var(--status-renumbered-text); }
+  .change-summary-line--newParagraph { color: var(--status-newparagraph-text); }
+  .change-summary-line--removed { color: var(--status-removed-text); }
   .wp-status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); }
   /* The always-visible 3-way comparison: baseline (from PDF) | the standard's text as captured
      at the time the Excel WP mapping was done | the current Draftworx WP procedure — side by
@@ -2161,24 +2168,103 @@
     var probe = lowerText.substring(idx + ownHeaderLen, idx + ownHeaderLen + SIBLING_HEADER_WINDOW);
     return allHeaders.some(function (h) { return h !== ownHeaderLower && probe.indexOf(h) !== -1; });
   }
+  // Matches any standard-code-shaped string in raw text (ISA 315, ISRE 2400, ISRE 2410, LPC
+  // Rules, ...) regardless of whether the app tracks that particular one — used both to
+  // discover a genuinely new standard to add, AND (below) to find where the NEXT standard's
+  // chapter starts so THIS standard's section stops there, even when that next standard is one
+  // this app deliberately never creates (e.g. ISRE 2410 isn't a supported family — see
+  // parseStandardReference — but its chapter heading must still act as a hard stop, or its
+  // paragraphs get scanned as if they belonged to whichever tracked standard precedes it).
+  var STANDARD_CODE_SCAN_RE = /(?:ISA|ISAE|ISRS|ISRE)\s*\d{3,4}(?:\s*\([^)]{0,40}\))?|(?:LPC|PPRA)\s+Rules/gi;
+  // markerQualityAt alone can't tell "this IS a new chapter starting" from "this sits in the
+  // MIDDLE of a chapter that's still going" — a mid-sentence cross-reference like "...guidance
+  // in ISRE 2410 (Revised) on the conduct of..." scores just as well as a real heading would,
+  // because the REST of the current (unrelated) chapter still follows it with plenty of real
+  // numbered content. A real heading is always typeset on its own line; an inline mention never
+  // is — requiring a line break immediately before the match is what actually distinguishes them.
+  function looksLikeLineStart(fullText, idx) {
+    if (idx === 0) return true;
+    return /[\r\n]\s{0,4}$/.test(fullText.substring(Math.max(0, idx - 6), idx));
+  }
+  // The nearest position AFTER afterIdx that looks like a REAL chapter opening for some other
+  // standard (at the start of its own line, AND score >= 3 — the same "many qualifying
+  // paragraphs nearby" bar used to decide a discovered standard is real) — or -1 if none is
+  // found before hardStop. excludeHeaderLower is this section's OWN header, so a repeated
+  // running header/footer of the standard's own name is never mistaken for the next chapter.
+  function nextChapterStart(fullText, afterIdx, hardStop, excludeHeaderLower) {
+    var re = new RegExp(STANDARD_CODE_SCAN_RE.source, "gi");
+    re.lastIndex = afterIdx;
+    var m;
+    while ((m = re.exec(fullText))) {
+      if (m.index >= hardStop) return -1;
+      var ownLower = m[0].toLowerCase().replace(/\s*\(.*?\)\s*$/, "").trim();
+      if (ownLower !== excludeHeaderLower && looksLikeLineStart(fullText, m.index) && markerQualityAt(fullText, m.index) >= 3) return m.index;
+    }
+    return -1;
+  }
+  // Different handbook editions/publishers don't always typeset a chapter opening the same
+  // way — one edition's page might read "ISRE 2400", another spells out "International Standard
+  // on Review Engagements 2400", another leads with the standard's descriptive TITLE instead of
+  // its code at all. Extra alternate strings to also search for, per family, on top of the
+  // standard's own code (std.code minus its parenthetical suffix) — every candidate is scored
+  // exactly the same way (markerQualityAt + sibling-header penalty) and the single best-scoring
+  // occurrence across ALL of them wins, so adding an edition-specific phrasing here never makes
+  // matching worse, only ever gives it another way to succeed.
+  var STANDARD_ALT_HEADERS = {
+    "ISRE 2400": ["International Standard on Review Engagements 2400", "Engagements to Review Historical Financial Statements"]
+  };
+  // The same "many qualifying paragraphs nearby, not just one or two" bar used everywhere else
+  // (discoverNewStandardsInPdf's real-chapter check, nextChapterStart's chapter-opening check)
+  // to decide an occurrence looks like genuine chapter content rather than noise.
+  var MIN_REAL_CHAPTER_SCORE = 3;
   function buildExtractionSections(fullText) {
     var lowerText = fullText.toLowerCase();
     var allHeaders = data.standards.map(function (s) { return s.code.replace(/\s*\(.*?\)\s*$/, "").trim().toLowerCase(); });
     var sections = [];
     data.standards.forEach(function (std) {
       var header = std.code.replace(/\s*\(.*?\)\s*$/, "").trim();
-      var headerLower = header.toLowerCase();
-      var bestIdx = -1, bestScore = -Infinity, searchFrom = 0, idx;
-      while ((idx = lowerText.indexOf(headerLower, searchFrom)) !== -1) {
-        var score = markerQualityAt(fullText, idx) - (hasSiblingHeaderNearby(lowerText, allHeaders, idx, headerLower, headerLower.length) ? 1000 : 0);
-        if (score > bestScore) { bestScore = score; bestIdx = idx; }
-        searchFrom = idx + headerLower.length;
-      }
-      if (bestIdx !== -1) sections.push({ std: std, index: bestIdx, header: header });
+      var codeLower = header.toLowerCase();
+      var candidates = [codeLower].concat((STANDARD_ALT_HEADERS[std.family] || []).map(function (h) { return h.toLowerCase(); }));
+      var occurrences = [];
+      candidates.forEach(function (candidateLower) {
+        var searchFrom = 0, idx;
+        while ((idx = lowerText.indexOf(candidateLower, searchFrom)) !== -1) {
+          var score = markerQualityAt(fullText, idx) - (hasSiblingHeaderNearby(lowerText, allHeaders, idx, candidateLower, candidateLower.length) ? 1000 : 0);
+          occurrences.push({ idx: idx, score: score, matchLower: candidateLower });
+          searchFrom = idx + candidateLower.length;
+        }
+      });
+      if (!occurrences.length) return;
+      // The chapter's real opening is virtually always the EARLIEST occurrence that clears the
+      // "genuinely real content nearby" bar — picking whichever occurrence scores highest
+      // overall is fragile: a LATER occurrence (this same standard's own name repeated as the
+      // heading of its Application Material section, or a page deep in dense Requirements text)
+      // can easily out-score the real opening, since a real opening is often followed by a
+      // short, sparser Introduction/Objective section with fewer widely-spaced paragraphs. That
+      // exact failure mode is what silently skipped a real edition's paragraphs 18-48 — the
+      // section was built starting from a later, higher-scoring but WRONG occurrence, not the
+      // chapter's actual start. Only fall back to the single best-scoring occurrence if nothing
+      // clears the bar, so a low-signal document still gets a best-effort guess.
+      var qualifying = occurrences.filter(function (o) { return o.score >= MIN_REAL_CHAPTER_SCORE; });
+      var chosen = qualifying.length
+        ? qualifying.reduce(function (a, b) { return b.idx < a.idx ? b : a; })
+        : occurrences.reduce(function (a, b) { return b.score > a.score ? b : a; });
+      // codeLower (not whichever alternate phrasing actually matched) is what a running
+      // header/footer repeating THIS standard's own code elsewhere in its chapter would look
+      // like, and it's what nextChapterStart's exclusion check compares against below — the
+      // alternate phrasing is only ever used to locate the START of the section, never as the
+      // thing to exclude when scanning for where it ENDS.
+      sections.push({ std: std, index: chosen.idx, header: header, codeLower: codeLower, matchLen: chosen.matchLower.length });
     });
     sections.sort(function (a, b) { return a.index - b.index; });
     sections.forEach(function (sec, i) {
-      var end = (i + 1 < sections.length) ? sections[i + 1].index : fullText.length;
+      var nextTrackedIdx = (i + 1 < sections.length) ? sections[i + 1].index : fullText.length;
+      // Never trust "the next TRACKED standard's position" alone as the boundary — a real but
+      // unsupported/untracked standard's chapter (or one whose header just wasn't found this
+      // time) can sit in between, and without this check its paragraphs get silently absorbed
+      // into THIS section purely because nothing else was there to stop it.
+      var nextChapterIdx = nextChapterStart(fullText, sec.index + sec.matchLen, nextTrackedIdx, sec.codeLower);
+      var end = nextChapterIdx !== -1 ? nextChapterIdx : nextTrackedIdx;
       sec.text = fullText.substring(sec.index, end);
     });
     return sections;
@@ -2188,7 +2274,6 @@
   // for standard-code-shaped strings (ISA 315, ISRE 2400, LPC Rules, ...) independently of
   // what's currently in the tracker, and create the standard when one genuinely has real
   // requirement-paragraph content following it (not just a passing cross-reference).
-  var STANDARD_CODE_SCAN_RE = /(?:ISA|ISAE|ISRS|ISRE)\s*\d{3,4}(?:\s*\([^)]{0,40}\))?|(?:LPC|PPRA)\s+Rules/gi;
   function discoverNewStandardsInPdf(fullText) {
     var lowerText = fullText.toLowerCase();
     var allHeaders = data.standards.map(function (s) { return s.code.replace(/\s*\(.*?\)\s*$/, "").trim().toLowerCase(); });
@@ -2212,10 +2297,6 @@
     });
     return createdStds;
   }
-  // Some IAASB standards' numbered paragraphs don't start as "requirements" from 1 — earlier
-  // ones are scope/introduction. Record a family's known first-requirement number here as we
-  // learn it; a family not listed defaults to no cutoff (starts from paragraph 1).
-  var REQUIREMENTS_START_PARA = { "ISRE 2400": 18 };
   // A "Definitions" paragraph (and its lettered sub-paragraphs) reads like "'X' means Y" or
   // "'X' has the meaning attributed to it in..." — it's explaining terminology, not imposing a
   // requirement, so it should never be tracked as one even if its number would otherwise
@@ -2296,7 +2377,7 @@
     var numCoreMatch = sec.std.code.match(/\d+/);
     var numCore = numCoreMatch ? numCoreMatch[0] : "";
     var text = sec.text;
-    var startPara = REQUIREMENTS_START_PARA[sec.std.family] || 1;
+    var isISRE2400 = sec.std.family === "ISRE 2400";
 
     // Every top-level marker: a plain number ("18.", a possible requirement) or an
     // "A"-prefixed number ("A14.", Application Material) — the A-prefixed ones are only kept
@@ -2319,16 +2400,20 @@
     for (var i = 0; i < markers.length; i++) {
       var marker = markers[i];
       if (marker.isAppMaterial) continue;
-      if (marker.num < startPara) continue; // introductory/scope paragraph, not a requirement
 
-      // A paragraph is tracked because its NUMBER is in the requirements range and it isn't
-      // Application Material — not because of what words happen to appear in its text. Relying
-      // on a "shall" keyword match here would falsely flag a genuine, existing paragraph as
-      // Removed whenever the extracted text doesn't happen to contain that exact word (odd
-      // line-break splits, rephrasing, etc.) — the paragraph NUMBER is the source of truth.
       var startIdx = marker.start;
       var endIdx = (i + 1 < markers.length) ? markers[i + 1].headerStart : text.length;
       var body = text.substring(startIdx, endIdx);
+
+      // Which paragraph NUMBER a handbook edition's requirements actually start at varies
+      // between editions/publishers (17, 18, 15, ...) and even between IAASB vs. IRBA-reprinted
+      // volumes — any fixed cutoff tuned against one edition is simply wrong for another, and
+      // silently drops real requirements the moment the numbering doesn't match. For ISRE 2400,
+      // "shall" is what actually marks a requirement in IAASB drafting, consistently across
+      // every edition, so it's the sole criterion here — no per-edition number to keep in sync.
+      // For every OTHER family (once a paragraph is already tracked, not on first extraction),
+      // matching is still purely by NUMBER, never by keyword — see computeFlagsForSection.
+      if (isISRE2400 && !/\bshall\b/i.test(body)) continue; // no obligation in this paragraph — not a requirement
 
       extractSubParagraphs(numCore + "." + marker.num, body).forEach(function (item) { found.push(item); });
     }
@@ -2367,9 +2452,15 @@
     });
     var newCandidates = extracted.filter(function (e) { return !sec.std.paragraphs.some(function (p) { return p.number === e.number; }); });
 
-    // Renumber detection: a "missing" paragraph and a "new" paragraph that share essentially
-    // the same CONTENT are the same requirement moved to a different number, not one removed
-    // and an unrelated one added — pair them up by exact normalized text match.
+    // Renumber detection, two passes so an exact match always wins the candidate it deserves
+    // before any fuzzy match gets a look (a greedy single pass could let a fuzzy match steal a
+    // candidate that was actually another paragraph's exact match later in iteration order):
+    // Pass 1 — EXACT text match: the same paragraph, purely moved to a new number.
+    // Pass 2 — STRONG fuzzy match (high word overlap, not exact): the same paragraph, moved AND
+    // reworded — still flagged as "renumbered" (not a separate missing+new pair), but rendered
+    // with a word diff too since the text itself also changed. A real but unrelated paragraph
+    // rarely shares this much vocabulary, so the threshold is set high to avoid false pairings.
+    var RENUMBER_FUZZY_THRESHOLD = 55;
     var usedNew = {};
     missingCandidates = missingCandidates.filter(function (p) {
       var normOld = normalizeWs(p.text).toLowerCase();
@@ -2382,6 +2473,23 @@
           statusUpdates.push({ paragraphId: p.id, autoStatus: "renumbered" });
           return false;
         }
+      }
+      return true;
+    });
+    missingCandidates = missingCandidates.filter(function (p) {
+      var normOld = normalizeWs(p.text).toLowerCase();
+      if (!normOld) { statusUpdates.push({ paragraphId: p.id, autoStatus: "removed" }); return true; }
+      var bestIdx = -1, bestPct = -1;
+      for (var i = 0; i < newCandidates.length; i++) {
+        if (usedNew[i]) continue;
+        var pct = textOverlapPct(p.text, newCandidates[i].text);
+        if (pct !== null && pct > bestPct) { bestPct = pct; bestIdx = i; }
+      }
+      if (bestIdx !== -1 && bestPct >= RENUMBER_FUZZY_THRESHOLD) {
+        usedNew[bestIdx] = true;
+        flags.push({ id: uid("flag"), type: "renumbered", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: p.id, number: newCandidates[bestIdx].number, oldNumber: p.number, oldText: p.text, newText: newCandidates[bestIdx].text, status: "open", source: "pdf", handbookName: handbookName, importedAt: importedAt });
+        statusUpdates.push({ paragraphId: p.id, autoStatus: "renumbered" });
+        return false;
       }
       statusUpdates.push({ paragraphId: p.id, autoStatus: "removed" });
       return true;
@@ -2442,14 +2550,21 @@
         if (foundR) {
           var oldNumber = foundR.para.number;
           var oldTextR = foundR.para.text;
+          var textAlsoChanged = normalizeWs(oldTextR).toLowerCase() !== normalizeWs(flag.newText).toLowerCase()
+            && normalizeWs(flag.newText).toLowerCase().indexOf(normalizeWs(oldTextR).toLowerCase()) === -1
+            && normalizeWs(oldTextR).toLowerCase().indexOf(normalizeWs(flag.newText).toLowerCase()) === -1;
           if (!foundR.para.history) foundR.para.history = [];
           foundR.para.history.push({ oldNumber: oldNumber, newNumber: flag.number, oldText: oldTextR, newText: flag.newText, handbook: handbookName, changedAt: new Date().toISOString(), changedBy: identityName() });
           foundR.para.number = flag.number;
+          // A fuzzy-matched renumber can carry a genuine wording change too (see
+          // computeFlagsForSection's second pairing pass) — the text has to move with the
+          // number, not just the number on its own, or the accepted "new" wording is silently lost.
+          foundR.para.text = flag.newText;
           if (flag.source === "pdf" && handbookName) { foundR.para.sourceDoc = handbookName; foundR.para.sourceImportedAt = new Date().toISOString(); }
           sortParagraphs(foundR.std);
           applyAutoStatus(foundR.para.id, "matched");
-          logChange("update", "paragraph", flag.standardCode + " " + oldNumber + " → " + flag.number, "Accepted a Renumbered change from " + originLabel + " import — paragraph number updated (text unchanged); previous number kept in history.",
-            { paragraphRef: flag.number, oldNumber: oldNumber, newNumber: flag.number });
+          logChange("update", "paragraph", flag.standardCode + " " + oldNumber + " → " + flag.number, "Accepted a Renumbered change from " + originLabel + " import — paragraph number updated" + (textAlsoChanged ? " and text updated to match handbook wording" : " (text unchanged)") + "; previous version kept in history.",
+            { paragraphRef: flag.number, oldNumber: oldNumber, newNumber: flag.number, oldText: oldTextR, newText: flag.newText });
         }
       } else if (flag.type === "new") {
         var std = data.standards.find(function (s) { return s.id === flag.standardId; });
@@ -2538,25 +2653,55 @@
     if (type === "renumbered") return '<span class="flag-badge flag-renumbered"' + extraAttrs + '>⇄ Renumbered</span>';
     return '<span class="flag-badge flag-missing"' + extraAttrs + '>✕ Not Found</span>';
   }
+  // A word-level diff is only meaningful/needed when the text actually differs — reused for
+  // deciding whether a "renumbered" flag also needs a diff, not just the plain moved-text case.
+  // Same tolerance as computeFlagsForSection's own "changed" detection (exact match or one
+  // string contained in the other), so this never disagrees with what triggered the flag.
+  function textsEffectivelyEqual(a, b) {
+    var na = normalizeWs(a || "").toLowerCase(), nb = normalizeWs(b || "").toLowerCase();
+    if (!na || !nb) return na === nb;
+    return na === nb || na.indexOf(nb) !== -1 || nb.indexOf(na) !== -1;
+  }
+  // The one-line "what kind of change is this" label shown above every diff/renumber block —
+  // works for both a live pendingFlag and a resolved changeLog entry, since both share the same
+  // {type, oldNumber, number, oldText, newText} shape.
+  function changeSummaryLineHtml(f) {
+    var key, label;
+    if (f.type === "changed") { key = "changed"; label = "Text changed"; }
+    else if (f.type === "renumbered") {
+      key = "renumbered";
+      label = textsEffectivelyEqual(f.oldText, f.newText) ? "Renumbered" : "Renumbered and text changed";
+    } else if (f.type === "new") { key = "newParagraph"; label = "New paragraph"; }
+    else { key = "removed"; label = "Removed from standard"; }
+    return '<div class="change-summary-line change-summary-line--' + key + '">' + escapeHtml(label) + "</div>";
+  }
   function flagBodyHtml(f) {
     var canResolve = can("senior");
     var originLabel = f.source === "excel" ? "Excel WP mapping" : "PDF";
+    var summaryHtml = changeSummaryLineHtml(f);
     if (f.type === "changed") {
-      return '<div class="diff-block" spellcheck="false">' + renderWordDiff(f.oldText, f.newText) + "</div>" +
+      return summaryHtml + '<div class="diff-block" spellcheck="false">' + renderWordDiff(f.oldText, f.newText) + "</div>" +
         '<div class="readonly-note"><span class="diff-del" style="padding:0 2px;">strikethrough</span> = removed, <span class="diff-ins" style="padding:0 2px;">highlight</span> = added.</div>' +
         (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Accept</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>' : "");
     }
     if (f.type === "renumbered") {
-      return '<div class="diff-block" spellcheck="false"><strong>' + escapeHtml(formatParaNumber(f.oldNumber)) + " → " + escapeHtml(formatParaNumber(f.number)) + ":</strong><br>" + escapeHtml(f.newText) + "</div>" +
-        '<div class="readonly-note">Same wording found under a different paragraph number in the latest ' + escapeHtml(originLabel) + " import.</div>" +
+      var textChanged = !textsEffectivelyEqual(f.oldText, f.newText);
+      var renumberLine = "Paragraph renumbered: was " + formatParaNumber(f.oldNumber) + ", now " + formatParaNumber(f.number) + ".";
+      var renumberBody = '<div class="diff-block" spellcheck="false"><strong>' + escapeHtml(renumberLine) + "</strong>" +
+        (textChanged ? "<br><br>" + renderWordDiff(f.oldText, f.newText) : "<br>" + escapeHtml(f.newText)) +
+        "</div>" +
+        (textChanged
+          ? '<div class="readonly-note"><span class="diff-del" style="padding:0 2px;">strikethrough</span> = removed, <span class="diff-ins" style="padding:0 2px;">highlight</span> = added.</div>'
+          : '<div class="readonly-note">Same wording found under a different paragraph number in the latest ' + escapeHtml(originLabel) + " import.</div>");
+      return summaryHtml + renumberBody +
         (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Accept (renumber to ' + escapeHtml(formatParaNumber(f.number)) + ')</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>' : "");
     }
     if (f.type === "new" && f.alreadyApplied) {
-      return '<div class="diff-block" spellcheck="false"><strong>Added automatically from ' + escapeHtml(originLabel) + " — please confirm it's correct:</strong><br>" + escapeHtml(f.newText) + "</div>" +
+      return summaryHtml + '<div class="diff-block" spellcheck="false"><strong>Added automatically from ' + escapeHtml(originLabel) + " — please confirm it's correct:</strong><br>" + escapeHtml(f.newText) + "</div>" +
         (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn" data-dismiss-flag="' + f.id + '">Acknowledge</button></div>' : "");
     }
     if (f.type === "new") {
-      return '<div class="diff-block" spellcheck="false"><strong>Suggested new paragraph text (from ' + escapeHtml(originLabel) + '):</strong><br>' + escapeHtml(f.newText) + "</div>" +
+      return summaryHtml + '<div class="diff-block" spellcheck="false"><strong>Suggested new paragraph text (from ' + escapeHtml(originLabel) + '):</strong><br>' + escapeHtml(f.newText) + "</div>" +
         (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn primary" data-apply-flag="' + f.id + '">Accept (add to tracker)</button><button class="btn" data-dismiss-flag="' + f.id + '">Dismiss</button></div>' : "");
     }
     // "Not Found" never offers to delete — a paragraph number missing from the latest import
@@ -2564,7 +2709,7 @@
     // automatically would be a data-loss risk. It's surfaced here for manual review only;
     // deleting it (if that's genuinely the right call) is always a separate, deliberate action
     // via "Delete paragraph" on the card itself, never something this flag triggers.
-    return '<div class="diff-block" spellcheck="false"><strong>Not Found — Review Manually:</strong><br>' + escapeHtml(f.oldText) + "</div>" +
+    return summaryHtml + '<div class="diff-block" spellcheck="false"><strong>Not Found — Review Manually:</strong><br>' + escapeHtml(f.oldText) + "</div>" +
       '<div class="readonly-note">This paragraph number was not found in the latest ' + escapeHtml(originLabel) + " import. It has NOT been removed — review it manually (it may have been renumbered, superseded, or simply missed by extraction) and act on it yourself if needed.</div>" +
       (canResolve ? '<div class="cell-actions" style="margin-top:8px;"><button class="btn" data-dismiss-flag="' + f.id + '">Acknowledge</button></div>' : "");
   }
@@ -2578,13 +2723,20 @@
     var banner = '<div class="resolved-flag-banner resolved-flag-banner--' + (accepted ? "accepted" : "dismissed") + '">' +
       (accepted ? "✓ Accepted" : "○ Dismissed") + " by " + escapeHtml(rc.resolvedBy || "Unknown") +
       (rc.resolvedAt ? " · " + new Date(rc.resolvedAt).toLocaleString() : "") + "</div>";
+    var summaryHtml = changeSummaryLineHtml(rc);
     var body;
     if (rc.type === "changed") {
       body = '<div class="diff-block" spellcheck="false">' + renderWordDiff(rc.oldText, rc.newText) + "</div>" +
         '<div class="readonly-note"><span class="diff-del" style="padding:0 2px;">strikethrough</span> = removed, <span class="diff-ins" style="padding:0 2px;">highlight</span> = added' + (accepted ? " (now the baseline)." : " — not applied, baseline unchanged.") + "</div>";
     } else if (rc.type === "renumbered") {
-      body = '<div class="diff-block" spellcheck="false"><strong>' + escapeHtml(formatParaNumber(rc.oldNumber)) + " → " + escapeHtml(formatParaNumber(rc.number)) + ":</strong><br>" + escapeHtml(rc.newText) + "</div>" +
-        '<div class="readonly-note">Same wording found under a different paragraph number in the ' + escapeHtml(originLabel) + " import." + (accepted ? " Renumbered accordingly." : " Not applied — number unchanged.") + "</div>";
+      var textChanged = !textsEffectivelyEqual(rc.oldText, rc.newText);
+      var renumberLine = "Paragraph renumbered: was " + formatParaNumber(rc.oldNumber) + ", now " + formatParaNumber(rc.number) + ".";
+      body = '<div class="diff-block" spellcheck="false"><strong>' + escapeHtml(renumberLine) + "</strong>" +
+        (textChanged ? "<br><br>" + renderWordDiff(rc.oldText, rc.newText) : "<br>" + escapeHtml(rc.newText)) +
+        "</div>" +
+        (textChanged
+          ? '<div class="readonly-note"><span class="diff-del" style="padding:0 2px;">strikethrough</span> = removed, <span class="diff-ins" style="padding:0 2px;">highlight</span> = added' + (accepted ? " (now the baseline)." : " — not applied, baseline unchanged.") + "</div>"
+          : '<div class="readonly-note">Same wording found under a different paragraph number in the ' + escapeHtml(originLabel) + " import." + (accepted ? " Renumbered accordingly." : " Not applied — number unchanged.") + "</div>");
     } else if (rc.type === "new") {
       body = '<div class="diff-block" spellcheck="false"><strong>New paragraph text (from ' + escapeHtml(originLabel) + '):</strong><br>' + escapeHtml(rc.newText) + "</div>" +
         (accepted ? "" : '<div class="readonly-note">Not added to the tracker.</div>');
@@ -2592,7 +2744,7 @@
       body = '<div class="diff-block" spellcheck="false"><strong>Not Found in that ' + escapeHtml(originLabel) + " import:</strong><br>" + escapeHtml(rc.oldText) + "</div>" +
         '<div class="readonly-note">Acknowledged — the paragraph was left exactly as it was.</div>';
     }
-    return banner + body;
+    return banner + summaryHtml + body;
   }
   function renderFlagRow(f) {
     return '<div class="flag-row"><div class="flag-number">' + escapeHtml(formatParaNumber(f.number)) + " " + flagBadgeHtml(f.type) + "</div>" + flagBodyHtml(f) + "</div>";
