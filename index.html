@@ -150,6 +150,20 @@
   .backup-row .backup-label { flex: 1; }
   .backup-row .backup-kind { font-size: 10px; text-transform: uppercase; color: var(--text-muted); background: var(--surface-2); border-radius: 999px; padding: 2px 8px; }
 
+  .tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--status-removed); color: #fff; font-size: 10px; font-weight: 600; margin-left: 5px; vertical-align: 2px; }
+  .msg-bubble-btn { position: relative; }
+  .msg-bubble-btn .msg-count-badge { font-size: 10px; color: var(--text-muted); }
+  .msg-bubble-btn .msg-unread-dot { position: absolute; top: 1px; right: 1px; width: 7px; height: 7px; border-radius: 50%; background: var(--status-removed); border: 1px solid var(--surface-1); }
+  .messages-section { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+  .messages-section h4 { margin: 0 0 8px; font-size: 13px; }
+  .message-row { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; margin-bottom: 8px; font-size: 12px; }
+  .message-row.message-row--resolved { opacity: 0.6; }
+  .message-row .message-meta { display: flex; gap: 8px; align-items: center; color: var(--text-muted); font-size: 11px; margin-bottom: 4px; }
+  .message-row .message-text { white-space: pre-wrap; margin-bottom: 6px; }
+  .message-row .message-actions { display: flex; gap: 6px; }
+  .message-group-panel .message-group-head { display: flex; align-items: center; gap: 8px; }
+  .message-group-panel .message-group-head .tab-badge { margin-left: 0; }
+
   .family-panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 12px; }
   .family-panel h3 { margin: 0 0 2px; font-size: 14px; }
   .family-panel .fp-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 12px; }
@@ -358,6 +372,7 @@
       <button class="tab-btn active" data-view="dashboard">Dashboard</button>
       <button class="tab-btn" data-view="coverage">Coverage Review</button>
       <button class="tab-btn" data-view="review">Import & Compare</button>
+      <button class="tab-btn" data-view="messages">Messages<span id="messages-tab-badge" class="tab-badge" style="display:none;"></span></button>
       <button class="tab-btn" data-view="audit">Audit Trail</button>
       <button class="tab-btn" data-view="developer">Developer</button>
       <button class="tab-btn" data-view="settings">Settings</button>
@@ -498,6 +513,12 @@
         </div>
       </section>
 
+      <section class="view" id="view-messages">
+        <div class="page-head"><h2>Messages</h2><p>Notes attached to specific paragraphs, grouped by paragraph. Anyone can send, reply, or resolve a message.</p></div>
+        <div class="empty-state" id="no-messages-msg" style="display:none;">No messages yet. Click the 💬 icon on any paragraph row to start one.</div>
+        <div id="messages-groups"></div>
+      </section>
+
       <section class="view" id="view-audit">
         <div class="page-head"><h2>Audit Trail</h2><p>A full history of who changed what, and when.</p></div>
         <div class="filter-bar">
@@ -532,6 +553,16 @@
         <div class="family-panel">
           <h3>Database info</h3>
           <div id="developer-db-info" class="db-info-row"></div>
+        </div>
+
+        <div class="family-panel">
+          <h3>Backup location</h3>
+          <div class="fp-sub" id="backup-location-note"></div>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="btn" id="choose-backup-folder-btn">Choose folder</button>
+            <button class="btn" id="reconnect-backup-folder-btn" style="display:none;">Reconnect folder</button>
+            <button class="btn" id="clear-backup-folder-btn" style="display:none;">Use Downloads instead</button>
+          </div>
         </div>
 
         <div class="family-panel danger-zone-panel">
@@ -627,6 +658,23 @@
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
       <button type="button" class="btn primary" id="save-user-btn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-message">
+  <form method="dialog">
+    <div class="modal-head"><h3 id="dlg-message-title">New message</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-body">
+      <div class="readonly-note" id="message-context-note"></div>
+      <div class="field"><label>To</label>
+        <select id="f-message-recipient"></select>
+      </div>
+      <div class="field"><label>Message</label><textarea id="f-message-text" placeholder="Type your note..." required></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="button" class="btn primary" id="send-message-btn">Send</button>
     </div>
   </form>
 </dialog>
@@ -1095,7 +1143,7 @@
       }
     ];
 
-    return { methodologies: methodologies, standards: standards, nextColorIndex: methodologies.length, users: [], auditLog: [], pendingFlags: [], changeLog: [], lastImport: null };
+    return { methodologies: methodologies, standards: standards, nextColorIndex: methodologies.length, users: [], auditLog: [], pendingFlags: [], changeLog: [], lastImport: null, messages: [] };
   }
 
   // ---------- State ----------
@@ -1116,7 +1164,8 @@
     standardCollapse: {},
     paraExpanded: {},
     childrenExpanded: {},
-    editing: { methodologyId: null, standardId: null }
+    editing: { methodologyId: null, standardId: null, messageParagraphId: null, messageReplyToId: null },
+    messagesJumpTo: null
   };
   var STANDARD_COLLAPSE_THRESHOLD = 5;
 
@@ -1139,6 +1188,8 @@
     if (!Array.isArray(d.changeLog)) d.changeLog = [];
     if (typeof d.lastImport === "undefined") d.lastImport = null;
     if (typeof d.lastBackupAt === "undefined") d.lastBackupAt = null;
+    if (!Array.isArray(d.messages)) d.messages = [];
+    d.messages.forEach(function (m) { if (!Array.isArray(m.readBy)) m.readBy = []; });
     if (!Array.isArray(d.users)) d.users = [];
     // The old 4-tier model (viewer/reviewer/senior/admin) is replaced by Read Only/Editor/
     // Developer/Admin — map every existing user across 1:1 by rough capability (reviewer could
@@ -1258,6 +1309,106 @@
     try { var list = JSON.parse(localStorage.getItem(BACKUPS_KEY)); return Array.isArray(list) ? list : []; } catch (e) { return []; }
   }
   function saveBackupsList(list) { localStorage.setItem(BACKUPS_KEY, JSON.stringify(list)); }
+
+  // ---------- Backup location (File System Access API) ----------
+  // Browsers never expose real OS paths to a web page — only an opaque directory HANDLE granted
+  // via a native picker, and only that handle's own folder name (not the path to it) can ever be
+  // shown back to the user. A FileSystemDirectoryHandle is structured-cloneable, so it can be
+  // persisted in IndexedDB (unlike localStorage, which can't hold it) — letting the chosen folder
+  // survive a reload without asking again, AS LONG AS the browser still trusts the permission;
+  // otherwise a fresh user gesture (Reconnect) is unavoidable, by browser design, not a bug here.
+  var BACKUP_DIR_DB = "dwx-backup-dir-db", BACKUP_DIR_STORE = "handles";
+  var chosenBackupDirHandle = null;
+  var backupDirNeedsReconnect = false;
+  function openBackupDirDB() {
+    return new Promise(function (resolve, reject) {
+      var req = indexedDB.open(BACKUP_DIR_DB, 1);
+      req.onupgradeneeded = function () { req.result.createObjectStore(BACKUP_DIR_STORE); };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+  function saveBackupDirHandleToDB(handle) {
+    return openBackupDirDB().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction(BACKUP_DIR_STORE, "readwrite");
+        tx.objectStore(BACKUP_DIR_STORE).put(handle, "backupDir");
+        tx.oncomplete = function () { resolve(); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    });
+  }
+  function loadBackupDirHandleFromDB() {
+    return openBackupDirDB().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction(BACKUP_DIR_STORE, "readonly");
+        var req = tx.objectStore(BACKUP_DIR_STORE).get("backupDir");
+        req.onsuccess = function () { resolve(req.result || null); };
+        req.onerror = function () { reject(req.error); };
+      });
+    });
+  }
+  function clearBackupDirHandleFromDB() {
+    return openBackupDirDB().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction(BACKUP_DIR_STORE, "readwrite");
+        tx.objectStore(BACKUP_DIR_STORE).delete("backupDir");
+        tx.oncomplete = function () { resolve(); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    });
+  }
+  // Called once at startup — silently reconnects if the browser still trusts the previously
+  // granted handle; otherwise flags that a fresh Reconnect click (a real user gesture) is needed.
+  async function tryRestoreBackupDirHandle() {
+    if (!window.showDirectoryPicker) return;
+    try {
+      var handle = await loadBackupDirHandleFromDB();
+      if (!handle) return;
+      var perm = await handle.queryPermission({ mode: "readwrite" });
+      if (perm === "granted") chosenBackupDirHandle = handle;
+      else backupDirNeedsReconnect = true;
+    } catch (e) { /* IndexedDB unavailable, or a stale/invalid handle — fall back to Downloads */ }
+    renderDeveloperView();
+  }
+  async function chooseBackupFolder() {
+    if (!window.showDirectoryPicker) { alert("This browser doesn't support choosing a folder — backups will keep downloading to your Downloads folder instead."); return; }
+    try {
+      var handle = await window.showDirectoryPicker({ mode: "readwrite" });
+      chosenBackupDirHandle = handle;
+      backupDirNeedsReconnect = false;
+      await saveBackupDirHandleToDB(handle);
+    } catch (e) { /* user cancelled the picker — not an error */ }
+    renderDeveloperView();
+  }
+  async function reconnectBackupFolder() {
+    try {
+      var handle = await loadBackupDirHandleFromDB();
+      if (!handle) return;
+      var perm = await handle.requestPermission({ mode: "readwrite" });
+      if (perm === "granted") { chosenBackupDirHandle = handle; backupDirNeedsReconnect = false; }
+      else alert("Permission wasn't granted — backups will keep going to Downloads instead.");
+    } catch (e) { alert("Couldn't reconnect to that folder — try Choose folder again."); }
+    renderDeveloperView();
+  }
+  function clearBackupFolder() {
+    chosenBackupDirHandle = null;
+    backupDirNeedsReconnect = false;
+    clearBackupDirHandleFromDB().catch(function () {});
+    renderDeveloperView();
+  }
+  // Best-effort only — a failure here (permission revoked, handle stale, API unsupported) never
+  // surfaces to the caller; the localStorage backup entry has already succeeded regardless, and
+  // that's what the rest of the app actually depends on.
+  function writeBackupFileToChosenFolder(entry) {
+    if (!chosenBackupDirHandle) return;
+    var filename = "backup-" + entry.label.replace(/[^a-z0-9_-]+/gi, "_") + "-" + entry.createdAt.replace(/[:.]/g, "-") + ".json";
+    chosenBackupDirHandle.getFileHandle(filename, { create: true })
+      .then(function (fh) { return fh.createWritable(); })
+      .then(function (w) { return w.write(entry.snapshot).then(function () { return w.close(); }); })
+      .catch(function () {});
+  }
+
   function formatBytes(n) {
     if (n < 1024) return n + " B";
     if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
@@ -1279,6 +1430,7 @@
     saveBackupsList(list);
     data.lastBackupAt = entry.createdAt;
     persist();
+    writeBackupFileToChosenFolder(entry);
     return entry;
   }
   // One daily snapshot per calendar day, called once at startup — never more than one per day
@@ -1321,7 +1473,7 @@
   }
   function clearAllData() {
     runDangerAction("All Data", function () {
-      data.methodologies = []; data.standards = []; data.pendingFlags = []; data.changeLog = []; data.lastImport = null;
+      data.methodologies = []; data.standards = []; data.pendingFlags = []; data.changeLog = []; data.lastImport = null; data.messages = [];
     });
   }
   function clearAllMethodologies() {
@@ -1523,6 +1675,104 @@
   function sortParagraphs(std) {
     std.paragraphs.sort(function (a, b) { return compareParaNumbers(a.number, b.number); });
   }
+
+  // ---------- Messages ----------
+  // Flat array on data.messages, denormalized with standardCode/paraNumber/methodologyName at
+  // creation time so a message still reads sensibly even if the standard/paragraph/methodology
+  // it referred to is later renamed or deleted — findParagraph-by-id is only needed for the
+  // "jump to this paragraph" navigation, not for basic display.
+  function currentUserId() { var u = resolveIdentityUser(); return u ? u.id : null; }
+  function messagesForParagraph(paragraphId) {
+    return (data.messages || []).filter(function (m) { return m.paragraphId === paragraphId; })
+      .sort(function (a, b) { return new Date(a.createdAt) - new Date(b.createdAt); });
+  }
+  // Unread FOR THE CURRENT USER — a message someone sent TO me that I haven't opened yet.
+  // Messages I sent myself are never "unread" for me (I already know what I wrote).
+  function unreadMessagesFor(userId, paragraphId) {
+    if (!userId) return [];
+    return (data.messages || []).filter(function (m) {
+      if (paragraphId && m.paragraphId !== paragraphId) return false;
+      return m.recipientId === userId && (m.readBy || []).indexOf(userId) === -1;
+    });
+  }
+  function markParagraphMessagesRead(paragraphId, userId) {
+    if (!userId) return;
+    var changed = false;
+    (data.messages || []).forEach(function (m) {
+      if (m.paragraphId !== paragraphId) return;
+      if (m.recipientId === userId && (m.readBy || []).indexOf(userId) === -1) { m.readBy.push(userId); changed = true; }
+    });
+    if (changed) persist();
+    return changed;
+  }
+  function sendMessage(paragraphId, recipientId, text, parentId) {
+    var found = findParagraph(paragraphId);
+    if (!found) return null;
+    var sender = resolveIdentityUser();
+    var recipient = data.users.find(function (u) { return u.id === recipientId; });
+    if (!sender || !recipient || !text.trim()) return null;
+    var meth = data.methodologies.find(function (m) { return m.id === state.activeMethodologyId; });
+    var msg = {
+      id: uid("msg"), paragraphId: paragraphId, standardCode: found.std.code, paraNumber: found.para.number,
+      methodologyId: meth ? meth.id : null, methodologyName: meth ? meth.name : null,
+      senderId: sender.id, senderName: sender.name, recipientId: recipient.id, recipientName: recipient.name,
+      text: text.trim(), createdAt: new Date().toISOString(), parentId: parentId || null,
+      resolved: false, resolvedAt: null, resolvedBy: null, readBy: [sender.id]
+    };
+    data.messages.push(msg);
+    logChange("create", "message", found.std.code + " " + found.para.number, sender.name + ' sent a message to ' + recipient.name + ' on ' + found.std.code + " " + formatParaNumber(found.para.number) + ".");
+    persist();
+    return msg;
+  }
+  function resolveMessage(messageId) {
+    var msg = (data.messages || []).find(function (m) { return m.id === messageId; });
+    if (!msg || msg.resolved) return;
+    msg.resolved = true; msg.resolvedAt = new Date().toISOString(); msg.resolvedBy = identityName();
+    logChange("update", "message", msg.standardCode + " " + msg.paraNumber, identityName() + " marked a message as resolved.");
+    persist();
+  }
+  function totalUnreadMessageCount() { return unreadMessagesFor(currentUserId()).length; }
+  function updateMessagesTabBadge() {
+    var badge = document.getElementById("messages-tab-badge");
+    if (!badge) return;
+    var n = totalUnreadMessageCount();
+    badge.textContent = n > 0 ? String(n) : "";
+    badge.style.display = n > 0 ? "" : "none";
+  }
+  function openMessageModal(paragraphId, replyToMessage) {
+    var found = findParagraph(paragraphId);
+    if (!found) return;
+    state.editing.messageParagraphId = paragraphId;
+    state.editing.messageReplyToId = replyToMessage ? replyToMessage.id : null;
+    document.getElementById("dlg-message-title").textContent = replyToMessage ? "Reply" : "New message";
+    document.getElementById("message-context-note").textContent =
+      "Re: " + found.std.code + " " + formatParaNumber(found.para.number) + (replyToMessage ? ' — replying to ' + replyToMessage.senderName + '\'s message' : "");
+    var me = resolveIdentityUser();
+    var candidates = data.users.filter(function (u) { return !me || u.id !== me.id; });
+    if (!candidates.length) { alert("Add another team member in Settings first — there's no one else to message yet."); return; }
+    var recipientSelect = document.getElementById("f-message-recipient");
+    recipientSelect.innerHTML = candidates
+      .map(function (u) { return '<option value="' + escapeAttr(u.id) + '">' + escapeHtml(u.name) + " (" + accessLevelLabel(u.accessLevel) + ")</option>"; }).join("");
+    // Reply always targets whichever side of that original message ISN'T me — if I sent it,
+    // continue talking to the person I sent it to; if someone sent it to me, reply back to them.
+    if (replyToMessage && me) recipientSelect.value = replyToMessage.senderId === me.id ? replyToMessage.recipientId : replyToMessage.senderId;
+    document.getElementById("f-message-text").value = "";
+    document.getElementById("dlg-message").showModal();
+  }
+  function sendMessageFromModal() {
+    var paragraphId = state.editing.messageParagraphId;
+    var recipientId = document.getElementById("f-message-recipient").value;
+    var text = document.getElementById("f-message-text").value;
+    if (!paragraphId || !recipientId || !text.trim()) { alert("Choose a recipient and type a message."); return; }
+    var msg = sendMessage(paragraphId, recipientId, text, state.editing.messageReplyToId);
+    if (!msg) return;
+    document.getElementById("dlg-message").close();
+    state.editing.messageParagraphId = null;
+    state.editing.messageReplyToId = null;
+    withScrollPreserved(renderCoverageView);
+    if (state.view === "messages") renderMessagesView();
+    updateMessagesTabBadge();
+  }
   // A sub-paragraph like "2400.48.c.v" only ever renders nested under "2400.48" (see
   // buildParaTree's ancestor walk) if that ancestor number actually exists as a paragraph — PDF
   // extraction can add a sub-item like this on its own (e.g. its main paragraph's lead-in text
@@ -1570,6 +1820,7 @@
     renderNotifyBanner();
     renderAuditView();
     renderSettingsView();
+    updateMessagesTabBadge();
     persist();
   }
 
@@ -1581,6 +1832,7 @@
     else if (name === "coverage") renderCoverageView();
     else if (name === "review") renderReviewView();
     else if (name === "audit") renderAuditView();
+    else if (name === "messages") renderMessagesView();
     else if (name === "developer") renderDeveloperView();
     else if (name === "settings") renderSettingsView();
   }
@@ -1892,6 +2144,9 @@
     var pendingFlag = (data.pendingFlags || []).find(function (fl) { return fl.status === "open" && fl.paragraphId === p.id; });
     var resolvedChange = pendingFlag ? null : latestChangeLogEntryFor(p.id);
     var isExpanded = state.paraExpanded.hasOwnProperty(p.id) ? state.paraExpanded[p.id] : !!pendingFlag;
+    // Mark read BEFORE the row's own unread badge is computed below — otherwise the badge would
+    // still show the pre-read count for this same render pass (one render behind reality).
+    if (isExpanded) markParagraphMessagesRead(p.id, currentUserId());
 
     var item = document.createElement("div");
     var levelClass = depth > 0 ? " level-" + Math.min(depth, 3) : "";
@@ -1912,6 +2167,12 @@
     var wpMapBadgeHtml = '<span class="status-dot-pill" title="WP extract coverage of the official text">' +
       '<span class="status-dot status-dot--wp-' + wpMapKey + '"></span>' + WP_MAP_STATUS[wpMapKey].label + "</span>";
 
+    var msgCount = messagesForParagraph(p.id).length;
+    var unreadCount = unreadMessagesFor(currentUserId(), p.id).length;
+    var msgBubbleHtml = '<button class="icon-btn msg-bubble-btn" data-open-message="' + p.id + '" title="' + (msgCount ? msgCount + " message(s) for this paragraph" : "Send a message about this paragraph") + '">💬' +
+      (msgCount ? '<span class="msg-count-badge">' + msgCount + "</span>" : "") +
+      (unreadCount ? '<span class="msg-unread-dot"></span>' : "") + "</button>";
+
     var row = document.createElement("div");
     row.className = "para-row-collapsed";
     row.setAttribute("data-toggle-para", p.id);
@@ -1919,6 +2180,7 @@
       treeToggleHtml +
       '<span class="para-ref no-case">' + escapeHtml(formatParaNumber(p.number)) + "</span>" +
       '<span class="para-row-spacer"></span>' +
+      msgBubbleHtml +
       sourceBadgeHtml +
       flagBadgeInline +
       wpMapBadgeHtml +
@@ -1939,6 +2201,24 @@
     return item;
   }
 
+  function messagesSectionHtml(paragraphId) {
+    var msgs = messagesForParagraph(paragraphId);
+    var rowsHtml = msgs.map(function (m) {
+      return '<div class="message-row' + (m.resolved ? " message-row--resolved" : "") + '">' +
+        '<div class="message-meta"><strong>' + escapeHtml(m.senderName) + "</strong> → " + escapeHtml(m.recipientName) + " · " + new Date(m.createdAt).toLocaleString() + (m.resolved ? " · ✓ Resolved by " + escapeHtml(m.resolvedBy || "") : "") + "</div>" +
+        '<div class="message-text">' + escapeHtml(m.text) + "</div>" +
+        '<div class="message-actions">' +
+          '<button class="btn" data-reply-message="' + escapeAttr(m.id) + '">Reply</button>' +
+          (m.resolved ? "" : '<button class="btn" data-resolve-message="' + escapeAttr(m.id) + '">Resolve</button>') +
+          '<button class="btn" data-goto-messages-tab="' + escapeAttr(paragraphId) + '">Go to Messages tab</button>' +
+        "</div>" +
+      "</div>";
+    }).join("");
+    return '<div class="messages-section"><h4>💬 Messages (' + msgs.length + ")</h4>" +
+      (msgs.length ? rowsHtml : '<div class="fp-sub" style="margin:0 0 8px;">No messages yet for this paragraph.</div>') +
+      '<button class="btn" data-open-message="' + escapeAttr(paragraphId) + '">+ New message</button>' +
+    "</div>";
+  }
   function renderParagraphDetail(std, p, meth, cov, pendingFlag, resolvedChange) {
     var detail = document.createElement("div");
     detail.className = "review-card";
@@ -2050,7 +2330,8 @@
         tickMarksHtml +
         '<textarea class="review-textarea" data-notes-field placeholder="Comparison notes, reviewer commentary, evidence reference..."' + ro + ">" + escapeHtml(cov.notes || "") + "</textarea>" +
         '<div class="save-caption" data-caption>' + savedCaption + "</div>" +
-      "</div>";
+      "</div>" +
+      messagesSectionHtml(p.id);
     return detail;
   }
 
@@ -2101,6 +2382,33 @@
       card.querySelectorAll("[data-dismiss-flag]").forEach(function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); applyFlag(b.getAttribute("data-dismiss-flag"), "dismiss"); }); });
     });
     container.querySelectorAll("[data-del-para]").forEach(function (b) { b.addEventListener("click", function () { deleteParagraph(b.getAttribute("data-del-para")); }); });
+    // The bubble icon sits on the collapsed row itself, so it must stop the click from also
+    // toggling that row's expand/collapse — same reasoning as the flag badge above.
+    container.querySelectorAll("[data-open-message]").forEach(function (b) {
+      b.addEventListener("click", function (e) { e.stopPropagation(); openMessageModal(b.getAttribute("data-open-message"), null); });
+    });
+    container.querySelectorAll("[data-reply-message]").forEach(function (b) {
+      b.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var msg = (data.messages || []).find(function (m) { return m.id === b.getAttribute("data-reply-message"); });
+        if (msg) openMessageModal(msg.paragraphId, msg);
+      });
+    });
+    container.querySelectorAll("[data-resolve-message]").forEach(function (b) {
+      b.addEventListener("click", function (e) {
+        e.stopPropagation();
+        resolveMessage(b.getAttribute("data-resolve-message"));
+        withScrollPreserved(renderCoverageView);
+        updateMessagesTabBadge();
+      });
+    });
+    container.querySelectorAll("[data-goto-messages-tab]").forEach(function (b) {
+      b.addEventListener("click", function (e) {
+        e.stopPropagation();
+        state.messagesJumpTo = b.getAttribute("data-goto-messages-tab");
+        switchToView("messages");
+      });
+    });
   }
 
   function ensureCoverageEntry(para, methodologyId) {
@@ -2305,6 +2613,75 @@
     renderAll();
   }
 
+  // ---------- Messages tab ----------
+  function jumpToParagraphFromMessage(paragraphId, methodologyId) {
+    if (!findParagraph(paragraphId)) { alert("That paragraph no longer exists."); return; }
+    if (methodologyId && data.methodologies.some(function (m) { return m.id === methodologyId; })) state.activeMethodologyId = methodologyId;
+    state.paraExpanded[paragraphId] = true;
+    switchToView("coverage");
+  }
+  function renderMessagesView() {
+    var byPara = {};
+    (data.messages || []).forEach(function (m) { (byPara[m.paragraphId] = byPara[m.paragraphId] || []).push(m); });
+    var groups = Object.keys(byPara).map(function (paragraphId) {
+      var msgs = byPara[paragraphId].slice().sort(function (a, b) { return new Date(a.createdAt) - new Date(b.createdAt); });
+      return { paragraphId: paragraphId, msgs: msgs, latest: msgs[msgs.length - 1] };
+    }).sort(function (a, b) { return new Date(b.latest.createdAt) - new Date(a.latest.createdAt); });
+
+    document.getElementById("no-messages-msg").style.display = groups.length ? "none" : "block";
+    var container = document.getElementById("messages-groups");
+    var me = currentUserId();
+    container.innerHTML = groups.map(function (g) {
+      var first = g.msgs[0];
+      var unreadInGroup = unreadMessagesFor(me, g.paragraphId).length;
+      var rowsHtml = g.msgs.map(function (m) {
+        return '<div class="message-row' + (m.resolved ? " message-row--resolved" : "") + '">' +
+          '<div class="message-meta"><strong>' + escapeHtml(m.senderName) + "</strong> → " + escapeHtml(m.recipientName) + " · " + new Date(m.createdAt).toLocaleString() + (m.resolved ? " · ✓ Resolved by " + escapeHtml(m.resolvedBy || "") : "") + "</div>" +
+          '<div class="message-text">' + escapeHtml(m.text) + "</div>" +
+          '<div class="message-actions">' +
+            '<button class="btn" data-reply-message="' + escapeAttr(m.id) + '">Reply</button>' +
+            (m.resolved ? "" : '<button class="btn" data-resolve-message="' + escapeAttr(m.id) + '">Resolve</button>') +
+          "</div>" +
+        "</div>";
+      }).join("");
+      return '<div class="family-panel message-group-panel">' +
+        '<div class="message-group-head"><h3 style="margin:0;">' + escapeHtml(first.standardCode) + " " + escapeHtml(formatParaNumber(first.paraNumber)) + "</h3>" +
+        (unreadInGroup ? '<span class="tab-badge">' + unreadInGroup + "</span>" : "") +
+        '<span class="spacer"></span>' +
+        '<button class="btn" data-view-paragraph="' + escapeAttr(g.paragraphId) + '" data-view-paragraph-meth="' + escapeAttr(first.methodologyId || "") + '">View paragraph</button></div>' +
+        '<div class="fp-sub">' + (first.methodologyName ? escapeHtml(first.methodologyName) + " · " : "") + g.msgs.length + " message(s)</div>" +
+        rowsHtml +
+        '<button class="btn" data-open-message="' + escapeAttr(g.paragraphId) + '" style="margin-top:6px;">+ New message</button>' +
+      "</div>";
+    }).join("");
+
+    container.querySelectorAll("[data-reply-message]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var msg = (data.messages || []).find(function (m) { return m.id === b.getAttribute("data-reply-message"); });
+        if (msg) openMessageModal(msg.paragraphId, msg);
+      });
+    });
+    container.querySelectorAll("[data-resolve-message]").forEach(function (b) {
+      b.addEventListener("click", function () { resolveMessage(b.getAttribute("data-resolve-message")); renderMessagesView(); updateMessagesTabBadge(); });
+    });
+    container.querySelectorAll("[data-open-message]").forEach(function (b) {
+      b.addEventListener("click", function () { openMessageModal(b.getAttribute("data-open-message"), null); });
+    });
+    container.querySelectorAll("[data-view-paragraph]").forEach(function (b) {
+      b.addEventListener("click", function () { jumpToParagraphFromMessage(b.getAttribute("data-view-paragraph"), b.getAttribute("data-view-paragraph-meth")); });
+    });
+
+    // Viewing this tab reads everything currently shown on it, for the current user.
+    groups.forEach(function (g) { markParagraphMessagesRead(g.paragraphId, me); });
+    updateMessagesTabBadge();
+
+    if (state.messagesJumpTo) {
+      var target = container.querySelector('[data-view-paragraph="' + state.messagesJumpTo + '"]');
+      if (target) target.closest(".message-group-panel").scrollIntoView({ behavior: "smooth", block: "start" });
+      state.messagesJumpTo = null;
+    }
+  }
+
   // ---------- Audit trail ----------
   function renderAuditView() {
     var clearAuditBtn = document.getElementById("clear-audit-btn");
@@ -2403,6 +2780,25 @@
         }).join("")
       : '<div class="fp-sub" style="margin:0;">No backups yet — one is taken automatically once a day, or before any Danger Zone action.</div>';
     backupsList.querySelectorAll("[data-restore-backup]").forEach(function (b) { b.addEventListener("click", function () { restoreBackupById(b.getAttribute("data-restore-backup")); }); });
+
+    var pickerSupported = !!window.showDirectoryPicker;
+    var noteEl = document.getElementById("backup-location-note");
+    var chooseBtn = document.getElementById("choose-backup-folder-btn");
+    var reconnectBtn = document.getElementById("reconnect-backup-folder-btn");
+    var clearBtn = document.getElementById("clear-backup-folder-btn");
+    if (!pickerSupported) {
+      noteEl.textContent = "This browser doesn't support choosing a folder — backups always download to your Downloads folder (the default).";
+      chooseBtn.style.display = "none"; reconnectBtn.style.display = "none"; clearBtn.style.display = "none";
+    } else if (chosenBackupDirHandle) {
+      noteEl.textContent = 'Backups are written automatically to the "' + chosenBackupDirHandle.name + '" folder whenever one is taken (shown as its folder name only — browsers never expose the full path).';
+      chooseBtn.style.display = "none"; reconnectBtn.style.display = "none"; clearBtn.style.display = "";
+    } else if (backupDirNeedsReconnect) {
+      noteEl.textContent = "A backup folder was chosen previously, but this browser session needs permission re-granted before it can write there again.";
+      chooseBtn.style.display = "none"; reconnectBtn.style.display = ""; clearBtn.style.display = "";
+    } else {
+      noteEl.textContent = "No folder chosen yet — backups download to your Downloads folder (the default).";
+      chooseBtn.style.display = ""; reconnectBtn.style.display = "none"; clearBtn.style.display = "none";
+    }
 
     document.getElementById("developer-json-view").style.display = "none";
   }
@@ -3680,7 +4076,14 @@
     renderIdentityBadge();
     applyGlobalRolePermissions();
     if (wasMandatory) finishInit();
-    else { renderAuditView(); renderSettingsView(); }
+    else {
+      renderAuditView(); renderSettingsView();
+      // Unread message badges/dots are per-viewer, not global — a plain user switch has to
+      // refresh them (and whichever paragraph card/tab happens to be showing) same as if the
+      // whole app had just reloaded under the new identity.
+      renderCoverageView(); updateMessagesTabBadge();
+      if (state.view === "messages") renderMessagesView();
+    }
   }
   function wireIdentityDialog() {
     var dlg = document.getElementById("dlg-identity");
@@ -3753,6 +4156,9 @@
     document.getElementById("danger-clear-pdf-imports-btn").addEventListener("click", clearAllPdfImports);
     document.getElementById("danger-clear-excel-imports-btn").addEventListener("click", clearAllExcelImports);
     document.getElementById("danger-clear-audit-btn").addEventListener("click", clearAuditTrail);
+    document.getElementById("choose-backup-folder-btn").addEventListener("click", chooseBackupFolder);
+    document.getElementById("reconnect-backup-folder-btn").addEventListener("click", reconnectBackupFolder);
+    document.getElementById("clear-backup-folder-btn").addEventListener("click", clearBackupFolder);
     document.getElementById("developer-export-json-btn").addEventListener("click", exportData);
     document.getElementById("developer-view-json-btn").addEventListener("click", function () {
       var ta = document.getElementById("developer-json-view");
@@ -3837,6 +4243,7 @@
 
     document.getElementById("add-user-btn").addEventListener("click", function () { openUserModal(null); });
     document.getElementById("save-user-btn").addEventListener("click", saveUser);
+    document.getElementById("send-message-btn").addEventListener("click", sendMessageFromModal);
 
     renderAll();
     applyGlobalRolePermissions();
@@ -3845,6 +4252,7 @@
   document.addEventListener("DOMContentLoaded", function () {
     data = load();
     maybeCreateDailyAutoBackup();
+    tryRestoreBackupDirHandle();
     wireIdentityDialog();
     identity = resolveSessionIdentity();
     if (identity) { renderIdentityBadge(); finishInit(); }
