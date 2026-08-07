@@ -139,6 +139,17 @@
   .activity-feed-panel .activity-row:last-child { border-bottom: none; }
   .activity-feed-panel .activity-when { color: var(--text-muted); flex-shrink: 0; width: 130px; }
 
+  .danger-zone-panel { border-color: var(--status-removed); background: rgba(220,38,38,0.05); }
+  .danger-zone-panel h3 { color: var(--status-removed-text); }
+  .danger-zone-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .db-info-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+  .db-info-stat { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 14px; font-size: 12px; min-width: 140px; }
+  .db-info-stat strong { display: block; font-size: 16px; margin-bottom: 2px; }
+  .backup-row { display: flex; align-items: center; gap: 10px; font-size: 12px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .backup-row:last-child { border-bottom: none; }
+  .backup-row .backup-label { flex: 1; }
+  .backup-row .backup-kind { font-size: 10px; text-transform: uppercase; color: var(--text-muted); background: var(--surface-2); border-radius: 999px; padding: 2px 8px; }
+
   .family-panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 12px; }
   .family-panel h3 { margin: 0 0 2px; font-size: 14px; }
   .family-panel .fp-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 12px; }
@@ -348,6 +359,7 @@
       <button class="tab-btn" data-view="coverage">Coverage Review</button>
       <button class="tab-btn" data-view="review">Import & Compare</button>
       <button class="tab-btn" data-view="audit">Audit Trail</button>
+      <button class="tab-btn" data-view="developer">Developer</button>
       <button class="tab-btn" data-view="settings">Settings</button>
     </div>
     <div class="spacer"></div>
@@ -356,8 +368,6 @@
       <input type="text" id="search-input" placeholder="Search paragraphs, standards...">
     </div>
     <span class="identity-badge" id="identity-badge"></span>
-    <button class="btn" id="export-btn">Export JSON</button>
-    <button class="btn" id="import-btn">Import JSON</button>
     <input type="file" id="import-file" accept="application/json" hidden>
   </header>
 
@@ -379,7 +389,7 @@
       <div class="notify-banner" id="notify-banner"></div>
 
       <section class="view active" id="view-dashboard">
-        <div class="page-head"><h2>Overview</h2><p id="overview-sub"></p></div>
+        <div class="page-head"><h2>Overview</h2><p id="overview-sub"></p><p id="overview-last-backup" style="margin:2px 0 0; font-size:12px; color:var(--text-muted);"></p></div>
         <div id="dashboard-alerts"></div>
         <div id="dashboard-panels"></div>
         <div class="family-panel activity-feed-panel">
@@ -516,13 +526,60 @@
         </div>
       </section>
 
+      <section class="view" id="view-developer">
+        <div class="page-head"><h2>Developer</h2><p>Bulk data tools and troubleshooting. Visible to Developer and Admin roles only.</p></div>
+
+        <div class="family-panel">
+          <h3>Database info</h3>
+          <div id="developer-db-info" class="db-info-row"></div>
+        </div>
+
+        <div class="family-panel danger-zone-panel">
+          <h3>⚠ Danger Zone</h3>
+          <div class="fp-sub">Each button below takes a safety backup first, then permanently clears that data from this browser. Restore the backup from the list below if it wasn't intended.</div>
+          <div class="danger-zone-actions">
+            <button class="btn danger" id="danger-clear-all-data-btn">Clear All Data</button>
+            <button class="btn danger" id="danger-clear-methodologies-btn">Clear All Methodologies</button>
+            <button class="btn danger" id="danger-clear-standards-btn">Clear All Standards</button>
+            <button class="btn danger" id="danger-clear-paragraphs-btn">Clear All Paragraphs</button>
+            <button class="btn danger" id="danger-clear-pdf-imports-btn">Clear All PDF Imports</button>
+            <button class="btn danger" id="danger-clear-excel-imports-btn">Clear All Excel Imports</button>
+            <button class="btn danger" id="danger-clear-audit-btn">Clear Audit Trail</button>
+          </div>
+        </div>
+
+        <div class="family-panel">
+          <h3>Backups</h3>
+          <div class="fp-sub">One saved automatically per day (last 7 kept), plus a safety snapshot before every Danger Zone action and before every restore. Stored in this browser only — use Settings &gt; Download Backup to keep a copy elsewhere too.</div>
+          <div id="developer-backups-list"></div>
+        </div>
+
+        <div class="family-panel">
+          <h3>Raw JSON data</h3>
+          <div class="fp-sub">The exact contents of this browser's tracker data, for troubleshooting.</div>
+          <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <button class="btn" id="developer-view-json-btn">View Raw JSON</button>
+            <button class="btn" id="developer-export-json-btn">Export JSON</button>
+          </div>
+          <textarea id="developer-json-view" readonly spellcheck="false" style="display:none; width:100%; height:300px; font-family:monospace; font-size:11px;"></textarea>
+        </div>
+      </section>
+
       <section class="view" id="view-settings">
-        <div class="page-head"><h2>Settings</h2><p>Manage the list of team members who can be selected at login, and their access level.</p></div>
+        <div class="page-head"><h2>Settings</h2><p>Manage the list of team members who can be selected at login, and their access level, and back up or restore the full tracker dataset.</p></div>
         <div class="family-panel">
           <h3>Team members</h3>
-          <div class="fp-sub">The first user added is automatically an Admin.</div>
+          <div class="fp-sub" id="users-list-note">The first user added is automatically an Admin. Only Admins can add, edit or remove team members.</div>
           <div id="users-list"></div>
           <button class="btn primary" id="add-user-btn" style="margin-top:12px;">+ Add user</button>
+        </div>
+        <div class="family-panel">
+          <h3>Data management</h3>
+          <div class="fp-sub">Download a full backup of everything in this browser as a JSON file, or restore one you downloaded earlier — restoring replaces ALL current data.</div>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="btn primary" id="settings-download-backup-btn">Download Backup</button>
+            <button class="btn" id="settings-restore-backup-btn">Restore from Backup</button>
+          </div>
         </div>
       </section>
     </main>
@@ -1081,6 +1138,7 @@
     if (!Array.isArray(d.pendingFlags)) d.pendingFlags = [];
     if (!Array.isArray(d.changeLog)) d.changeLog = [];
     if (typeof d.lastImport === "undefined") d.lastImport = null;
+    if (typeof d.lastBackupAt === "undefined") d.lastBackupAt = null;
     if (!Array.isArray(d.users)) d.users = [];
     // The old 4-tier model (viewer/reviewer/senior/admin) is replaced by Read Only/Editor/
     // Developer/Admin — map every existing user across 1:1 by rough capability (reviewer could
@@ -1186,6 +1244,116 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
     var el = document.getElementById("last-saved");
     if (el) el.textContent = "Saved " + new Date().toLocaleTimeString();
+  }
+
+  // ---------- Backups ----------
+  // All backups (daily auto-backups, safety snapshots taken right before a Danger Zone action,
+  // and manual ones from Settings > Download Backup) live in ONE array under a single storage
+  // key, each tagged with a "kind" — a single structure is far simpler to list/prune/restore
+  // from than scattered per-day keys, while still giving each kind its own 7-deep retention so
+  // a burst of Danger Zone actions can never evict the daily history, or vice versa.
+  var BACKUPS_KEY = "dwx-standards-tracker-backups";
+  var MAX_BACKUPS_PER_KIND = 7;
+  function loadBackups() {
+    try { var list = JSON.parse(localStorage.getItem(BACKUPS_KEY)); return Array.isArray(list) ? list : []; } catch (e) { return []; }
+  }
+  function saveBackupsList(list) { localStorage.setItem(BACKUPS_KEY, JSON.stringify(list)); }
+  function formatBytes(n) {
+    if (n < 1024) return n + " B";
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+    return (n / (1024 * 1024)).toFixed(2) + " MB";
+  }
+  // Snapshots the CURRENT data, prunes that SAME kind down to the last MAX_BACKUPS_PER_KIND
+  // entries (oldest first out), and stamps data.lastBackupAt so the Dashboard/Database Info
+  // panel always reflects the most recent backup of ANY kind.
+  function createBackup(kind, label) {
+    var snapshot = JSON.stringify(data);
+    var entry = { id: uid("bak"), kind: kind, label: label, createdAt: new Date().toISOString(), sizeBytes: snapshot.length, snapshot: snapshot };
+    var list = loadBackups();
+    list.push(entry);
+    var sameKind = list.filter(function (b) { return b.kind === kind; }).sort(function (a, b) { return new Date(a.createdAt) - new Date(b.createdAt); });
+    if (sameKind.length > MAX_BACKUPS_PER_KIND) {
+      var evictIds = sameKind.slice(0, sameKind.length - MAX_BACKUPS_PER_KIND).map(function (b) { return b.id; });
+      list = list.filter(function (b) { return evictIds.indexOf(b.id) === -1; });
+    }
+    saveBackupsList(list);
+    data.lastBackupAt = entry.createdAt;
+    persist();
+    return entry;
+  }
+  // One daily snapshot per calendar day, called once at startup — never more than one per day
+  // regardless of how many times the app is opened that day.
+  function maybeCreateDailyAutoBackup() {
+    var today = new Date().toISOString().slice(0, 10);
+    var already = loadBackups().some(function (b) { return b.kind === "daily" && b.label === today; });
+    if (!already) createBackup("daily", today);
+  }
+  function restoreBackupById(id) {
+    var entry = loadBackups().find(function (b) { return b.id === id; });
+    if (!entry) return;
+    if (!confirm("Restore the backup from " + new Date(entry.createdAt).toLocaleString() + "? This replaces ALL current data in this browser with that snapshot. Your current data is itself backed up first, so this can still be undone afterwards.")) return;
+    createBackup("pre-restore", "Before restoring " + entry.label);
+    var restored = JSON.parse(entry.snapshot);
+    migrateData(restored);
+    if (typeof restored.nextColorIndex !== "number") restored.nextColorIndex = restored.methodologies.length;
+    data = restored;
+    logChange("update", "data", "Backup restored", 'Restored the "' + entry.label + '" backup from ' + new Date(entry.createdAt).toLocaleString() + ".");
+    persist();
+    renderAll();
+    applyGlobalRolePermissions();
+    alert('Restored the "' + entry.label + '" backup.');
+  }
+
+  // ---------- Developer tab: Danger Zone ----------
+  // Every Danger Zone action goes through this: confirm, take a safety backup FIRST (so it's
+  // always undoable via the backup list even though the action itself has no direct "undo"),
+  // then run the actual clear.
+  function runDangerAction(label, clearFn) {
+    if (!confirm("This will permanently clear " + label + ". A safety backup will be taken first so this can be undone by restoring it from the Backups list below. Continue?")) return;
+    createBackup("pre-delete", "Before: Clear " + label);
+    clearFn();
+    logChange("delete", "data", label, "Cleared " + label + " (Developer tab Danger Zone).");
+    persist();
+    renderAll();
+    applyGlobalRolePermissions();
+    renderDeveloperView();
+    alert(label + " cleared. A backup was taken first — restore it from the Developer tab's Backups list if this wasn't intended.");
+  }
+  function clearAllData() {
+    runDangerAction("All Data", function () {
+      data.methodologies = []; data.standards = []; data.pendingFlags = []; data.changeLog = []; data.lastImport = null;
+    });
+  }
+  function clearAllMethodologies() {
+    runDangerAction("All Methodologies", function () {
+      data.methodologies = [];
+      data.standards.forEach(function (s) { s.paragraphs.forEach(function (p) { p.coverage = {}; }); });
+    });
+  }
+  function clearAllStandards() { runDangerAction("All Standards", function () { data.standards = []; }); }
+  function clearAllParagraphs() { runDangerAction("All Paragraphs", function () { data.standards.forEach(function (s) { s.paragraphs = []; }); }); }
+  function clearAllPdfImports() {
+    runDangerAction("All PDF Imports", function () {
+      data.lastImport = null;
+      data.pendingFlags = (data.pendingFlags || []).filter(function (f) { return f.source !== "pdf"; });
+      data.changeLog = (data.changeLog || []).filter(function (f) { return f.source !== "pdf"; });
+    });
+  }
+  function clearAllExcelImports() {
+    runDangerAction("All Excel Imports", function () {
+      data.pendingFlags = (data.pendingFlags || []).filter(function (f) { return f.source !== "excel"; });
+      data.changeLog = (data.changeLog || []).filter(function (f) { return f.source !== "excel"; });
+    });
+  }
+  function clearAuditTrail() {
+    var count = (data.auditLog || []).length;
+    if (!confirm("Clear all " + count + " audit trail entries completely? This cannot be undone.")) return;
+    createBackup("pre-delete", "Before: Clear Audit Trail");
+    data.auditLog = [];
+    logChange("delete", "data", "Audit trail cleared", "Cleared " + count + " audit trail entries.");
+    persist();
+    renderAuditView();
+    renderDeveloperView();
   }
 
   function resolveIdentityUser() {
@@ -1413,6 +1581,7 @@
     else if (name === "coverage") renderCoverageView();
     else if (name === "review") renderReviewView();
     else if (name === "audit") renderAuditView();
+    else if (name === "developer") renderDeveloperView();
     else if (name === "settings") renderSettingsView();
   }
 
@@ -1480,6 +1649,8 @@
     var totalParas = allParagraphs().length;
     document.getElementById("overview-sub").textContent =
       data.methodologies.length + " methodologies tracked across " + data.standards.length + " standards and " + totalParas + " paragraphs.";
+    document.getElementById("overview-last-backup").textContent =
+      "Last backup: " + (data.lastBackupAt ? new Date(data.lastBackupAt).toLocaleString() : "never — see the Developer tab or Settings > Download Backup.");
 
     // ---- Alerts: aggregated across every methodology, only shown when there's something to flag ----
     var alertsEl = document.getElementById("dashboard-alerts");
@@ -2212,14 +2383,44 @@
     URL.revokeObjectURL(url);
   }
 
+  // ---------- Developer tab ----------
+  function renderDeveloperView() {
+    var infoEl = document.getElementById("developer-db-info");
+    var totalParas = allParagraphs().length;
+    var storageBytes = JSON.stringify(data).length;
+    infoEl.innerHTML =
+      '<div class="db-info-stat"><strong>' + totalParas + "</strong>Total paragraphs</div>" +
+      '<div class="db-info-stat"><strong>' + formatBytes(storageBytes) + "</strong>Storage used</div>" +
+      '<div class="db-info-stat"><strong>' + (data.lastBackupAt ? new Date(data.lastBackupAt).toLocaleString() : "Never") + "</strong>Last backup</div>";
+
+    var backupsList = document.getElementById("developer-backups-list");
+    var backups = loadBackups().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+    backupsList.innerHTML = backups.length
+      ? backups.map(function (b) {
+          return '<div class="backup-row"><span class="backup-kind">' + escapeHtml(b.kind) + "</span>" +
+            '<span class="backup-label">' + escapeHtml(b.label) + " — " + new Date(b.createdAt).toLocaleString() + " (" + formatBytes(b.sizeBytes) + ")</span>" +
+            '<button class="btn" data-restore-backup="' + escapeAttr(b.id) + '">Restore</button></div>';
+        }).join("")
+      : '<div class="fp-sub" style="margin:0;">No backups yet — one is taken automatically once a day, or before any Danger Zone action.</div>';
+    backupsList.querySelectorAll("[data-restore-backup]").forEach(function (b) { b.addEventListener("click", function () { restoreBackupById(b.getAttribute("data-restore-backup")); }); });
+
+    document.getElementById("developer-json-view").style.display = "none";
+  }
+
   // ---------- Settings: users ----------
+  // The Settings tab itself is already Developer+Admin only (see applyGlobalRolePermissions) —
+  // within it, a Developer can always SEE the team member list (name + role), but only an
+  // Admin gets Add/Edit/Remove controls, per-row and on the "+ Add user" button below.
   function renderSettingsView() {
     var isAdmin = can("admin");
     var list = document.getElementById("users-list");
     var addBtn = document.getElementById("add-user-btn");
+    var note = document.getElementById("users-list-note");
     if (addBtn) addBtn.style.display = isAdmin ? "" : "none";
-    if (!isAdmin) { list.innerHTML = '<div class="empty-state" style="padding:20px 0;">Admin access required to manage team members.</div>'; return; }
-    if (data.users.length === 0) { list.innerHTML = '<div class="empty-state" style="padding:20px 0;">No team members yet. Add the first one below.</div>'; return; }
+    if (note) note.textContent = isAdmin
+      ? "The first user added is automatically an Admin. Only Admins can add, edit or remove team members."
+      : "Read-only — only Admins can add, edit or remove team members.";
+    if (data.users.length === 0) { list.innerHTML = '<div class="empty-state" style="padding:20px 0;">No team members yet.' + (isAdmin ? " Add the first one below." : "") + "</div>"; return; }
     var countsByUser = {};
     (data.auditLog || []).forEach(function (e) { countsByUser[e.user] = (countsByUser[e.user] || 0) + 1; });
     list.innerHTML = data.users.map(function (u) {
@@ -2227,10 +2428,10 @@
       return '<div class="methodology-row" style="padding:6px 0;">' +
         '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(u.name) + '</span>' +
         '<span class="count">' + accessLevelLabel(u.accessLevel) + " · " + n + " change" + (n === 1 ? "" : "s") + "</span></span>" +
-        '<span class="row-actions" style="display:flex;">' +
+        (isAdmin ? '<span class="row-actions" style="display:flex;">' +
           '<button class="icon-btn" data-edit-user="' + u.id + '" title="Edit">✎</button>' +
           '<button class="icon-btn" data-del-user="' + u.id + '" title="Remove">✕</button>' +
-        "</span></div>";
+        "</span>" : "") + "</div>";
     }).join("");
     list.querySelectorAll("[data-edit-user]").forEach(function (b) { b.addEventListener("click", function () { openUserModal(b.getAttribute("data-edit-user")); }); });
     list.querySelectorAll("[data-del-user]").forEach(function (b) { b.addEventListener("click", function () { deleteUser(b.getAttribute("data-del-user")); }); });
@@ -3408,6 +3609,14 @@
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
+  // Settings > Download Backup — unlike the Developer tab's plain "Export JSON" (a one-off
+  // troubleshooting dump), this ALSO records the backup in the in-browser Backups list so
+  // "last backed up" stays accurate and it shows up next to the automatic ones.
+  function downloadBackup() {
+    createBackup("manual", new Date().toISOString().slice(0, 10) + " (manual)");
+    renderDeveloperView();
+    exportData();
+  }
   function handleImportFile(file) {
     var reader = new FileReader();
     reader.onload = function () {
@@ -3481,12 +3690,15 @@
   }
 
   function applyGlobalRolePermissions() {
-    var isAdmin = can("admin");
+    var isDeveloperUp = can("developer");
+    // Settings and Developer are both Developer/Admin only — Read Only and Editor never see
+    // either tab at all. Actually editing users (Add/Edit/Remove) is further restricted to
+    // Admin, inside renderSettingsView itself.
     var settingsTab = document.querySelector('.tab-btn[data-view="settings"]');
-    if (settingsTab) settingsTab.style.display = isAdmin ? "" : "none"; // Settings is user management — Admin only
-    var importJsonBtn = document.getElementById("import-btn");
-    if (importJsonBtn) importJsonBtn.style.display = can("developer") ? "" : "none"; // wholesale data replace — not "managing users", so Developer+ same as everything else
-    if (!isAdmin && state.view === "settings") switchToView("dashboard");
+    if (settingsTab) settingsTab.style.display = isDeveloperUp ? "" : "none";
+    var developerTab = document.querySelector('.tab-btn[data-view="developer"]');
+    if (developerTab) developerTab.style.display = isDeveloperUp ? "" : "none";
+    if (!isDeveloperUp && (state.view === "settings" || state.view === "developer")) switchToView("dashboard");
   }
 
   var appInitialized = false;
@@ -3530,9 +3742,24 @@
     document.querySelectorAll("[data-close]").forEach(function (b) { b.addEventListener("click", closeDialog); });
     document.querySelectorAll("dialog:not(#dlg-identity)").forEach(function (dlg) { dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); }); });
 
-    document.getElementById("export-btn").addEventListener("click", exportData);
-    document.getElementById("import-btn").addEventListener("click", function () { document.getElementById("import-file").click(); });
+    document.getElementById("settings-download-backup-btn").addEventListener("click", downloadBackup);
+    document.getElementById("settings-restore-backup-btn").addEventListener("click", function () { document.getElementById("import-file").click(); });
     document.getElementById("import-file").addEventListener("change", function (e) { if (e.target.files[0]) handleImportFile(e.target.files[0]); e.target.value = ""; });
+
+    document.getElementById("danger-clear-all-data-btn").addEventListener("click", clearAllData);
+    document.getElementById("danger-clear-methodologies-btn").addEventListener("click", clearAllMethodologies);
+    document.getElementById("danger-clear-standards-btn").addEventListener("click", clearAllStandards);
+    document.getElementById("danger-clear-paragraphs-btn").addEventListener("click", clearAllParagraphs);
+    document.getElementById("danger-clear-pdf-imports-btn").addEventListener("click", clearAllPdfImports);
+    document.getElementById("danger-clear-excel-imports-btn").addEventListener("click", clearAllExcelImports);
+    document.getElementById("danger-clear-audit-btn").addEventListener("click", clearAuditTrail);
+    document.getElementById("developer-export-json-btn").addEventListener("click", exportData);
+    document.getElementById("developer-view-json-btn").addEventListener("click", function () {
+      var ta = document.getElementById("developer-json-view");
+      var showing = ta.style.display !== "none";
+      if (!showing) ta.value = JSON.stringify(data, null, 2);
+      ta.style.display = showing ? "none" : "block";
+    });
     document.getElementById("confirm-import-btn").addEventListener("click", function () {
       if (pendingJsonImport) {
         data = pendingJsonImport;
@@ -3600,14 +3827,7 @@
 
     document.getElementById("dashboard-view-full-audit-link").addEventListener("click", function (e) { e.preventDefault(); switchToView("audit"); });
 
-    document.getElementById("clear-audit-btn").addEventListener("click", function () {
-      var count = (data.auditLog || []).length;
-      if (!confirm("Clear all " + count + " audit trail entries completely? This cannot be undone.")) return;
-      data.auditLog = [];
-      logChange("delete", "data", "Audit trail cleared", "Cleared " + count + " audit trail entries.");
-      persist();
-      renderAuditView();
-    });
+    document.getElementById("clear-audit-btn").addEventListener("click", clearAuditTrail);
 
     document.getElementById("export-audit-csv-btn").addEventListener("click", exportAuditCsv);
     document.getElementById("export-change-report-btn").addEventListener("click", exportChangeReportCsv);
@@ -3624,6 +3844,7 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     data = load();
+    maybeCreateDailyAutoBackup();
     wireIdentityDialog();
     identity = resolveSessionIdentity();
     if (identity) { renderIdentityBadge(); finishInit(); }
