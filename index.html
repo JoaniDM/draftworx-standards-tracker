@@ -522,9 +522,9 @@
 
 <dialog id="dlg-identity">
   <form method="dialog">
-    <div class="modal-head"><h3>Welcome</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-head"><h3>Login</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
     <div class="modal-body">
-      <p style="margin:0; font-size:13px; color:var(--text-secondary);" id="identity-intro">Select your name so changes you make can be attributed to you in the audit trail.</p>
+      <p style="margin:0; font-size:13px; color:var(--text-secondary);" id="identity-intro">Choose your name so changes you make can be attributed to you in the audit trail.</p>
       <div class="field" id="identity-existing-wrap">
         <label>Your name</label>
         <select id="f-identity-user"></select>
@@ -533,17 +533,12 @@
       <div class="field" id="identity-new-wrap" style="display:none;">
         <label>Your name</label>
         <input type="text" id="f-identity-new-name" placeholder="Full name">
-        <label style="margin-top:8px;">Job title</label>
-        <select id="f-identity-new-jobtitle">
-          <option>Developer</option><option>Senior</option><option>Manager</option><option>Partner</option><option>Reviewer</option>
-        </select>
         <div class="readonly-note">You're the first user, so you'll automatically be set up as Admin.</div>
       </div>
-      <div class="field"><label>PC / device name</label><input type="text" id="f-identity-pc" placeholder="e.g. DESKTOP-JD01" required></div>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
-      <button type="button" class="btn primary" id="save-identity-btn">Save</button>
+      <button type="button" class="btn primary" id="save-identity-btn">Login</button>
     </div>
   </form>
 </dialog>
@@ -553,17 +548,12 @@
     <div class="modal-head"><h3 id="dlg-user-title">Add user</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
     <div class="modal-body">
       <div class="field"><label>Name</label><input type="text" id="f-user-name" required></div>
-      <div class="field"><label>Job title</label>
-        <select id="f-user-jobtitle">
-          <option>Developer</option><option>Senior</option><option>Manager</option><option>Partner</option><option>Reviewer</option>
-        </select>
-      </div>
       <div class="field" id="user-accesslevel-wrap"><label>Access level</label>
         <select id="f-user-accesslevel">
-          <option value="viewer">Viewer — read only</option>
-          <option value="reviewer">Reviewer — can comment and update WP extracts</option>
-          <option value="senior">Senior — can also import Excel/PDF and manage standards</option>
-          <option value="admin">Admin — full access including user management and reset</option>
+          <option value="readOnly">Read Only — view only</option>
+          <option value="editor">Editor — can edit WP extract, change status, add comments</option>
+          <option value="developer">Developer — everything except managing users</option>
+          <option value="admin">Admin — full access including user management and imports</option>
         </select>
       </div>
       <div class="readonly-note" id="user-firstadmin-note" style="display:none;">This is the first user, so they'll automatically be set as Admin.</div>
@@ -725,12 +715,16 @@
     return t;
   }
 
-  var JOB_TITLES = ["Developer", "Senior", "Manager", "Partner", "Reviewer"];
-  var ACCESS_LEVELS = ["viewer", "reviewer", "senior", "admin"];
-  var ACCESS_RANK = { viewer: 0, reviewer: 1, senior: 2, admin: 3 };
-  var ACCESS_LABEL = { viewer: "Viewer", reviewer: "Reviewer", senior: "Senior", admin: "Admin" };
-  function accessLevelLabel(level) { return ACCESS_LABEL[level] || "Viewer"; }
-  function currentAccessLevel() { var u = resolveIdentityUser(); return (u && u.accessLevel) || "viewer"; }
+  // Four roles only: Read Only (view everything, change nothing), Editor (the day-to-day
+  // coverage-review work — WP extract, status, comments — but no imports, no structural
+  // changes, no user management), Developer (everything except managing users), Admin (all of
+  // it). There's no 5th tier and no separate structural-vs-import split — "developer" is the one
+  // rung that unlocks both at once, since neither is a Read Only/Editor concern.
+  var ACCESS_LEVELS = ["readOnly", "editor", "developer", "admin"];
+  var ACCESS_RANK = { readOnly: 0, editor: 1, developer: 2, admin: 3 };
+  var ACCESS_LABEL = { readOnly: "Read Only", editor: "Editor", developer: "Developer", admin: "Admin" };
+  function accessLevelLabel(level) { return ACCESS_LABEL[level] || "Read Only"; }
+  function currentAccessLevel() { var u = resolveIdentityUser(); return (u && u.accessLevel) || "readOnly"; }
   function can(minLevel) { return ACCESS_RANK[currentAccessLevel()] >= ACCESS_RANK[minLevel]; }
 
   // Browsers refuse to construct a real Worker directly from a cross-origin script URL, and
@@ -1062,9 +1056,14 @@
     if (!Array.isArray(d.changeLog)) d.changeLog = [];
     if (typeof d.lastImport === "undefined") d.lastImport = null;
     if (!Array.isArray(d.users)) d.users = [];
+    // The old 4-tier model (viewer/reviewer/senior/admin) is replaced by Read Only/Editor/
+    // Developer/Admin — map every existing user across 1:1 by rough capability (reviewer could
+    // edit WP extract/status/comments, same as the new Editor; senior could import and manage
+    // structure, same as the new Developer) so nobody's access silently changes on upgrade.
+    var LEGACY_ACCESS_LEVEL_MAP = { viewer: "readOnly", reviewer: "editor", senior: "developer", admin: "admin" };
     d.users.forEach(function (u, idx) {
-      if (typeof u.jobTitle === "undefined") u.jobTitle = "Reviewer";
-      if (typeof u.accessLevel === "undefined") u.accessLevel = idx === 0 ? "admin" : "reviewer";
+      if (LEGACY_ACCESS_LEVEL_MAP.hasOwnProperty(u.accessLevel)) u.accessLevel = LEGACY_ACCESS_LEVEL_MAP[u.accessLevel];
+      if (typeof u.accessLevel === "undefined") u.accessLevel = idx === 0 ? "admin" : "readOnly";
     });
     if (d.users.length && !d.users.some(function (u) { return u.accessLevel === "admin"; })) d.users[0].accessLevel = "admin";
 
@@ -1151,16 +1150,16 @@
       var parsed = JSON.parse(raw);
       if (parsed && parsed.userId) {
         var u = data.users.find(function (x) { return x.id === parsed.userId; });
-        return u ? { userId: parsed.userId, pcName: parsed.pcName || "" } : null;
+        return u ? { userId: parsed.userId } : null;
       }
       if (parsed && parsed.name) {
         var match = data.users.find(function (x) { return x.name.toLowerCase() === parsed.name.toLowerCase(); });
         if (!match) {
           var isFirst = data.users.length === 0;
-          match = { id: uid("user"), name: parsed.name, jobTitle: "Reviewer", accessLevel: isFirst ? "admin" : "reviewer" };
+          match = { id: uid("user"), name: parsed.name, accessLevel: isFirst ? "admin" : "editor" };
           data.users.push(match);
         }
-        var newIdentity = { userId: match.id, pcName: parsed.pcName || "" };
+        var newIdentity = { userId: match.id };
         localStorage.setItem(IDENTITY_KEY, JSON.stringify(newIdentity));
         return newIdentity;
       }
@@ -1176,7 +1175,7 @@
     if (!Array.isArray(data.auditLog)) data.auditLog = [];
     var entry = {
       id: uid("log"), timestamp: new Date().toISOString(), user: identityName(),
-      pcName: identity ? identity.pcName : "Unknown", action: action, entityType: entityType, label: label, summary: summary
+      action: action, entityType: entityType, label: label, summary: summary
     };
     if (extra) {
       entry.paragraphRef = extra.paragraphRef || null;
@@ -1325,8 +1324,8 @@
     var el = document.getElementById("identity-badge");
     var u = resolveIdentityUser();
     if (!u || !identity) { el.innerHTML = ""; return; }
-    el.innerHTML = '<span title="PC: ' + escapeAttr(identity.pcName) + '">' + escapeHtml(u.name) + "</span>" +
-      ' <span style="color:var(--header-text-muted);">· ' + escapeHtml(u.jobTitle || "") + " · " + accessLevelLabel(u.accessLevel) + "</span>" +
+    el.innerHTML = "<span>" + escapeHtml(u.name) + "</span>" +
+      ' <span style="color:var(--header-text-muted);">· ' + accessLevelLabel(u.accessLevel) + "</span>" +
       ' <button class="btn icon-only" id="switch-user-btn" title="Switch user" style="padding:2px 6px; font-size:11px;">Switch User</button>';
     document.getElementById("switch-user-btn").addEventListener("click", function () { openIdentityModal(false); });
   }
@@ -1356,7 +1355,7 @@
 
     var list = document.getElementById("methodology-list");
     list.innerHTML = "";
-    var canManage = can("senior");
+    var canManage = can("developer");
     data.methodologies.forEach(function (meth) {
       var row = document.createElement("div");
       row.className = "methodology-row";
@@ -1380,7 +1379,7 @@
     var addMethBtn = document.getElementById("add-methodology-btn");
     if (addMethBtn) addMethBtn.style.display = canManage ? "" : "none";
     var resetBtn = document.getElementById("reset-demo-btn");
-    if (resetBtn) resetBtn.style.display = can("admin") ? "" : "none";
+    if (resetBtn) resetBtn.style.display = can("developer") ? "" : "none";
   }
 
   function renderDashboard() {
@@ -1449,7 +1448,7 @@
 
     var container = document.getElementById("coverage-list");
     container.innerHTML = "";
-    var canManageStructure = can("senior");
+    var canManageStructure = can("developer");
 
     var matchingStandards = [];
     data.standards.forEach(function (std) {
@@ -1614,8 +1613,8 @@
     var detail = document.createElement("div");
     detail.className = "review-card";
 
-    var canEditCoverage = can("reviewer");
-    var canManageStructure = can("senior");
+    var canEditCoverage = can("editor");
+    var canManageStructure = can("developer");
 
     var statusPillsHtml = canEditCoverage
       ? STATUS_ORDER.map(function (key) {
@@ -1946,7 +1945,7 @@
   // ---------- Audit trail ----------
   function renderAuditView() {
     var clearAuditBtn = document.getElementById("clear-audit-btn");
-    if (clearAuditBtn) clearAuditBtn.style.display = ((data.auditLog || []).length > 0 && can("admin")) ? "" : "none";
+    if (clearAuditBtn) clearAuditBtn.style.display = ((data.auditLog || []).length > 0 && can("developer")) ? "" : "none";
     var userSelect = document.getElementById("audit-filter-user");
     var users = Array.from(new Set((data.auditLog || []).map(function (e) { return e.user; }))).sort();
     var currentVal = userSelect.value || "all";
@@ -1974,19 +1973,19 @@
       if (e.oldNumber && e.newNumber && e.oldNumber !== e.newNumber) changeCell += '<br><span style="color:var(--text-muted); font-size:11px;">Number: ' + escapeHtml(e.oldNumber) + " → " + escapeHtml(e.newNumber) + "</span>";
       if (e.oldText || e.newText) changeCell += '<br><span style="color:var(--text-muted); font-size:11px;">Full before/after text is in the CSV export.</span>';
       tr.innerHTML = "<td>" + new Date(e.timestamp).toLocaleString() + "</td>" +
-        "<td>" + escapeHtml(e.user) + '<br><span style="color:var(--text-muted); font-size:11px;">' + escapeHtml(e.pcName || "") + "</span></td>" +
+        "<td>" + escapeHtml(e.user) + "</td>" +
         "<td>" + escapeHtml(e.entityType) + "</td>" + "<td>" + escapeHtml(e.label) + "</td>" + "<td>" + changeCell + "</td>";
       body.appendChild(tr);
     });
   }
   function exportAuditCsv() {
     var entries = (data.auditLog || []).slice();
-    var headers = ["Date", "User", "PC", "Action", "Type", "Paragraph Ref", "Old Number", "New Number", "Item", "Summary", "Old Text", "New Text"];
+    var headers = ["Date", "User", "Action", "Type", "Paragraph Ref", "Old Number", "New Number", "Item", "Summary", "Old Text", "New Text"];
     function csvCell(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
     var rows = [headers.map(csvCell).join(",")];
     entries.forEach(function (e) {
       rows.push([
-        new Date(e.timestamp).toLocaleString(), e.user, e.pcName || "", e.action, e.entityType,
+        new Date(e.timestamp).toLocaleString(), e.user, e.action, e.entityType,
         e.paragraphRef || "", e.oldNumber || "", e.newNumber || "", e.label, e.summary, e.oldText || "", e.newText || ""
       ].map(csvCell).join(","));
     });
@@ -2035,7 +2034,7 @@
       var n = countsByUser[u.name] || 0;
       return '<div class="methodology-row" style="padding:6px 0;">' +
         '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(u.name) + '</span>' +
-        '<span class="count">' + escapeHtml(u.jobTitle || "") + " · " + accessLevelLabel(u.accessLevel) + " · " + n + " change" + (n === 1 ? "" : "s") + "</span></span>" +
+        '<span class="count">' + accessLevelLabel(u.accessLevel) + " · " + n + " change" + (n === 1 ? "" : "s") + "</span></span>" +
         '<span class="row-actions" style="display:flex;">' +
           '<button class="icon-btn" data-edit-user="' + u.id + '" title="Edit">✎</button>' +
           '<button class="icon-btn" data-del-user="' + u.id + '" title="Remove">✕</button>' +
@@ -2051,8 +2050,7 @@
     var isFirst = data.users.length === 0;
     document.getElementById("dlg-user-title").textContent = u ? "Edit user" : "Add user";
     document.getElementById("f-user-name").value = u ? u.name : "";
-    document.getElementById("f-user-jobtitle").value = u ? u.jobTitle : "Reviewer";
-    document.getElementById("f-user-accesslevel").value = u ? u.accessLevel : "viewer";
+    document.getElementById("f-user-accesslevel").value = u ? u.accessLevel : "readOnly";
     document.getElementById("user-accesslevel-wrap").style.display = isFirst ? "none" : "";
     document.getElementById("user-firstadmin-note").style.display = isFirst ? "" : "none";
     dlg.showModal();
@@ -2060,7 +2058,6 @@
   function saveUser() {
     var name = document.getElementById("f-user-name").value.trim();
     if (!name) return;
-    var jobTitle = document.getElementById("f-user-jobtitle").value;
     var accessLevel = document.getElementById("f-user-accesslevel").value;
     if (state.editing.userId) {
       var u = data.users.find(function (x) { return x.id === state.editing.userId; });
@@ -2068,19 +2065,18 @@
         alert("You can't change the access level of the last Admin — promote someone else to Admin first.");
         return;
       }
-      var oldName = u.name, oldJob = u.jobTitle, oldAccess = u.accessLevel;
-      u.name = name; u.jobTitle = jobTitle; u.accessLevel = accessLevel;
+      var oldName = u.name, oldAccess = u.accessLevel;
+      u.name = name; u.accessLevel = accessLevel;
       logChange("update", "user", name, "Updated team member" +
         (oldName !== name ? (' name to "' + name + '"') : "") +
-        (oldJob !== jobTitle ? (", job title to " + jobTitle) : "") +
         (oldAccess !== accessLevel ? (", access level to " + accessLevelLabel(accessLevel)) : ""));
       if (identity && identity.userId === u.id) { renderIdentityBadge(); }
     } else {
       if (data.users.some(function (x) { return x.name.toLowerCase() === name.toLowerCase(); })) { alert("That name is already in the list."); return; }
       var isFirst = data.users.length === 0;
-      var newUser = { id: uid("user"), name: name, jobTitle: jobTitle, accessLevel: isFirst ? "admin" : accessLevel };
+      var newUser = { id: uid("user"), name: name, accessLevel: isFirst ? "admin" : accessLevel };
       data.users.push(newUser);
-      logChange("create", "user", name, 'Added team member "' + name + '" (' + newUser.jobTitle + ", " + accessLevelLabel(newUser.accessLevel) + (isFirst ? " — first user, auto-Admin" : "") + ")");
+      logChange("create", "user", name, 'Added team member "' + name + '" (' + accessLevelLabel(newUser.accessLevel) + (isFirst ? " — first user, auto-Admin" : "") + ")");
     }
     document.getElementById("dlg-user").close();
     persist();
@@ -2161,6 +2157,35 @@
     var probe = lowerText.substring(idx + ownHeaderLen, idx + ownHeaderLen + SIBLING_HEADER_WINDOW);
     return allHeaders.some(function (h) { return h !== ownHeaderLower && probe.indexOf(h) !== -1; });
   }
+  // A real chapter heading sits alone at the start of its own line — a cross-reference to the
+  // same standard code from INSIDE another standard's own paragraph ("...as described in ISRE
+  // 2400 (Revised), the auditor shall...") sits mid-sentence instead. Without this check, a
+  // standard whose code is only ever mentioned as such a cross-reference (never repeated at its
+  // own real chapter heading) has no other occurrence to compare it against, so that stray
+  // mid-sentence mention would win by default and anchor the whole section in the wrong place —
+  // the exact cross-standard bleed this app has repeatedly been reported to have.
+  function looksLikeLineStart(fullText, idx) {
+    var start = idx;
+    while (start > 0 && /[ \t]/.test(fullText[start - 1])) start--;
+    return start === 0 || fullText[start - 1] === "\n";
+  }
+  // Used by buildExtractionSections to find where a section's OWN content ends, even when the
+  // standard that follows it in the PDF isn't one this tracker follows at all — see
+  // STANDARD_CODE_SCAN_RE below for the shape it looks for. Only a genuine line-start heading
+  // with real numbered content following it counts (same bar discoverNewStandardsInPdf uses for
+  // deciding a candidate is a real chapter and not just a passing mention).
+  function nextForeignHeadingWithin(text, ownHeaderLower) {
+    var re = new RegExp(STANDARD_CODE_SCAN_RE.source, "gi");
+    var m;
+    while ((m = re.exec(text))) {
+      var candLower = m[0].replace(/\s*\(.*?\)\s*$/, "").trim().toLowerCase();
+      if (candLower === ownHeaderLower) continue;
+      if (!looksLikeLineStart(text, m.index)) continue;
+      if (markerQualityAt(text, m.index) < 3) continue;
+      return m.index;
+    }
+    return null;
+  }
   function buildExtractionSections(fullText) {
     var lowerText = fullText.toLowerCase();
     var allHeaders = data.standards.map(function (s) { return s.code.replace(/\s*\(.*?\)\s*$/, "").trim().toLowerCase(); });
@@ -2170,6 +2195,7 @@
       var headerLower = header.toLowerCase();
       var bestIdx = -1, bestScore = -Infinity, searchFrom = 0, idx;
       while ((idx = lowerText.indexOf(headerLower, searchFrom)) !== -1) {
+        if (!looksLikeLineStart(fullText, idx)) { searchFrom = idx + headerLower.length; continue; }
         var score = markerQualityAt(fullText, idx) - (hasSiblingHeaderNearby(lowerText, allHeaders, idx, headerLower, headerLower.length) ? 1000 : 0);
         if (score > bestScore) { bestScore = score; bestIdx = idx; }
         searchFrom = idx + headerLower.length;
@@ -2179,7 +2205,15 @@
     sections.sort(function (a, b) { return a.index - b.index; });
     sections.forEach(function (sec, i) {
       var end = (i + 1 < sections.length) ? sections[i + 1].index : fullText.length;
-      sec.text = fullText.substring(sec.index, end);
+      var sectionText = fullText.substring(sec.index, end);
+      // Two standards are often bundled back-to-back in the same handbook PDF (e.g. ISRE 2400
+      // immediately followed by ISRE 2410's own real chapter) — if that SECOND one isn't itself
+      // a standard this tracker follows, nothing above stops the FIRST one's section from
+      // running straight into it. Look for any OTHER standard-code-shaped heading genuinely at
+      // the start of a line within this section's own text and stop there, regardless of
+      // whether that code belongs to a standard the tracker currently knows about.
+      var foreignAt = nextForeignHeadingWithin(sectionText, sec.header.toLowerCase());
+      sec.text = foreignAt === null ? sectionText : sectionText.substring(0, foreignAt);
     });
     return sections;
   }
@@ -2355,6 +2389,13 @@
     var flags = [], statusUpdates = [];
     var missingCandidates = [], changedList = [];
     sec.std.paragraphs.forEach(function (p) {
+      // A paragraph that never went through a PDF baseline import (created manually, or via
+      // Excel WP mapping) was never claimed to be "in the PDF" in the first place — comparing
+      // it against the latest PDF and flagging it "Not Found" the moment ANY paragraph in this
+      // standard has a baseline is a false positive, not a real discrepancy. Only paragraphs
+      // that already carry a PDF sourceDoc (i.e. are genuinely part of the existing baseline)
+      // are ever eligible for Matched/Update Body/Renumbered/Not Found comparison here.
+      if (!p.sourceDoc) return;
       var match = extractedByNumber[p.number];
       if (!match) { missingCandidates.push(p); return; }
       var a = normalizeWs(p.text).toLowerCase(), b = normalizeWs(match.text).toLowerCase();
@@ -2539,7 +2580,7 @@
     return '<span class="flag-badge flag-missing"' + extraAttrs + '>✕ Not Found</span>';
   }
   function flagBodyHtml(f) {
-    var canResolve = can("senior");
+    var canResolve = can("developer");
     var originLabel = f.source === "excel" ? "Excel WP mapping" : "PDF";
     if (f.type === "changed") {
       return '<div class="diff-block" spellcheck="false">' + renderWordDiff(f.oldText, f.newText) + "</div>" +
@@ -2616,16 +2657,16 @@
     }).join("");
     pillsEl.querySelectorAll("[data-set-type]").forEach(function (b) { b.addEventListener("click", function () { state.reviewFilter.type = b.getAttribute("data-set-type"); renderReviewView(); }); });
 
-    document.getElementById("dismiss-all-missing-btn").style.display = (counts.missing > 0 && can("senior")) ? "" : "none";
-    document.getElementById("clear-all-flags-btn").style.display = ((data.pendingFlags || []).length > 0 && can("admin")) ? "" : "none";
+    document.getElementById("dismiss-all-missing-btn").style.display = (counts.missing > 0 && can("developer")) ? "" : "none";
+    document.getElementById("clear-all-flags-btn").style.display = ((data.pendingFlags || []).length > 0 && can("developer")) ? "" : "none";
     var importPdfBaselineBtn = document.getElementById("import-pdf-baseline-btn");
-    if (importPdfBaselineBtn) importPdfBaselineBtn.style.display = can("senior") ? "" : "none";
+    if (importPdfBaselineBtn) importPdfBaselineBtn.style.display = can("developer") ? "" : "none";
     var importPdfNewVersionBtn = document.getElementById("import-pdf-newversion-btn");
-    if (importPdfNewVersionBtn) importPdfNewVersionBtn.style.display = can("senior") ? "" : "none";
+    if (importPdfNewVersionBtn) importPdfNewVersionBtn.style.display = can("developer") ? "" : "none";
     var importExcelBtn = document.getElementById("import-excel-btn");
-    if (importExcelBtn) importExcelBtn.style.display = can("senior") ? "" : "none";
+    if (importExcelBtn) importExcelBtn.style.display = can("developer") ? "" : "none";
     var downloadTemplateBtn = document.getElementById("download-excel-template-btn");
-    if (downloadTemplateBtn) downloadTemplateBtn.style.display = can("senior") ? "" : "none";
+    if (downloadTemplateBtn) downloadTemplateBtn.style.display = can("developer") ? "" : "none";
 
     var filtered = state.reviewFilter.type === "all" ? openFlags : openFlags.filter(function (f) { return f.type === state.reviewFilter.type; });
 
@@ -3224,31 +3265,26 @@
     var intro = document.getElementById("identity-intro");
     if (hasUsers) {
       existingWrap.style.display = ""; newWrap.style.display = "none";
-      intro.textContent = "Select your name so changes you make can be attributed to you in the audit trail.";
+      intro.textContent = "Choose your name so changes you make can be attributed to you in the audit trail.";
       var sel = document.getElementById("f-identity-user");
-      sel.innerHTML = '<option value="">Choose your name…</option>' + data.users.map(function (u) { return '<option value="' + escapeAttr(u.id) + '">' + escapeHtml(u.name) + " — " + escapeHtml(u.jobTitle || "") + "</option>"; }).join("");
+      sel.innerHTML = '<option value="">Choose your name…</option>' + data.users.map(function (u) { return '<option value="' + escapeAttr(u.id) + '">' + escapeHtml(u.name) + " — " + escapeHtml(accessLevelLabel(u.accessLevel)) + "</option>"; }).join("");
       if (identity && identity.userId) sel.value = identity.userId;
     } else {
       existingWrap.style.display = "none"; newWrap.style.display = "";
       intro.textContent = "You're the first person to open this tracker — let's set you up.";
       document.getElementById("f-identity-new-name").value = "";
-      document.getElementById("f-identity-new-jobtitle").value = "Manager";
     }
-    document.getElementById("f-identity-pc").value = identity ? identity.pcName : "";
     dlg.querySelectorAll("[data-close]").forEach(function (b) { b.style.display = mandatory ? "none" : ""; });
     dlg.dataset.mandatory = mandatory ? "1" : "0";
     dlg.showModal();
   }
   function saveIdentityHandler() {
-    var pcInput = document.getElementById("f-identity-pc").value.trim();
-    if (!pcInput) { alert("Please enter a PC/device name."); return; }
     var hasUsers = data.users.length > 0;
     var userObj, isNewUser = false;
     if (!hasUsers) {
       var newName = document.getElementById("f-identity-new-name").value.trim();
       if (!newName) { alert("Please enter your name."); return; }
-      var jobTitle = document.getElementById("f-identity-new-jobtitle").value;
-      userObj = { id: uid("user"), name: newName, jobTitle: jobTitle, accessLevel: "admin" };
+      userObj = { id: uid("user"), name: newName, accessLevel: "admin" };
       data.users.push(userObj);
       isNewUser = true;
     } else {
@@ -3259,9 +3295,9 @@
     var dlg = document.getElementById("dlg-identity");
     var wasMandatory = dlg.dataset.mandatory === "1";
     var previousUser = resolveIdentityUser();
-    identity = { userId: userObj.id, pcName: pcInput };
+    identity = { userId: userObj.id };
     localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
-    if (isNewUser) logChange("create", "user", userObj.name, 'Added team member "' + userObj.name + '" (' + userObj.jobTitle + ", Admin — first user)");
+    if (isNewUser) logChange("create", "user", userObj.name, 'Added team member "' + userObj.name + '" (Admin — first user)');
     if (!wasMandatory && previousUser && previousUser.id !== userObj.id) logChange("update", "user", "Switched user", 'User changed from "' + previousUser.name + '" to "' + userObj.name + '" on this device');
     persist();
     dlg.close();
@@ -3280,9 +3316,9 @@
   function applyGlobalRolePermissions() {
     var isAdmin = can("admin");
     var settingsTab = document.querySelector('.tab-btn[data-view="settings"]');
-    if (settingsTab) settingsTab.style.display = isAdmin ? "" : "none";
+    if (settingsTab) settingsTab.style.display = isAdmin ? "" : "none"; // Settings is user management — Admin only
     var importJsonBtn = document.getElementById("import-btn");
-    if (importJsonBtn) importJsonBtn.style.display = isAdmin ? "" : "none";
+    if (importJsonBtn) importJsonBtn.style.display = can("developer") ? "" : "none"; // wholesale data replace — not "managing users", so Developer+ same as everything else
     if (!isAdmin && state.view === "settings") switchToView("dashboard");
   }
 
