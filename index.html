@@ -130,6 +130,15 @@
 
   .notify-banner { display: none; align-items: center; gap: 12px; background: rgba(33,150,243,0.10); border: 1px solid var(--cat-1); color: var(--text-primary); padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
 
+  .dashboard-alert-panel { background: rgba(217,119,6,0.08); border: 1px solid var(--status-updatebody); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; }
+  .dashboard-alert-panel h3 { margin: 0 0 8px; font-size: 13px; }
+  .dashboard-alert-row { display: flex; align-items: center; gap: 10px; font-size: 12px; padding: 4px 0; }
+  .dash-stat-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+  .dash-stat-row .status-pill, .dash-stat-row .wp-status-pill { cursor: default; }
+  .activity-feed-panel .activity-row { display: flex; gap: 10px; font-size: 12px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .activity-feed-panel .activity-row:last-child { border-bottom: none; }
+  .activity-feed-panel .activity-when { color: var(--text-muted); flex-shrink: 0; width: 130px; }
+
   .family-panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 12px; }
   .family-panel h3 { margin: 0 0 2px; font-size: 14px; }
   .family-panel .fp-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 12px; }
@@ -363,7 +372,6 @@
 
       <div class="sidebar-footer">
         <div id="last-saved"></div>
-        <button id="reset-demo-btn">Reset to demo data</button>
       </div>
     </aside>
 
@@ -372,7 +380,13 @@
 
       <section class="view active" id="view-dashboard">
         <div class="page-head"><h2>Overview</h2><p id="overview-sub"></p></div>
+        <div id="dashboard-alerts"></div>
         <div id="dashboard-panels"></div>
+        <div class="family-panel activity-feed-panel">
+          <h3>Recent activity</h3>
+          <div class="fp-sub">The last 5 changes made by anyone, across every methodology. <a href="#" id="dashboard-view-full-audit-link">View full audit trail</a>.</div>
+          <div id="dashboard-activity-list"></div>
+        </div>
       </section>
 
       <section class="view" id="view-coverage">
@@ -382,9 +396,9 @@
         </div>
         <div class="filter-bar filter-bar--prominent">
           <div class="filter-group">
-            <label for="filter-family">Family</label>
+            <label for="filter-family">Standard</label>
             <select id="filter-family">
-              <option value="all">All families</option>
+              <option value="all">All standards</option>
             </select>
           </div>
           <div class="filter-group">
@@ -437,6 +451,7 @@
         <div class="family-panel">
           <h3><span class="import-step-badge">1</span>Import the IRBA/IAASB handbook (PDF)</h3>
           <div class="fp-sub">Two separate imports, done once each per handbook edition: first set the baseline, then later compare a new edition against it. A paragraph number that's gone missing on comparison is flagged as Not Found for manual review only — it's never deleted automatically. Accepting a flagged difference replaces the baseline and keeps the old version in that paragraph's history.</div>
+          <div class="readonly-note" id="import-scope-info" style="margin-bottom:10px;"></div>
           <div class="readonly-note" id="last-import-info" style="margin-bottom:14px;">No standards PDF has been imported yet.</div>
           <div class="field" style="max-width:360px; margin-bottom:14px;">
             <label>Handbook name / edition (shown as the source on each paragraph)</label>
@@ -468,15 +483,9 @@
           <button class="btn" id="download-excel-template-btn">Download Excel Template</button>
           <input type="file" id="import-excel-file" accept=".xlsx,.xls" hidden>
         </div>
-        <h2 style="font-size:14px; margin: 22px 0 10px;">Flagged differences (from PDF comparison)</h2>
-        <div class="pill-row" id="review-type-pills"></div>
         <div style="margin-bottom:10px; display:flex; gap:8px;">
-          <button class="btn" id="dismiss-all-missing-btn" style="display:none;">Acknowledge all Not Found paragraphs</button>
-          <button class="btn danger" id="clear-all-flags-btn" style="display:none;">Clear All Flags</button>
           <button class="btn" id="export-change-report-btn">Export Change Report</button>
         </div>
-        <div class="empty-state" id="no-flags-msg">No pending differences. Import a handbook PDF to check for changes.</div>
-        <div id="flags-container"></div>
       </section>
 
       <section class="view" id="view-audit">
@@ -572,9 +581,26 @@
       <div class="field"><label>Name</label><input type="text" id="f-methodology-name" required></div>
       <div class="field"><label>Description</label><textarea id="f-methodology-desc" placeholder="Optional notes about this methodology"></textarea></div>
       <div class="field">
-        <label>Standard families</label>
-        <div class="readonly-note">Only standards from these families are shown for this methodology, on both the Dashboard and Coverage Review.</div>
-        <div id="methodology-family-checks" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+        <label>Standards</label>
+        <div class="readonly-note">Only these standards are shown for this methodology, on both the Dashboard and Coverage Review — and only these are scanned when importing a PDF for it.</div>
+        <div id="methodology-standard-checks" style="display:flex; flex-direction:column; gap:6px; max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); padding:10px;"></div>
+        <div class="readonly-note" style="margin-top:10px;">Don't see the standard you need? Add a brand new one below — it's saved immediately and available for other methodologies too.</div>
+        <div style="display:flex; gap:8px; margin-top:8px; align-items:flex-end; flex-wrap:wrap;">
+          <div class="field" style="margin:0;"><label style="font-size:11px;">Family</label>
+            <select id="f-methodology-newstd-family">
+              <option value="ISA">ISA</option>
+              <option value="ISAE 3000">ISAE 3000</option>
+              <option value="ISRS 4400">ISRS 4400</option>
+              <option value="ISRS 4410">ISRS 4410</option>
+              <option value="ISRE 2400">ISRE 2400</option>
+              <option value="LPC Rules">LPC Rules</option>
+              <option value="PPRA Rules">PPRA Rules</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0; flex:1; min-width:140px;"><label style="font-size:11px;">New standard code</label><input type="text" id="f-methodology-newstd-code" placeholder="e.g. ISA 330"></div>
+          <div class="field" style="margin:0; flex:1; min-width:140px;"><label style="font-size:11px;">Title</label><input type="text" id="f-methodology-newstd-title" placeholder="e.g. The Auditor's Responses to Assessed Risks"></div>
+          <button type="button" class="btn" id="add-methodology-newstd-btn">+ Add standard</button>
+        </div>
       </div>
     </div>
     <div class="modal-foot">
@@ -598,7 +624,7 @@
           <option value="LPC Rules">LPC Rules</option>
           <option value="PPRA Rules">PPRA Rules</option>
         </select>
-        <div class="readonly-note">Which methodologies see this standard is automatic, based on its family — edit a methodology from the sidebar to change which families it uses.</div>
+        <div class="readonly-note">Which methodologies see this standard is automatic, based on its family — edit a methodology from the sidebar to change which standards it uses.</div>
       </div>
       <div class="field"><label>Code</label><input type="text" id="f-standard-code" placeholder="e.g. ISA 315 (Revised 2019)" required></div>
       <div class="field"><label>Title</label><input type="text" id="f-standard-title" placeholder="e.g. Identifying and Assessing the Risks of Material Misstatement" required></div>
@@ -1083,6 +1109,12 @@
         var derivedList = Object.keys(derived);
         meth.allowedFamilies = derivedList.length ? derivedList : FAMILIES.slice();
       }
+      // The specific standards picked for this methodology via the Add/Edit Methodology
+      // dialog's standard picker — once set, this takes over from allowedFamilies as the
+      // source of truth for which standards the methodology can see (see
+      // methodologyIncludesStandard below). Left empty for methodologies that haven't been
+      // through that picker yet, so nothing already working changes until it is.
+      if (!Array.isArray(meth.standardIds)) meth.standardIds = [];
     });
 
     d.standards.forEach(function (std) {
@@ -1103,14 +1135,33 @@
     });
     return methodologyRenamed;
   }
-  // A methodology only ever sees standards from its own fixed set of families (e.g. RAC -> ISA
-  // only, Legal Practitioner -> ISAE 3000 + LPC Rules) — this single check drives both Coverage
-  // Review filtering and the Dashboard, so a methodology never shows a bar for a family it
-  // doesn't use.
+  // A methodology's applicable standards are its EXPLICIT picks (meth.standardIds, set via the
+  // Add/Edit Methodology dialog's standard picker) once that list is non-empty — falling back to
+  // its whole allowedFamilies otherwise, so a methodology that predates the picker (the six
+  // seeded ones, or any not yet re-saved under it) keeps behaving exactly as before. This single
+  // check drives Coverage Review filtering, the Dashboard, coverage-entry creation on import, and
+  // (per methodology) which standard the PDF scanner is even allowed to look for.
+  function methodologyIncludesStandard(meth, std) {
+    if (!meth || !std) return false;
+    if (Array.isArray(meth.standardIds) && meth.standardIds.length) return meth.standardIds.indexOf(std.id) !== -1;
+    return (meth.allowedFamilies || []).indexOf(std.family) !== -1;
+  }
+  function applicableStandardsFor(meth) {
+    if (!meth) return data.standards.slice();
+    return data.standards.filter(function (s) { return methodologyIncludesStandard(meth, s); });
+  }
+  // Families in their canonical FAMILIES order, limited to the ones actually present among the
+  // given standards — drives family-grouped UI (sidebar, coverage filter, dashboard panels)
+  // without ever offering/counting a family that methodology has nothing in.
+  function uniqueFamiliesInOrder(stds) {
+    var present = {};
+    stds.forEach(function (s) { present[s.family] = true; });
+    return FAMILIES.filter(function (fam) { return present[fam]; }).concat(Object.keys(present).filter(function (fam) { return FAMILIES.indexOf(fam) === -1; }));
+  }
   function isStandardApplicable(std, methodologyId) {
     var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
-    if (!meth || !Array.isArray(meth.allowedFamilies)) return true;
-    return meth.allowedFamilies.indexOf(std.family) !== -1;
+    if (!meth) return true;
+    return methodologyIncludesStandard(meth, std);
   }
 
   function load() {
@@ -1239,13 +1290,58 @@
     if (applicable === 0) return null;
     return Math.round((counts.matched / applicable) * 100);
   }
-  // The families relevant to whichever methodology is currently active in Coverage Review —
-  // drives both the sidebar family list and the Coverage Review family filter, so neither ever
-  // offers a family that methodology can't use in the first place.
-  function activeAllowedFamilies() {
+  // The WP-extract-coverage equivalent of computeCounts — how much of the OFFICIAL TEXT is
+  // actually covered by the Draftworx WP extract, independent of the handbook-comparison status
+  // above (a paragraph can be perfectly Matched against the handbook and still have no WP
+  // mapping at all, or vice versa).
+  function computeWpMappingCounts(methodologyId) {
+    var counts = { covered: 0, partial: 0, notMapped: 0, review: 0 };
+    data.standards.forEach(function (std) {
+      if (!isStandardApplicable(std, methodologyId)) return;
+      std.paragraphs.forEach(function (p) {
+        var cov = p.coverage[methodologyId];
+        if (!cov) { counts.notMapped++; return; }
+        counts[wpMappingStatus(p, cov)]++;
+      });
+    });
+    return counts;
+  }
+  // Most recent coverage.updatedAt/updatedBy across every paragraph applicable to this
+  // methodology — "last touched" for that methodology's own WP mapping/status work, distinct
+  // from the global audit trail (which mixes every methodology together).
+  function lastUpdatedFor(methodologyId) {
+    var latest = null;
+    data.standards.forEach(function (std) {
+      if (!isStandardApplicable(std, methodologyId)) return;
+      std.paragraphs.forEach(function (p) {
+        var cov = p.coverage[methodologyId];
+        if (!cov || !cov.updatedAt) return;
+        if (!latest || new Date(cov.updatedAt) > new Date(latest.updatedAt)) latest = { updatedAt: cov.updatedAt, updatedBy: cov.updatedBy };
+      });
+    });
+    return latest;
+  }
+  // Open PDF-comparison flags (Update Body / Renumbered / New / Not Found) belonging to
+  // standards this methodology actually includes — the handbook-change alert on the Dashboard.
+  function openHandbookFlagsFor(methodologyId) {
+    var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
+    if (!meth) return [];
+    return (data.pendingFlags || []).filter(function (f) {
+      if (f.status !== "open" || f.source === "excel") return false;
+      var std = data.standards.find(function (s) { return s.id === f.standardId; });
+      return std && methodologyIncludesStandard(meth, std);
+    });
+  }
+  // The standards applicable to whichever methodology is currently active in Coverage Review —
+  // drives both the sidebar standard list and the Coverage Review standard filter, so neither
+  // ever offers a standard that methodology can't use in the first place.
+  function activeApplicableStandards() {
     var methId = state.activeMethodologyId || (data.methodologies[0] && data.methodologies[0].id);
     var meth = data.methodologies.find(function (m) { return m.id === methId; });
-    return (meth && Array.isArray(meth.allowedFamilies) && meth.allowedFamilies.length) ? meth.allowedFamilies : FAMILIES;
+    return applicableStandardsFor(meth);
+  }
+  function activeAllowedFamilies() {
+    return uniqueFamiliesInOrder(activeApplicableStandards());
   }
   function findParagraph(id) {
     for (var i = 0; i < data.standards.length; i++) {
@@ -1275,9 +1371,9 @@
       if (!std.paragraphs.some(function (p) { return p.number === candidate; })) {
         var coverage = {};
         // Strict standard-to-methodology mapping: never create a coverage entry for a
-        // methodology this standard's family doesn't belong to in the first place.
+        // methodology this standard doesn't belong to in the first place.
         data.methodologies.forEach(function (m) {
-          if ((m.allowedFamilies || []).indexOf(std.family) === -1) return;
+          if (!methodologyIncludesStandard(m, std)) return;
           coverage[m.id] = { status: "na", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
         });
         std.paragraphs.push({ id: uid("para"), number: candidate, text: "", source: "manual", coverage: coverage });
@@ -1331,14 +1427,14 @@
   }
 
   function renderSidebar() {
-    var families = activeAllowedFamilies();
+    var applicableStds = activeApplicableStandards();
+    var families = uniqueFamiliesInOrder(applicableStds);
     if (state.familyFilter !== "all" && families.indexOf(state.familyFilter) === -1) state.familyFilter = "all";
-    var totalParas = data.standards.filter(function (s) { return families.indexOf(s.family) !== -1; })
-      .reduce(function (sum, s) { return sum + s.paragraphs.length; }, 0);
+    var totalParas = applicableStds.reduce(function (sum, s) { return sum + s.paragraphs.length; }, 0);
     var familyList = document.getElementById("family-filter-list");
-    familyList.innerHTML = '<button class="side-item' + (state.familyFilter === "all" ? " active" : "") + '" data-family="all"><span class="label">All families</span><span class="count">' + totalParas + "</span></button>" +
+    familyList.innerHTML = '<button class="side-item' + (state.familyFilter === "all" ? " active" : "") + '" data-family="all"><span class="label">All standards</span><span class="count">' + totalParas + "</span></button>" +
       families.map(function (fam) {
-        var n = data.standards.filter(function (s) { return s.family === fam; }).reduce(function (sum, s) { return sum + s.paragraphs.length; }, 0);
+        var n = applicableStds.filter(function (s) { return s.family === fam; }).reduce(function (sum, s) { return sum + s.paragraphs.length; }, 0);
         return '<button class="side-item' + (state.familyFilter === fam ? " active" : "") + '" data-family="' + escapeAttr(fam) + '"><span class="label">' + escapeHtml(fam) + '</span><span class="count">' + n + "</span></button>";
       }).join("");
     familyList.querySelectorAll("[data-family]").forEach(function (btn) {
@@ -1349,7 +1445,7 @@
     });
 
     var filterFamilySelect = document.getElementById("filter-family");
-    filterFamilySelect.innerHTML = '<option value="all">All families</option>' +
+    filterFamilySelect.innerHTML = '<option value="all">All standards</option>' +
       families.map(function (fam) { return '<option value="' + escapeAttr(fam) + '">' + escapeHtml(fam) + "</option>"; }).join("");
     filterFamilySelect.value = state.familyFilter;
 
@@ -1378,8 +1474,6 @@
 
     var addMethBtn = document.getElementById("add-methodology-btn");
     if (addMethBtn) addMethBtn.style.display = canManage ? "" : "none";
-    var resetBtn = document.getElementById("reset-demo-btn");
-    if (resetBtn) resetBtn.style.display = can("developer") ? "" : "none";
   }
 
   function renderDashboard() {
@@ -1387,34 +1481,99 @@
     document.getElementById("overview-sub").textContent =
       data.methodologies.length + " methodologies tracked across " + data.standards.length + " standards and " + totalParas + " paragraphs.";
 
+    // ---- Alerts: aggregated across every methodology, only shown when there's something to flag ----
+    var alertsEl = document.getElementById("dashboard-alerts");
+    var flagRows = [], notMappedRows = [];
+    data.methodologies.forEach(function (meth) {
+      var openFlags = openHandbookFlagsFor(meth.id);
+      if (openFlags.length) flagRows.push({ meth: meth, count: openFlags.length });
+      var wpCounts = computeWpMappingCounts(meth.id);
+      if (wpCounts.notMapped) notMappedRows.push({ meth: meth, count: wpCounts.notMapped });
+    });
+    var alertBlocks = [];
+    if (flagRows.length) {
+      var totalFlags = flagRows.reduce(function (s, r) { return s + r.count; }, 0);
+      alertBlocks.push('<div class="dashboard-alert-row"><span>⚠ <strong>' + totalFlags + "</strong> handbook change(s) not yet accepted — " +
+        flagRows.map(function (r) { return escapeHtml(r.meth.name) + " (" + r.count + ")"; }).join(", ") + '</span><span class="spacer"></span>' +
+        '<button class="btn" data-goto-review="1">Review now</button></div>');
+    }
+    if (notMappedRows.length) {
+      var totalNotMapped = notMappedRows.reduce(function (s, r) { return s + r.count; }, 0);
+      alertBlocks.push('<div class="dashboard-alert-row"><span>⚠ <strong>' + totalNotMapped + "</strong> paragraph(s) with no Excel/WP mapping yet — " +
+        notMappedRows.map(function (r) { return escapeHtml(r.meth.name) + " (" + r.count + ")"; }).join(", ") + '</span><span class="spacer"></span>' +
+        '<button class="btn" data-goto-notmapped="1">Review now</button></div>');
+    }
+    if (alertBlocks.length) {
+      alertsEl.innerHTML = '<div class="dashboard-alert-panel"><h3>⚠ Needs attention</h3>' + alertBlocks.join("") + "</div>";
+      var reviewBtn = alertsEl.querySelector("[data-goto-review]");
+      if (reviewBtn) reviewBtn.addEventListener("click", function () { switchToView("review"); });
+      var notMappedBtn = alertsEl.querySelector("[data-goto-notmapped]");
+      if (notMappedBtn) notMappedBtn.addEventListener("click", function () {
+        state.wpStatusFilter = "notMapped";
+        var wpSel = document.getElementById("filter-wp-status");
+        if (wpSel) wpSel.value = "notMapped";
+        switchToView("coverage");
+      });
+    } else {
+      alertsEl.innerHTML = "";
+    }
+
     var panels = document.getElementById("dashboard-panels");
     panels.innerHTML = "";
     if (data.methodologies.length === 0) {
       panels.innerHTML = '<div class="empty-state">No methodologies yet. Add one from the sidebar to start tracking coverage.</div>';
-      return;
+    } else {
+      // One panel per methodology, limited to the families it actually uses — a methodology
+      // never shows a bar for a family it has nothing to do with, and a family it hasn't added
+      // any standards for yet shows a note instead of a dead 0% bar.
+      data.methodologies.forEach(function (meth) {
+        var methStds = applicableStandardsFor(meth);
+        var families = uniqueFamiliesInOrder(methStds);
+        var methTotalParas = methStds.reduce(function (sum, s) { return sum + s.paragraphs.length; }, 0);
+        var counts = computeCounts(meth.id, null);
+        var wpCounts = computeWpMappingCounts(meth.id);
+        var overallPct = coveragePercent(counts);
+        var lastUpdated = lastUpdatedFor(meth.id);
+        var panel = document.createElement("div");
+        panel.className = "family-panel";
+        var rows = families.map(function (fam) {
+          var famStandardCount = methStds.filter(function (s) { return s.family === fam; }).length;
+          if (famStandardCount === 0) {
+            return '<div class="hbar-row"><div class="hbar-label" title="' + escapeAttr(fam) + '">' + escapeHtml(fam) + '</div><div class="fp-sub" style="flex:1; margin:0;">No standards added yet</div></div>';
+          }
+          var pct = coveragePercent(computeCounts(meth.id, fam));
+          return '<div class="hbar-row"><div class="hbar-label" title="' + escapeAttr(fam) + '">' + escapeHtml(fam) + '</div>' +
+            '<div class="hbar-track"><div class="hbar-fill" style="width:' + (pct || 0) + "%; background:" + catColor(meth.colorIndex) + ';"></div></div>' +
+            '<div class="hbar-pct">' + (pct === null ? "–" : pct + "%") + "</div></div>";
+        }).join("");
+        // Exactly the six statuses that matter for an at-a-glance dashboard read — the ones that
+        // mean "something needs a look" (Matched/Not Sure/N/A/Bookmark are the calm, nothing-to-
+        // do-yet states already summed up in the % Matched bar above).
+        var statChips = '<div class="dash-stat-row">' +
+          '<span class="wp-status-pill"><span class="status-dot status-dot--wp-covered"></span>Covered: ' + wpCounts.covered + "</span>" +
+          '<span class="wp-status-pill"><span class="status-dot status-dot--wp-partial"></span>Partial: ' + wpCounts.partial + "</span>" +
+          '<span class="wp-status-pill"><span class="status-dot status-dot--wp-notMapped"></span>Not Mapped: ' + wpCounts.notMapped + "</span>" +
+          '<span class="status-pill active-updateBody">' + STATUS.updateBody.icon + " Update Body: " + counts.updateBody + "</span>" +
+          '<span class="status-pill active-renumbered">' + STATUS.renumbered.icon + " Renumbered: " + counts.renumbered + "</span>" +
+          '<span class="status-pill active-removed">' + STATUS.removed.icon + " Not Found: " + counts.removed + "</span>" +
+          "</div>";
+        var lastUpdatedHtml = lastUpdated
+          ? '<div class="fp-sub" style="margin-top:2px;">Last updated ' + new Date(lastUpdated.updatedAt).toLocaleString() + (lastUpdated.updatedBy ? " by " + escapeHtml(lastUpdated.updatedBy) : "") + "</div>"
+          : '<div class="fp-sub" style="margin-top:2px;">No coverage edits yet</div>';
+        panel.innerHTML = "<h3>" + escapeHtml(meth.name) + " — " + (overallPct === null ? "–" : overallPct + "% Matched") + "</h3>" +
+          '<div class="fp-sub">' + escapeHtml(families.join(", ")) + " · " + methTotalParas + " paragraph(s) tracked</div>" + rows + statChips + lastUpdatedHtml;
+        panels.appendChild(panel);
+      });
     }
-    // One panel per methodology, limited to the families it actually uses — a methodology
-    // never shows a bar for a family it has nothing to do with, and a family it hasn't added
-    // any standards for yet shows a note instead of a dead 0% bar.
-    data.methodologies.forEach(function (meth) {
-      var families = (Array.isArray(meth.allowedFamilies) && meth.allowedFamilies.length) ? meth.allowedFamilies : FAMILIES;
-      var overallPct = coveragePercent(computeCounts(meth.id, null));
-      var panel = document.createElement("div");
-      panel.className = "family-panel";
-      var rows = families.map(function (fam) {
-        var famStandardCount = data.standards.filter(function (s) { return s.family === fam; }).length;
-        if (famStandardCount === 0) {
-          return '<div class="hbar-row"><div class="hbar-label" title="' + escapeAttr(fam) + '">' + escapeHtml(fam) + '</div><div class="fp-sub" style="flex:1; margin:0;">No standards added yet</div></div>';
-        }
-        var pct = coveragePercent(computeCounts(meth.id, fam));
-        return '<div class="hbar-row"><div class="hbar-label" title="' + escapeAttr(fam) + '">' + escapeHtml(fam) + '</div>' +
-          '<div class="hbar-track"><div class="hbar-fill" style="width:' + (pct || 0) + "%; background:" + catColor(meth.colorIndex) + ';"></div></div>' +
-          '<div class="hbar-pct">' + (pct === null ? "–" : pct + "%") + "</div></div>";
-      }).join("");
-      panel.innerHTML = "<h3>" + escapeHtml(meth.name) + " — " + (overallPct === null ? "–" : overallPct + "% Matched") + "</h3>" +
-        '<div class="fp-sub">' + escapeHtml(families.join(", ")) + " · % of tracked paragraphs confirmed in sync with the last handbook PDF import</div>" + rows;
-      panels.appendChild(panel);
-    });
+
+    // ---- Recent activity: last 5 changes, any user, any methodology ----
+    var activityList = document.getElementById("dashboard-activity-list");
+    var recent = (data.auditLog || []).slice(0, 5);
+    activityList.innerHTML = recent.length
+      ? recent.map(function (e) {
+          return '<div class="activity-row"><div class="activity-when">' + new Date(e.timestamp).toLocaleString() + "</div><div><strong>" + escapeHtml(e.user) + "</strong> — " + escapeHtml(e.summary || e.label) + "</div></div>";
+        }).join("")
+      : '<div class="fp-sub" style="margin:0;">No activity yet.</div>';
   }
 
   // ---------- Coverage Review ----------
@@ -1816,11 +1975,17 @@
   }
 
   // ---------- CRUD: Methodologies ----------
-  function renderMethodologyFamilyChecks(selectedFamilies) {
-    var wrap = document.getElementById("methodology-family-checks");
-    wrap.innerHTML = FAMILIES.map(function (fam) {
-      var checked = selectedFamilies.indexOf(fam) !== -1;
-      return '<label style="display:flex; align-items:center; gap:4px; font-size:12px;"><input type="checkbox" value="' + escapeAttr(fam) + '" data-fam-check' + (checked ? " checked" : "") + '>' + escapeHtml(fam) + "</label>";
+  function renderMethodologyStandardChecks(selectedIds) {
+    var wrap = document.getElementById("methodology-standard-checks");
+    if (!data.standards.length) { wrap.innerHTML = '<div class="fp-sub" style="margin:0;">No standards yet — add one below.</div>'; return; }
+    var sorted = data.standards.slice().sort(function (a, b) {
+      var fa = FAMILIES.indexOf(a.family), fb = FAMILIES.indexOf(b.family);
+      if (fa !== fb) return fa - fb;
+      return a.code.localeCompare(b.code);
+    });
+    wrap.innerHTML = sorted.map(function (std) {
+      var checked = selectedIds.indexOf(std.id) !== -1;
+      return '<label style="display:flex; align-items:center; gap:6px; font-size:12px;"><input type="checkbox" value="' + escapeAttr(std.id) + '" data-std-check' + (checked ? " checked" : "") + '><span class="fam-badge" style="font-size:10px;">' + escapeHtml(std.family) + '</span>' + escapeHtml(std.code) + "</label>";
     }).join("");
   }
   function openMethodologyModal(id) {
@@ -1830,21 +1995,48 @@
     document.getElementById("dlg-methodology-title").textContent = meth ? "Edit methodology" : "Add methodology";
     document.getElementById("f-methodology-name").value = meth ? meth.name : "";
     document.getElementById("f-methodology-desc").value = meth ? meth.description : "";
-    renderMethodologyFamilyChecks(meth && Array.isArray(meth.allowedFamilies) ? meth.allowedFamilies : []);
+    document.getElementById("f-methodology-newstd-code").value = "";
+    document.getElementById("f-methodology-newstd-title").value = "";
+    renderMethodologyStandardChecks(meth ? applicableStandardsFor(meth).map(function (s) { return s.id; }) : []);
     dlg.showModal();
+  }
+  // Lets someone setting up a methodology add a standard this app has never heard of yet
+  // (e.g. a firm-specific policy document) without leaving the dialog — created and persisted
+  // immediately so it survives even if the methodology dialog is then cancelled, and shows up
+  // in every other methodology's own picker from then on too.
+  function addStandardFromMethodologyDialog() {
+    var family = document.getElementById("f-methodology-newstd-family").value;
+    var code = document.getElementById("f-methodology-newstd-code").value.trim();
+    var title = document.getElementById("f-methodology-newstd-title").value.trim();
+    if (!code || !title) { alert("Enter both a code and a title for the new standard."); return; }
+    var dup = data.standards.find(function (s) { return s.code.toLowerCase() === code.toLowerCase(); });
+    if (dup) { alert('A standard with the code "' + dup.code + '" already exists — check it in the list above instead of adding a duplicate.'); return; }
+    var alreadyChecked = Array.from(document.querySelectorAll("#methodology-standard-checks input:checked")).map(function (cb) { return cb.value; });
+    var std = { id: uid("std"), family: family, code: code, title: title, paragraphs: [] };
+    data.standards.push(std);
+    logChange("create", "standard", code, 'Added standard "' + code + '" (from the Add Methodology dialog)');
+    persist();
+    renderMethodologyStandardChecks(alreadyChecked.concat([std.id]));
+    document.getElementById("f-methodology-newstd-code").value = "";
+    document.getElementById("f-methodology-newstd-title").value = "";
   }
   function saveMethodology() {
     var name = document.getElementById("f-methodology-name").value.trim();
     if (!name) return;
     var desc = document.getElementById("f-methodology-desc").value.trim();
-    var allowedFamilies = Array.from(document.querySelectorAll("#methodology-family-checks input:checked")).map(function (cb) { return cb.value; });
+    var standardIds = Array.from(document.querySelectorAll("#methodology-standard-checks input:checked")).map(function (cb) { return cb.value; });
+    var allowedFamilies = uniqueFamiliesInOrder(data.standards.filter(function (s) { return standardIds.indexOf(s.id) !== -1; }));
     if (state.editing.methodologyId) {
       var meth = data.methodologies.find(function (m) { return m.id === state.editing.methodologyId; });
       var oldName = meth.name;
-      meth.name = name; meth.description = desc; meth.allowedFamilies = allowedFamilies;
-      logChange("update", "methodology", name, oldName !== name ? 'Renamed "' + oldName + '" to "' + name + '"' : "Updated description/standard families");
+      meth.name = name; meth.description = desc; meth.standardIds = standardIds;
+      // An empty pick list on Save (nothing checked) is far more likely a mis-click than a
+      // deliberate "this methodology now covers nothing" — leave the previous allowedFamilies
+      // fallback intact rather than wiping the methodology's visibility to nothing.
+      if (standardIds.length) meth.allowedFamilies = allowedFamilies;
+      logChange("update", "methodology", name, oldName !== name ? 'Renamed "' + oldName + '" to "' + name + '"' : "Updated description/standards");
     } else {
-      data.methodologies.push({ id: uid("meth"), name: name, description: desc, colorIndex: data.nextColorIndex, allowedFamilies: allowedFamilies });
+      data.methodologies.push({ id: uid("meth"), name: name, description: desc, colorIndex: data.nextColorIndex, allowedFamilies: allowedFamilies, standardIds: standardIds });
       data.nextColorIndex++;
       logChange("create", "methodology", name, 'Added methodology "' + name + '"');
     }
@@ -2186,11 +2378,16 @@
     }
     return null;
   }
-  function buildExtractionSections(fullText) {
+  // standardsScope narrows WHICH standards this import is even allowed to write to (e.g. only
+  // the ones picked for the methodology that's currently active when the import happens) —
+  // allHeaders below still comes from the FULL standards list regardless, since spotting a
+  // stray mention of some OTHER standard (in or out of scope) right next to a candidate is what
+  // hasSiblingHeaderNearby uses to reject a listing/cross-reference, not a real chapter opening.
+  function buildExtractionSections(fullText, standardsScope) {
     var lowerText = fullText.toLowerCase();
     var allHeaders = data.standards.map(function (s) { return s.code.replace(/\s*\(.*?\)\s*$/, "").trim().toLowerCase(); });
     var sections = [];
-    data.standards.forEach(function (std) {
+    (standardsScope || data.standards).forEach(function (std) {
       var header = std.code.replace(/\s*\(.*?\)\s*$/, "").trim();
       var headerLower = header.toLowerCase();
       var bestIdx = -1, bestScore = -Infinity, searchFrom = 0, idx;
@@ -2446,7 +2643,7 @@
   function applyAutoStatus(paragraphId, autoStatus) {
     var found = findParagraph(paragraphId);
     if (!found) return;
-    var relevantMethods = data.methodologies.filter(function (m) { return (m.allowedFamilies || []).indexOf(found.std.family) !== -1; });
+    var relevantMethods = data.methodologies.filter(function (m) { return methodologyIncludesStandard(m, found.std); });
     relevantMethods.forEach(function (m) {
       var cov = ensureCoverageEntry(found.para, m.id);
       if (cov.status !== "na" && cov.status !== "bookmark") cov.status = autoStatus;
@@ -2497,11 +2694,11 @@
         if (std) {
           ensureAncestorParagraphs(std, flag.number);
           var coverage = {};
-          // Strict standard-to-methodology mapping: only methodologies this standard's family
+          // Strict standard-to-methodology mapping: only methodologies this standard
           // actually belongs to get a coverage entry — a paragraph accepted from a PDF import
           // must never be tracked against a methodology it has no business being in.
           data.methodologies.forEach(function (m) {
-            if ((m.allowedFamilies || []).indexOf(std.family) === -1) return;
+            if (!methodologyIncludesStandard(m, std)) return;
             coverage[m.id] = { status: "newParagraph", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
           });
           var newPara = { id: uid("para"), number: flag.number, text: flag.newText, source: flag.source === "excel" ? "excel" : "pdf", coverage: coverage };
@@ -2566,11 +2763,6 @@
     if (!entries.length) return null;
     entries.sort(function (a, b) { return new Date(b.resolvedAt) - new Date(a.resolvedAt); });
     return entries[0];
-  }
-  function flagCounts(openFlags) {
-    var c = { all: openFlags.length, "new": 0, changed: 0, renumbered: 0, missing: 0 };
-    openFlags.forEach(function (f) { c[f.type] = (c[f.type] || 0) + 1; });
-    return c;
   }
   function flagBadgeHtml(type, extraAttrs) {
     extraAttrs = extraAttrs || "";
@@ -2639,6 +2831,12 @@
     return '<div class="flag-row"><div class="flag-number">' + escapeHtml(formatParaNumber(f.number)) + " " + flagBadgeHtml(f.type) + "</div>" + flagBodyHtml(f) + "</div>";
   }
   function renderReviewView() {
+    var scopeEl = document.getElementById("import-scope-info");
+    var activeMeth = data.methodologies.find(function (m) { return m.id === state.activeMethodologyId; });
+    var scopedStds = activeMeth ? applicableStandardsFor(activeMeth) : [];
+    scopeEl.innerHTML = activeMeth
+      ? "Importing for <strong>" + escapeHtml(activeMeth.name) + "</strong> — only scans for " + (scopedStds.length ? escapeHtml(scopedStds.map(function (s) { return s.code; }).join(", ")) : "no standards yet (add some via ✎ Edit methodology first)") + ". Switch methodology in the sidebar to import for a different one."
+      : "Select a methodology in the sidebar first — the scanner only ever looks for that methodology's own standards.";
     var infoEl = document.getElementById("last-import-info");
     if (data.lastImport) {
       infoEl.innerHTML = "Last imported <strong>" + escapeHtml(data.lastImport.fileName) + "</strong>" +
@@ -2648,17 +2846,6 @@
         (data.lastImport.notFoundStandards && data.lastImport.notFoundStandards.length ? "<br>Not found in this PDF: " + escapeHtml(data.lastImport.notFoundStandards.join(", ")) : "");
     } else infoEl.textContent = "No standards PDF has been imported yet.";
 
-    var openFlags = (data.pendingFlags || []).filter(function (f) { return f.status === "open"; });
-    var counts = flagCounts(openFlags);
-    var pillsEl = document.getElementById("review-type-pills");
-    var types = [["all", "All"], ["new", "New"], ["changed", "Changed"], ["renumbered", "Renumbered"], ["missing", "Not Found"]];
-    pillsEl.innerHTML = types.map(function (t) {
-      return '<button class="pill-btn' + (state.reviewFilter.type === t[0] ? " active" : "") + '" data-set-type="' + t[0] + '">' + t[1] + " (" + (counts[t[0]] || 0) + ")</button>";
-    }).join("");
-    pillsEl.querySelectorAll("[data-set-type]").forEach(function (b) { b.addEventListener("click", function () { state.reviewFilter.type = b.getAttribute("data-set-type"); renderReviewView(); }); });
-
-    document.getElementById("dismiss-all-missing-btn").style.display = (counts.missing > 0 && can("developer")) ? "" : "none";
-    document.getElementById("clear-all-flags-btn").style.display = ((data.pendingFlags || []).length > 0 && can("developer")) ? "" : "none";
     var importPdfBaselineBtn = document.getElementById("import-pdf-baseline-btn");
     if (importPdfBaselineBtn) importPdfBaselineBtn.style.display = can("developer") ? "" : "none";
     var importPdfNewVersionBtn = document.getElementById("import-pdf-newversion-btn");
@@ -2667,33 +2854,6 @@
     if (importExcelBtn) importExcelBtn.style.display = can("developer") ? "" : "none";
     var downloadTemplateBtn = document.getElementById("download-excel-template-btn");
     if (downloadTemplateBtn) downloadTemplateBtn.style.display = can("developer") ? "" : "none";
-
-    var filtered = state.reviewFilter.type === "all" ? openFlags : openFlags.filter(function (f) { return f.type === state.reviewFilter.type; });
-
-    var container = document.getElementById("flags-container");
-    container.innerHTML = "";
-    document.getElementById("no-flags-msg").style.display = openFlags.length ? "none" : "block";
-
-    var byStandard = {};
-    filtered.forEach(function (f) { (byStandard[f.standardCode] = byStandard[f.standardCode] || []).push(f); });
-    Object.keys(byStandard).forEach(function (code) { byStandard[code].sort(function (a, b) { return compareParaNumbers(a.number, b.number); }); });
-
-    Object.keys(byStandard).forEach(function (code) {
-      var group = document.createElement("div");
-      group.className = "family-panel";
-      var list = byStandard[code];
-      var revealed = state.reviewRevealed[code] || 20;
-      var shown = list.slice(0, revealed);
-      var moreCount = list.length - shown.length;
-      group.innerHTML = "<h3>" + escapeHtml(code) + "</h3><div class=\"fp-sub\">" + list.length + " flagged difference(s)" + (moreCount > 0 ? (" — showing " + shown.length + " of " + list.length) : "") + "</div>" +
-        shown.map(renderFlagRow).join("") +
-        (moreCount > 0 ? '<button class="btn" data-reveal-more="' + escapeAttr(code) + '" style="margin-top:8px;">Show ' + Math.min(20, moreCount) + " more (of " + moreCount + " remaining)</button>" : "");
-      container.appendChild(group);
-    });
-
-    container.querySelectorAll("[data-apply-flag]").forEach(function (b) { b.addEventListener("click", function () { applyFlag(b.getAttribute("data-apply-flag"), "apply"); }); });
-    container.querySelectorAll("[data-dismiss-flag]").forEach(function (b) { b.addEventListener("click", function () { applyFlag(b.getAttribute("data-dismiss-flag"), "dismiss"); }); });
-    container.querySelectorAll("[data-reveal-more]").forEach(function (b) { b.addEventListener("click", function () { var code = b.getAttribute("data-reveal-more"); state.reviewRevealed[code] = (state.reviewRevealed[code] || 20) + 20; renderReviewView(); }); });
   }
   function renderNotifyBanner() {
     var banner = document.getElementById("notify-banner");
@@ -2718,6 +2878,11 @@
   }
   async function importPdfFile(file, mode) {
     if (typeof pdfjsLib === "undefined") { alert("The PDF engine failed to load (this feature needs an internet connection to fetch pdf.js from its CDN). Please check your connection and try again."); return; }
+    var preflightMeth = data.methodologies.find(function (m) { return m.id === state.activeMethodologyId; });
+    if (!preflightMeth || !applicableStandardsFor(preflightMeth).length) {
+      alert("Select a methodology in the sidebar that has at least one standard added to it first — the scanner only ever looks for that methodology's own standards.");
+      return;
+    }
     var progressWrap = document.getElementById("import-progress");
     var progressFill = document.getElementById("import-progress-fill");
     var progressText = document.getElementById("import-progress-text");
@@ -2745,9 +2910,18 @@
       var importedAt = new Date().toISOString();
       // A standard has to already exist for buildExtractionSections to know to look for it — if
       // it was deleted (or never added), scan the raw text for its code independently first.
+      // (Global — not scoped to the active methodology — since discovering an entirely new
+      // standard isn't specific to any one methodology; it still has to be added to one via the
+      // Add/Edit Methodology dialog before an import can write to it.)
       var newlyCreatedStandards = discoverNewStandardsInPdf(fullText);
-      var sections = buildExtractionSections(fullText);
-      var notFoundStandards = data.standards.filter(function (std) { return !sections.some(function (s) { return s.std.id === std.id; }); });
+      // The scanner only ever looks for the standard(s) actually selected for whichever
+      // methodology is currently active — never anything selected for a DIFFERENT methodology,
+      // even if its code also happens to appear in this same PDF. Import once per methodology
+      // that needs this handbook.
+      var activeMeth = data.methodologies.find(function (m) { return m.id === state.activeMethodologyId; });
+      var scopedStandards = activeMeth ? applicableStandardsFor(activeMeth) : data.standards;
+      var sections = buildExtractionSections(fullText, scopedStandards);
+      var notFoundStandards = scopedStandards.filter(function (std) { return !sections.some(function (s) { return s.std.id === std.id; }); });
       var createdCount = 0, updatedCount = 0, flaggedCount = 0;
       var touchedStandards = []; // for the diagnostic log + so we can jump to a methodology that can actually see the result
       var skippedStandards = []; // standards found in the PDF but skipped because this button's step didn't apply to them
@@ -2777,10 +2951,10 @@
               var coverage = {};
               // Strict standard-to-methodology mapping: e.g. an ISA paragraph only ever gets a
               // coverage entry for RAC, never for Review+/Compilation/AUP/etc. — a methodology
-              // whose allowedFamilies doesn't include this standard's family has no business
-              // tracking it at all, so a PDF import must never write data for it.
+              // that doesn't include this standard has no business tracking it at all, so a PDF
+              // import must never write data for it.
               data.methodologies.forEach(function (m) {
-                if ((m.allowedFamilies || []).indexOf(sec.std.family) === -1) return;
+                if (!methodologyIncludesStandard(m, sec.std)) return;
                 coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
               });
               sec.std.paragraphs.push({ id: uid("para"), number: e.number, text: e.text, source: "pdf", sourceDoc: handbookName, sourceImportedAt: importedAt, coverage: coverage });
@@ -2825,23 +2999,16 @@
       if (notFoundStandards.length) console.log("[PDF import] standards NOT found in this PDF (header text never matched):", notFoundStandards.map(function (s) { return s.code; }));
       if (skippedStandards.length) console.log("[PDF import] standards skipped for this step (" + mode + "):", skippedStandards.map(function (s) { return s.std.code + " — " + s.reason; }));
 
-      // A big import can touch standards outside whichever methodology tab happens to be
-      // active, and any leftover family/status/search filter can hide every one of the
-      // paragraphs just written — both would make a real, successful import look like nothing
-      // happened. Clear the filters, and jump to a methodology that can actually see the result
-      // if the current one can't.
+      // Every standard this import could possibly have touched belongs to the active
+      // methodology by construction (the scan was scoped to exactly that set above), so unlike
+      // before there's no need to jump to some OTHER methodology to see the result — just clear
+      // any leftover family/status/search filter that could otherwise hide the paragraphs just
+      // written.
       state.familyFilter = "all"; state.statusFilter = "all"; state.wpStatusFilter = "all"; state.search = "";
       document.getElementById("filter-family").value = "all";
       document.getElementById("filter-status").value = "all";
       document.getElementById("filter-wp-status").value = "all";
       document.getElementById("search-input").value = "";
-      var touchedFamilies = touchedStandards.map(function (t) { return t.std.family; });
-      var activeMeth = data.methodologies.find(function (m) { return m.id === state.activeMethodologyId; });
-      var activeMethCanSeeResult = activeMeth && touchedFamilies.some(function (fam) { return (activeMeth.allowedFamilies || []).indexOf(fam) !== -1; });
-      if (!activeMethCanSeeResult) {
-        var candidateMeth = data.methodologies.find(function (m) { return touchedFamilies.some(function (fam) { return (m.allowedFamilies || []).indexOf(fam) !== -1; }); });
-        if (candidateMeth) state.activeMethodologyId = candidateMeth.id;
-      }
       persist();
       renderCoverageView(); renderDashboard(); renderAuditView(); renderReviewView(); renderNotifyBanner();
       if (createdCount || updatedCount || flaggedCount) switchToView("coverage");
@@ -2961,11 +3128,11 @@
   }
   // The guided workflow is PDF first (populates official text) then Excel (populates the WP
   // extract) — this checks whether that's actually happened yet for the methodology's own
-  // standard families, so we can nudge the user rather than silently leave text blank.
+  // standards, so we can nudge the user rather than silently leave text blank.
   function familiesHavePdfText(methodologyId) {
     var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
     if (!meth) return true;
-    var relevantStds = data.standards.filter(function (s) { return (meth.allowedFamilies || []).indexOf(s.family) !== -1; });
+    var relevantStds = applicableStandardsFor(meth);
     if (!relevantStds.length) return true;
     return relevantStds.some(function (s) { return s.paragraphs.some(function (p) { return !!p.sourceDoc; }); });
   }
@@ -3354,6 +3521,7 @@
 
     document.getElementById("add-methodology-btn").addEventListener("click", function () { openMethodologyModal(null); });
     document.getElementById("save-methodology-btn").addEventListener("click", saveMethodology);
+    document.getElementById("add-methodology-newstd-btn").addEventListener("click", addStandardFromMethodologyDialog);
     document.getElementById("add-standard-btn").addEventListener("click", function () { openStandardModal(null); });
     document.getElementById("save-standard-btn").addEventListener("click", saveStandard);
     document.getElementById("add-paragraph-btn").addEventListener("click", function () { openParagraphModal(null); });
@@ -3377,13 +3545,6 @@
         pendingJsonImport = null;
       }
       document.getElementById("dlg-import-confirm").close();
-      renderAll();
-    });
-
-    document.getElementById("reset-demo-btn").addEventListener("click", function () {
-      if (!confirm("Reset all data to the demo dataset? Your current data in this browser will be lost.")) return;
-      data = seedData();
-      logChange("update", "data", "Demo data reset", "Reset all tracker data to the demo dataset");
       renderAll();
     });
 
@@ -3437,25 +3598,7 @@
         "\nFull details (including any unmatched reference numbers) were printed to the browser console.");
     });
 
-    document.getElementById("dismiss-all-missing-btn").addEventListener("click", function () {
-      if (!confirm("Acknowledge all Not Found paragraphs? This just clears those flags for review — no paragraphs are ever deleted by this.")) return;
-      var missing = data.pendingFlags.filter(function (f) { return f.status === "open" && f.type === "missing"; });
-      missing.forEach(function (f) { f.status = "dismissed"; });
-      logChange("update", "flag", "Bulk acknowledge", "Acknowledged " + missing.length + " Not Found paragraph(s) as reviewed (no match found in the latest import; nothing was deleted).");
-      persist();
-      renderReviewView(); renderNotifyBanner(); renderCoverageView();
-    });
-
-    document.getElementById("clear-all-flags-btn").addEventListener("click", function () {
-      var count = (data.pendingFlags || []).length;
-      if (!confirm("Clear all " + count + " flag(s) and the last import record completely? This cannot be undone.")) return;
-      data.pendingFlags = [];
-      data.lastImport = null;
-      state.bannerDismissed = false;
-      logChange("update", "flag", "Cleared all flags", "Cleared " + count + " flag(s) and the last import record.");
-      persist();
-      renderReviewView(); renderNotifyBanner(); renderCoverageView();
-    });
+    document.getElementById("dashboard-view-full-audit-link").addEventListener("click", function (e) { e.preventDefault(); switchToView("audit"); });
 
     document.getElementById("clear-audit-btn").addEventListener("click", function () {
       var count = (data.auditLog || []).length;
