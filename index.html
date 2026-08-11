@@ -151,10 +151,6 @@
   .backup-row .backup-kind { font-size: 10px; text-transform: uppercase; color: var(--text-muted); background: var(--surface-2); border-radius: 999px; padding: 2px 8px; }
 
   .tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--status-removed); color: #fff; font-size: 10px; font-weight: 600; margin-left: 5px; vertical-align: 2px; }
-  .msg-bubble-btn { position: relative; display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; background: #f59e0b; color: #fff; border: none; border-radius: 999px; padding: 5px 10px; font-size: 13px; line-height: 1; cursor: pointer; }
-  .msg-bubble-btn:hover { background: #d97706; color: #fff; }
-  .msg-bubble-btn .msg-count-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; font-size: 10px; font-weight: 700; background: var(--status-removed); color: #fff; }
-  .msg-bubble-btn .msg-count-badge.msg-count-badge--read { background: #ffffff; color: #f59e0b; }
   .messages-section { margin-top: 14px; border-top: 1px solid var(--border); padding: 14px 16px 16px; box-sizing: border-box; }
   .messages-section h4 { margin: 0 0 8px; font-size: 13px; }
   .message-row { position: relative; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 34px 8px 12px; margin-bottom: 8px; font-size: 12px; box-sizing: border-box; }
@@ -303,6 +299,24 @@
   @media (max-width: 980px) {
     .compare-triple { grid-template-columns: 1fr; }
   }
+  /* The three comparison tabs replace the old always-stacked 3-way layout — one 2-column pair
+     shown at a time, switched via the tab bar. Default tab is Handbook Compare (see
+     state.paraActiveTab). The tab bar itself is never hidden or gated — only the content of
+     whichever panel is open reacts to there being nothing to compare yet. */
+  .compare-tabs { display: flex; gap: 6px; padding: 12px 16px; background: var(--surface-page); }
+  .compare-tab-btn { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .compare-tab-status { font-weight: 500; opacity: 0.85; }
+  .compare-tab-btn.active { background: var(--cat-1); color: #fff; border-color: var(--cat-1); }
+  .tab-status-controls { padding: 0 16px 14px; }
+  .tab-status-controls-label { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-bottom: 6px; }
+  .compare-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px 16px; background: var(--surface-page); border-top: 1px solid var(--border); }
+  .compare-pair .compare-card--baseline { background: #f0f7ff; }
+  .compare-pair .compare-card--historic { background: #fff7ed; }
+  .compare-pair .compare-card--excel { background: #f7f5ff; }
+  .compare-pair .compare-card--new { background: #fffbf0; }
+  @media (max-width: 640px) {
+    .compare-pair { grid-template-columns: 1fr; }
+  }
   .no-case { text-transform: none; }
   .review-text { font-size: 13px; color: var(--text-primary); white-space: pre-wrap; flex: 1; }
   .official-text-placeholder { color: var(--text-muted); font-style: italic; }
@@ -350,6 +364,12 @@
 
   dialog { border: none; border-radius: var(--radius); padding: 0; background: var(--surface-1); color: var(--text-primary); box-shadow: 0 12px 40px rgba(0,0,0,0.3); width: 440px; max-width: calc(100vw - 32px); }
   dialog::backdrop { background: rgba(10,14,26,0.5); }
+
+  #login-screen { position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; background: var(--surface-page); }
+  .login-card { width: 360px; max-width: calc(100vw - 32px); background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 12px 40px rgba(0,0,0,0.25); padding: 32px; }
+  .login-card h1 { font-size: 18px; margin: 0 0 6px; color: var(--text-primary); }
+  .login-card .login-sub { font-size: 13px; color: var(--text-secondary); margin: 0 0 20px; }
+  .login-card .field { margin-bottom: 18px; }
   .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); }
   .modal-head h3 { margin: 0; font-size: 15px; }
   .modal-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow-y: auto; }
@@ -385,6 +405,7 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       <input type="text" id="search-input" placeholder="Search paragraphs, standards...">
     </div>
+    <button class="btn" id="refresh-app-btn" title="Reload data from this browser's storage — nothing is cleared. Useful after switching users elsewhere, or if the view feels stuck.">⟳ Refresh</button>
     <span class="identity-badge" id="identity-badge"></span>
     <input type="file" id="import-file" accept="application/json" hidden>
   </header>
@@ -622,28 +643,18 @@
   </div>
 </div>
 
-<dialog id="dlg-identity">
-  <form method="dialog">
-    <div class="modal-head"><h3>Login</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
-    <div class="modal-body">
-      <p style="margin:0; font-size:13px; color:var(--text-secondary);" id="identity-intro">Choose your name so changes you make can be attributed to you in the audit trail.</p>
-      <div class="field" id="identity-existing-wrap">
-        <label>Your name</label>
-        <select id="f-identity-user"></select>
-        <div class="readonly-note">Don't see your name? Ask a Developer to add you in Settings.</div>
-      </div>
-      <div class="field" id="identity-new-wrap" style="display:none;">
-        <label>Your name</label>
-        <input type="text" id="f-identity-new-name" placeholder="Full name">
-        <div class="readonly-note">You're the first user, so you'll automatically be set up as Developer.</div>
-      </div>
+<div id="login-screen" style="display:none;">
+  <div class="login-card">
+    <h1>Draftworx Standards Compliance Tracker</h1>
+    <p class="login-sub">Choose your name to continue.</p>
+    <div class="field">
+      <label>Your name</label>
+      <select id="login-user-select"></select>
+      <div class="readonly-note">Don't see your name? Ask a Developer to add you in Settings.</div>
     </div>
-    <div class="modal-foot">
-      <button type="button" class="btn" data-close>Cancel</button>
-      <button type="button" class="btn primary" id="save-identity-btn">Login</button>
-    </div>
-  </form>
-</dialog>
+    <button type="button" class="btn primary" id="login-btn" style="width:100%; justify-content:center;">Login</button>
+  </div>
+</div>
 
 <dialog id="dlg-user">
   <form method="dialog">
@@ -653,11 +664,10 @@
       <div class="field" id="user-accesslevel-wrap"><label>Access level</label>
         <select id="f-user-accesslevel">
           <option value="readOnly">Read Only — view everything, send/reply to messages only</option>
-          <option value="editor">Editor — edit WP extract, change status, add comments, import Step 2 (Compare)</option>
+          <option value="editor">Editor — edit WP extract, change status, add comments, import Step 2 (Compare) only</option>
           <option value="developer">Developer — full access, including the Developer tab, Settings and user management</option>
         </select>
       </div>
-      <div class="readonly-note" id="user-firstadmin-note" style="display:none;">This is the first user, so they'll automatically be set as Developer.</div>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
@@ -1185,6 +1195,7 @@
     standardCollapse: {},
     paraExpanded: {},
     childrenExpanded: {},
+    paraActiveTab: {},
     editing: { methodologyId: null, standardId: null, messageParagraphId: null, messageReplyToId: null, pdfImportMode: null },
     messagesJumpTo: null
   };
@@ -1257,6 +1268,8 @@
           if (typeof c.historicStandardText === "undefined") c.historicStandardText = "";
           if (typeof c.updatedBy === "undefined") c.updatedBy = null;
           if (typeof c.source === "undefined") c.source = null;
+          if (typeof c.excelStatus === "undefined") c.excelStatus = "notSure";
+          if (LEGACY_STATUS_MAP[c.excelStatus]) c.excelStatus = LEGACY_STATUS_MAP[c.excelStatus];
           if (!c.tickMarks || typeof c.tickMarks !== "object") c.tickMarks = emptyTickMarks();
           else TICK_MARK_DEFS.forEach(function (d) { if (typeof c.tickMarks[d.key] === "undefined") c.tickMarks[d.key] = false; });
           if (LEGACY_STATUS_MAP[c.status]) c.status = LEGACY_STATUS_MAP[c.status];
@@ -1546,28 +1559,29 @@
   }
   function identityName() { var u = resolveIdentityUser(); return u ? u.name : "Unknown"; }
 
+  // Reads whichever user this browser was last logged in as, provided that user still exists —
+  // a stale pointer (e.g. that user was removed in Settings) means no active session.
   function resolveSessionIdentity() {
     var raw = localStorage.getItem(IDENTITY_KEY);
     if (!raw) return null;
     try {
       var parsed = JSON.parse(raw);
-      if (parsed && parsed.userId) {
-        var u = data.users.find(function (x) { return x.id === parsed.userId; });
-        return u ? { userId: parsed.userId } : null;
-      }
-      if (parsed && parsed.name) {
-        var match = data.users.find(function (x) { return x.name.toLowerCase() === parsed.name.toLowerCase(); });
-        if (!match) {
-          var isFirst = data.users.length === 0;
-          match = { id: uid("user"), name: parsed.name, accessLevel: isFirst ? "developer" : "editor" };
-          data.users.push(match);
-        }
-        var newIdentity = { userId: match.id };
-        localStorage.setItem(IDENTITY_KEY, JSON.stringify(newIdentity));
-        return newIdentity;
-      }
-    } catch (e) { /* ignore */ }
-    return null;
+      if (!parsed || !parsed.userId) return null;
+      var u = data.users.find(function (x) { return x.id === parsed.userId; });
+      return u ? { userId: parsed.userId } : null;
+    } catch (e) { return null; }
+  }
+  // First-ever run: there's no one to log in as, so Joani is created as the sole Developer and
+  // logged in automatically — every later user is added deliberately via Settings > User
+  // Management instead of by typing a name into a login prompt.
+  function ensureBootstrapUser() {
+    if (data.users.length > 0) return;
+    var joani = { id: uid("user"), name: "Joani", accessLevel: "developer" };
+    data.users.push(joani);
+    identity = { userId: joani.id };
+    localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
+    logChange("create", "user", joani.name, 'Added team member "Joani" (Developer — auto-created on first run)');
+    persist();
   }
 
   // `extra` carries the structured before/after fields for a paragraph-comparison change
@@ -1893,8 +1907,9 @@
     if (!u || !identity) { el.innerHTML = ""; return; }
     el.innerHTML = "<span>" + escapeHtml(u.name) + "</span>" +
       ' <span style="color:var(--header-text-muted);">· ' + accessLevelLabel(u.accessLevel) + "</span>" +
-      ' <button class="btn icon-only" id="switch-user-btn" title="Switch user" style="padding:2px 6px; font-size:11px;">Switch User</button>';
-    document.getElementById("switch-user-btn").addEventListener("click", function () { openIdentityModal(false); });
+      ' <button class="btn icon-only" id="logout-btn" title="Log out" style="padding:2px 6px; font-size:11px;">Logout</button>';
+    var logoutBtn = document.getElementById("logout-btn");
+    if (logoutBtn) logoutBtn.addEventListener("click", logout);
   }
 
   function renderSidebar() {
@@ -2217,13 +2232,6 @@
     var wpMapBadgeHtml = '<span class="status-dot-pill" title="WP extract coverage of the official text">' +
       '<span class="status-dot status-dot--wp-' + wpMapKey + '"></span>' + WP_MAP_STATUS[wpMapKey].label + "</span>";
 
-    var msgCount = activeMessagesForParagraph(p.id).length;
-    var unreadCount = unreadMessagesFor(currentUserId(), p.id).length;
-    var msgBadgeHtml = msgCount
-      ? '<span class="msg-count-badge' + (unreadCount ? "" : " msg-count-badge--read") + '">' + msgCount + "</span>"
-      : "";
-    var msgBubbleHtml = '<button class="msg-bubble-btn" data-open-message="' + p.id + '" title="' + (msgCount ? msgCount + " active message(s) for this paragraph" : "Send a message about this paragraph") + '">💬' + msgBadgeHtml + "</button>";
-
     var row = document.createElement("div");
     row.className = "para-row-collapsed";
     row.setAttribute("data-toggle-para", p.id);
@@ -2231,7 +2239,6 @@
       treeToggleHtml +
       '<span class="para-ref no-case">' + escapeHtml(formatParaNumber(p.number)) + "</span>" +
       '<span class="para-row-spacer"></span>' +
-      msgBubbleHtml +
       sourceBadgeHtml +
       flagBadgeInline +
       wpMapBadgeHtml +
@@ -2295,39 +2302,54 @@
     var savedCaption = cov.updatedAt ? ("Last updated by " + escapeHtml(cov.updatedBy || "Unknown") + " · " + new Date(cov.updatedAt).toLocaleString()) : "Not yet reviewed for this methodology.";
     var ro = canEditCoverage ? "" : " disabled";
 
-    // ---- New Version banner — only rendered when a newer PDF import has actually produced a
-    // live (pendingFlag) or past-decided (resolvedChange) difference against the baseline. A
-    // Matched paragraph with nothing to compare gets no banner at all; it sits ABOVE the 3-way
-    // comparison below rather than as one of its columns, since Accept/Dismiss is a decision to
-    // make, not a text to compare side by side. ----
-    var comparisonRecord = pendingFlag || resolvedChange;
-    var newVersionSectionHtml = "";
-    if (comparisonRecord) {
-      var newVersionSourceSub = comparisonRecord.source === "excel"
-        ? "Excel WP mapping import"
-        : escapeHtml(comparisonRecord.handbookName || "PDF import") + (comparisonRecord.importedAt ? " · imported " + new Date(comparisonRecord.importedAt).toLocaleDateString() : "");
-      var newVersionBody = pendingFlag ? flagBodyHtml(pendingFlag) : resolvedChangeBodyHtml(resolvedChange);
-      newVersionSectionHtml = '<div class="compare-stack" style="padding-bottom:0;"><div class="compare-card compare-card--new">' +
-          '<div class="compare-card-header">New Version <span class="compare-card-header-sub">— ' + newVersionSourceSub + "</span></div>" +
-          newVersionBody +
-        "</div></div>";
-    }
+    // ---- Three comparison tabs — Handbook Compare (default), WP Compliance, Excel Compare —
+    // each its own 2-column pair, switched via state.paraActiveTab. The tab bar itself is never
+    // hidden or gated; only a tab's CONTENT reacts to there being nothing to compare yet (no new
+    // version imported, no WP extract mapped, etc.). ----
+    var activeTab = state.paraActiveTab[p.id] || "handbook";
 
-    // ---- The always-visible 3-way comparison, side by side: current handbook baseline (PDF) |
-    // the standard's text as it read when the Excel WP mapping was last done | the current WP
-    // procedure Draftworx has for it. The middle and right columns are two INDEPENDENT
-    // snapshots — historicStandardText never changes once an Excel row set it (until a later
-    // Excel import overwrites it again), so comparing it against the baseline on the left is
-    // exactly what surfaces "the standard changed since this was mapped". ----
     var baselineSourceSub = p.sourceDoc
       ? escapeHtml(p.sourceDoc) + (p.sourceImportedAt ? " · imported " + new Date(p.sourceImportedAt).toLocaleDateString() : "")
       : (p.source === "excel" ? "Excel WP mapping import" : p.source === "pdf" ? "PDF import" : "Manual entry");
     var baselineColHtml = '<div class="compare-card compare-card--baseline">' +
         '<div class="compare-card-header">Current Handbook Baseline <span class="compare-card-header-sub">— ' + baselineSourceSub + "</span></div>" +
         '<div class="review-text" spellcheck="false">' + officialTextHtml(p) + "</div>" +
-        '<div class="readonly-note">Read-only — only updated by accepting a New Version difference above.' + (canManageStructure ? ' <button class="icon-btn" data-del-para="' + p.id + '" style="margin-left:4px;">✕ Delete paragraph</button>' : "") + "</div>" +
+        '<div class="readonly-note">Read-only — only updated by accepting a New Version difference in the Handbook Compare tab.' + (canManageStructure ? ' <button class="icon-btn" data-del-para="' + p.id + '" style="margin-left:4px;">✕ Delete paragraph</button>' : "") + "</div>" +
       "</div>";
 
+    // ---- Tab 1: Handbook Compare — baseline (left) vs the new-version PDF text (right), with
+    // the word-for-word diff and Accept/Dismiss folded into the right column (reusing the exact
+    // same flag/resolved-change rendering used elsewhere, so there's only one diff renderer in
+    // the whole app). No pending or past comparison at all just means nothing to show there. ----
+    var comparisonRecord = pendingFlag || resolvedChange;
+    var newVersionColHtml;
+    if (comparisonRecord) {
+      var newVersionSourceSub = comparisonRecord.source === "excel"
+        ? "Excel WP mapping import"
+        : escapeHtml(comparisonRecord.handbookName || "PDF import") + (comparisonRecord.importedAt ? " · imported " + new Date(comparisonRecord.importedAt).toLocaleDateString() : "");
+      var newVersionBody = pendingFlag ? flagBodyHtml(pendingFlag) : resolvedChangeBodyHtml(resolvedChange);
+      newVersionColHtml = '<div class="compare-card compare-card--new">' +
+          '<div class="compare-card-header">New Version <span class="compare-card-header-sub">— ' + newVersionSourceSub + "</span></div>" +
+          newVersionBody +
+        "</div>";
+    } else {
+      newVersionColHtml = '<div class="compare-card compare-card--new">' +
+          '<div class="compare-card-header">New Version</div>' +
+          '<div class="readonly-note">No differences to review — this paragraph is in sync with the last handbook comparison (or no new version PDF has been imported yet).</div>' +
+        "</div>";
+    }
+    // The Matched/Update Body/Renumbered/etc marking belongs to the Handbook Compare
+    // relationship specifically (it's set by accepting/dismissing exactly the comparison shown
+    // in the New Version column above) — living inside this tab only means switching to WP
+    // Compliance or Excel Compare never shows this same control again, since it has nothing to
+    // do with either of those.
+    var handbookStatusHtml = '<div class="tab-status-controls"><div class="tab-status-controls-label">Handbook comparison status</div><div class="status-pills">' + statusPillsHtml + "</div></div>";
+    var handbookPanelHtml = '<div class="compare-pair">' + baselineColHtml + newVersionColHtml + "</div>" + handbookStatusHtml;
+
+    // ---- Tab 2 (Excel Compare) content: the standard's text as it read when the Excel WP mapping was last
+    // done — historicStandardText never changes once an Excel row sets it (until a later Excel
+    // import overwrites it), so comparing it against the CURRENT baseline is exactly what
+    // surfaces "the standard changed since this was mapped". ----
     var historicText = cov.historicStandardText;
     var historicBodyHtml, historicNoteHtml = "";
     if (!historicText) {
@@ -2341,15 +2363,30 @@
         var histUnchanged = histA === baseB || baseB.indexOf(histA) !== -1 || histA.indexOf(baseB) !== -1;
         historicNoteHtml = histUnchanged
           ? '<div class="standard-unchanged-note">✓ Matches the current baseline — unchanged since this was mapped.</div>'
-          : '<div class="standard-changed-note">⚠ The standard has changed since this WP mapping was done — compare with the baseline on the left.</div>';
+          : '<div class="standard-changed-note">⚠ The standard has changed since this WP mapping was done — compare with the baseline.</div>';
       }
     }
     var historicColHtml = '<div class="compare-card compare-card--historic">' +
-        '<div class="compare-card-header">Standard Text When Mapped <span class="compare-card-header-sub">— from Excel</span></div>' +
+        '<div class="compare-card-header">Official Standard Text <span class="compare-card-header-sub">— from Excel, when mapped</span></div>' +
         '<div class="review-text" spellcheck="false">' + historicBodyHtml + "</div>" +
         historicNoteHtml +
       "</div>";
+    // Baseline always sits on the LEFT in every tab, this one included — the Excel-sourced text
+    // is the right-hand column here. Excel Compare gets the exact same clickable Matched/Update
+    // Body/Renumbered/etc pill row as Handbook Compare, but backed by its own cov.excelStatus
+    // field — so marking a status here never touches, and is never overwritten by, the Handbook
+    // Compare status.
+    var excelStatusPillsHtml = canEditCoverage
+      ? STATUS_ORDER.map(function (key) {
+          var s = STATUS[key];
+          return '<button class="status-pill' + (cov.excelStatus === key ? " active-" + key : "") + '" data-set-excel-status="' + key + '">' + s.icon + " " + s.label + "</button>";
+        }).join("")
+      : '<span class="status-pill active-' + (cov.excelStatus || "notSure") + '" style="cursor:default;">' + STATUS[cov.excelStatus || "notSure"].icon + " " + STATUS[cov.excelStatus || "notSure"].label + "</span>";
+    var excelStatusHtml = '<div class="tab-status-controls"><div class="tab-status-controls-label">Excel comparison status</div><div class="status-pills">' + excelStatusPillsHtml + "</div></div>";
+    var excelPanelHtml = '<div class="compare-pair">' + baselineColHtml + historicColHtml + "</div>" + excelStatusHtml;
 
+    // ---- Tab 2 content: baseline (left) vs the current Draftworx WP procedure (right), with
+    // the word-overlap % as the compliance signal. ----
     var wpMapKey = wpMappingStatus(p, cov);
     var excelCoverageHtml;
     if (!p.text) excelCoverageHtml = '<div class="readonly-note">Import the handbook PDF first to compare this against the official text.</div>';
@@ -2365,7 +2402,20 @@
         '<textarea class="review-textarea" spellcheck="false" data-wp-field placeholder="Paste or type the working paper procedure/extract that addresses this paragraph..."' + ro + ">" + escapeHtml(cov.wpExtract || "") + "</textarea>" +
         excelCoverageHtml +
       "</div>";
-    var tripleHtml = '<div class="compare-triple">' + baselineColHtml + historicColHtml + wpExtractColHtml + "</div>";
+    var wpPanelHtml = '<div class="compare-pair">' + baselineColHtml + wpExtractColHtml + "</div>";
+
+    var COMPARE_TABS = [
+      { key: "handbook", label: "Handbook Compare", html: handbookPanelHtml, badge: null },
+      { key: "excel", label: "Excel Compare", html: excelPanelHtml, badge: { dot: cov.excelStatus || "notSure", label: STATUS[cov.excelStatus || "notSure"].label } },
+      { key: "wp", label: "WP Compliance", html: wpPanelHtml, badge: { dot: "wp-" + wpMapKey, label: WP_MAP_STATUS[wpMapKey].label } }
+    ];
+    var compareTabsBarHtml = '<div class="compare-tabs">' +
+      COMPARE_TABS.map(function (t) {
+        var badgeHtml = t.badge ? ' <span class="status-dot status-dot--' + t.badge.dot + '"></span> <span class="compare-tab-status">' + escapeHtml(t.badge.label) + "</span>" : "";
+        return '<button class="compare-tab-btn' + (activeTab === t.key ? " active" : "") + '" data-set-compare-tab="' + t.key + '" data-compare-tab-para="' + escapeAttr(p.id) + '">' + t.label + badgeHtml + "</button>";
+      }).join("") +
+    "</div>";
+    var activeTabHtml = (COMPARE_TABS.find(function (t) { return t.key === activeTab; }) || COMPARE_TABS[0]).html;
 
     var tickMarks = cov.tickMarks || emptyTickMarks();
     var tickMarksHtml = '<div class="tick-marks-label">Expected compliance area (outside WP)</div><div class="tick-marks-grid">' +
@@ -2373,19 +2423,15 @@
         return '<label class="tick-mark-item"><input type="checkbox" data-tick-key="' + d.key + '"' + (tickMarks[d.key] ? " checked" : "") + ro + ">" + escapeHtml(d.label) + "</label>";
       }).join("") + "</div>";
 
-    // Two completely independent status indicators, side by side: the handbook-comparison
-    // outcome (editable via the pills below) and the WP-coverage outcome (purely derived from
-    // the overlap % above — there's nothing to click, it just reflects what's in section 3).
-    var statusBadgesHtml = '<div class="status-pills" style="margin-bottom:2px;">' +
-        '<span class="status-dot-pill" title="Handbook comparison status"><span class="status-dot status-dot--' + cov.status + '"></span>Handbook: ' + STATUS[cov.status].label + "</span>" +
-        '<span class="status-dot-pill" title="WP extract coverage of the official text"><span class="status-dot status-dot--wp-' + wpMapKey + '"></span>WP Coverage: ' + WP_MAP_STATUS[wpMapKey].label + "</span>" +
-      "</div>";
-
+    // The Handbook/WP status pills used to live here too, shared across every tab — which is
+    // exactly why marking one appeared to "stay the same" no matter which tab was open. Each is
+    // now scoped to its own tab instead (Handbook Compare's pills above; WP Compliance and
+    // Excel Compare already show their own independent status right on the tab button and
+    // inside their own panel). This section is just the general reviewer notes/tick marks that
+    // genuinely apply to the paragraph as a whole, not to any one comparison.
     detail.innerHTML =
-      newVersionSectionHtml + tripleHtml +
-      '<div class="status-section"><h4>' + escapeHtml(std.code) + " · " + escapeHtml(meth.name) + " — Status</h4>" +
-        statusBadgesHtml +
-        '<div class="status-pills">' + statusPillsHtml + "</div>" +
+      compareTabsBarHtml + activeTabHtml +
+      '<div class="status-section"><h4>' + escapeHtml(std.code) + " · " + escapeHtml(meth.name) + " — Reviewer Notes</h4>" +
         tickMarksHtml +
         '<textarea class="review-textarea" data-notes-field placeholder="Comparison notes, reviewer commentary, evidence reference..."' + ro + ">" + escapeHtml(cov.notes || "") + "</textarea>" +
         '<div class="save-caption" data-caption>' + savedCaption + "</div>" +
@@ -2395,6 +2441,14 @@
   }
 
   function wireParagraphCardEvents(container) {
+    container.querySelectorAll("[data-set-compare-tab]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var paraId = btn.getAttribute("data-compare-tab-para");
+        state.paraActiveTab[paraId] = btn.getAttribute("data-set-compare-tab");
+        withScrollPreserved(renderCoverageView);
+      });
+    });
     container.querySelectorAll("[data-toggle-children]").forEach(function (el) {
       el.addEventListener("click", function (e) {
         e.stopPropagation();
@@ -2427,6 +2481,9 @@
       var paraId = card.closest(".para-item").getAttribute("data-para-id");
       card.querySelectorAll("[data-set-status]").forEach(function (btn) {
         btn.addEventListener("click", function () { setCoverageStatus(paraId, state.activeMethodologyId, btn.getAttribute("data-set-status")); });
+      });
+      card.querySelectorAll("[data-set-excel-status]").forEach(function (btn) {
+        btn.addEventListener("click", function () { setExcelComparisonStatus(paraId, state.activeMethodologyId, btn.getAttribute("data-set-excel-status")); });
       });
       var wp = card.querySelector("[data-wp-field]");
       if (wp) wp.addEventListener("blur", function () { saveCoverageField(paraId, state.activeMethodologyId, "wpExtract", wp.value, "Updated Draftworx WP extract text"); });
@@ -2479,7 +2536,7 @@
   }
 
   function ensureCoverageEntry(para, methodologyId) {
-    if (!para.coverage[methodologyId]) para.coverage[methodologyId] = { status: "notSure", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
+    if (!para.coverage[methodologyId]) para.coverage[methodologyId] = { status: "notSure", excelStatus: "notSure", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
     return para.coverage[methodologyId];
   }
 
@@ -2492,6 +2549,18 @@
     var prevLabel = STATUS[cov.status].label;
     cov.status = status; cov.source = "manual"; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
     logChange("update", "coverage", found.std.code + " " + found.para.number + " — " + (meth ? meth.name : ""), "Status: " + prevLabel + " → " + STATUS[status].label);
+    persist();
+    withScrollPreserved(renderCoverageView);
+  }
+  function setExcelComparisonStatus(paragraphId, methodologyId, status) {
+    var found = findParagraph(paragraphId);
+    if (!found) return;
+    var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
+    var cov = ensureCoverageEntry(found.para, methodologyId);
+    if (cov.excelStatus === status) return;
+    var prevLabel = STATUS[cov.excelStatus || "notSure"].label;
+    cov.excelStatus = status; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
+    logChange("update", "coverage", found.std.code + " " + found.para.number + " — " + (meth ? meth.name : ""), "Excel comparison status: " + prevLabel + " → " + STATUS[status].label);
     persist();
     withScrollPreserved(renderCoverageView);
   }
@@ -2881,7 +2950,7 @@
   function renderSettingsView() {
     var list = document.getElementById("users-list");
     var note = document.getElementById("users-list-note");
-    if (note) note.textContent = "The first user added is automatically a Developer.";
+    if (note) note.textContent = "Add teammates and choose their access level below.";
     if (data.users.length === 0) { list.innerHTML = '<div class="empty-state" style="padding:20px 0;">No team members yet. Add the first one below.</div>'; return; }
     var countsByUser = {};
     (data.auditLog || []).forEach(function (e) { countsByUser[e.user] = (countsByUser[e.user] || 0) + 1; });
@@ -2902,12 +2971,9 @@
     state.editing.userId = id || null;
     var dlg = document.getElementById("dlg-user");
     var u = id ? data.users.find(function (x) { return x.id === id; }) : null;
-    var isFirst = data.users.length === 0;
     document.getElementById("dlg-user-title").textContent = u ? "Edit user" : "Add user";
     document.getElementById("f-user-name").value = u ? u.name : "";
     document.getElementById("f-user-accesslevel").value = u ? u.accessLevel : "readOnly";
-    document.getElementById("user-accesslevel-wrap").style.display = isFirst ? "none" : "";
-    document.getElementById("user-firstadmin-note").style.display = isFirst ? "" : "none";
     dlg.showModal();
   }
   function saveUser() {
@@ -2928,10 +2994,9 @@
       if (identity && identity.userId === u.id) { renderIdentityBadge(); }
     } else {
       if (data.users.some(function (x) { return x.name.toLowerCase() === name.toLowerCase(); })) { alert("That name is already in the list."); return; }
-      var isFirst = data.users.length === 0;
-      var newUser = { id: uid("user"), name: name, accessLevel: isFirst ? "developer" : accessLevel };
+      var newUser = { id: uid("user"), name: name, accessLevel: accessLevel };
       data.users.push(newUser);
-      logChange("create", "user", name, 'Added team member "' + name + '" (' + accessLevelLabel(newUser.accessLevel) + (isFirst ? " — first user, auto-Developer" : "") + ")");
+      logChange("create", "user", name, 'Added team member "' + name + '" (' + accessLevelLabel(newUser.accessLevel) + ")");
     }
     document.getElementById("dlg-user").close();
     persist();
@@ -2949,11 +3014,10 @@
     data.users = data.users.filter(function (x) { return x.id !== id; });
     logChange("delete", "user", u.name, 'Removed team member "' + u.name + '"');
     var wasSelf = identity && identity.userId === id;
-    if (wasSelf) { localStorage.removeItem(IDENTITY_KEY); identity = null; }
     persist();
     renderSettingsView();
     renderAuditView();
-    if (wasSelf) { renderIdentityBadge(); openIdentityModal(true); }
+    if (wasSelf) logout();
   }
 
   // ---------- PDF import & diff ----------
@@ -3512,7 +3576,7 @@
     var importPdfBaselineBtn = document.getElementById("import-pdf-baseline-btn");
     if (importPdfBaselineBtn) importPdfBaselineBtn.style.display = can("developer") ? "" : "none";
     // Step 2 (Compare a new version against the existing baseline) is the one import Editor is
-    // also allowed to trigger — Step 1 (set the baseline) stays Developer-only.
+    // also allowed to trigger — Step 1 (set the baseline) and Excel stay Developer-only.
     var importPdfNewVersionBtn = document.getElementById("import-pdf-newversion-btn");
     if (importPdfNewVersionBtn) importPdfNewVersionBtn.style.display = can("editor") ? "" : "none";
     var importExcelBtn = document.getElementById("import-excel-btn");
@@ -4119,67 +4183,42 @@
   // ---------- Wiring ----------
   function closeDialog(e) { var dlg = e.target.closest("dialog"); if (dlg) dlg.close(); }
 
-  function openIdentityModal(mandatory) {
-    var dlg = document.getElementById("dlg-identity");
-    var hasUsers = data.users.length > 0;
-    var existingWrap = document.getElementById("identity-existing-wrap");
-    var newWrap = document.getElementById("identity-new-wrap");
-    var intro = document.getElementById("identity-intro");
-    if (hasUsers) {
-      existingWrap.style.display = ""; newWrap.style.display = "none";
-      intro.textContent = "Choose your name so changes you make can be attributed to you in the audit trail.";
-      var sel = document.getElementById("f-identity-user");
-      sel.innerHTML = '<option value="">Choose your name…</option>' + data.users.map(function (u) { return '<option value="' + escapeAttr(u.id) + '">' + escapeHtml(u.name) + " — " + escapeHtml(accessLevelLabel(u.accessLevel)) + "</option>"; }).join("");
-      if (identity && identity.userId) sel.value = identity.userId;
-    } else {
-      existingWrap.style.display = "none"; newWrap.style.display = "";
-      intro.textContent = "You're the first person to open this tracker — let's set you up.";
-      document.getElementById("f-identity-new-name").value = "";
-    }
-    dlg.querySelectorAll("[data-close]").forEach(function (b) { b.style.display = mandatory ? "none" : ""; });
-    dlg.dataset.mandatory = mandatory ? "1" : "0";
-    dlg.showModal();
+  // ---------- Login screen ----------
+  // A plain full-page overlay, not a <dialog> — there's nothing to cancel out of: either no one
+  // is logged in yet (show it) or someone is (hide it). Login/logout never touch app data itself,
+  // only which user this browser is currently attributed to.
+  function showLoginScreen() {
+    var sel = document.getElementById("login-user-select");
+    sel.innerHTML = data.users.map(function (u) { return '<option value="' + escapeAttr(u.id) + '">' + escapeHtml(u.name) + " — " + escapeHtml(accessLevelLabel(u.accessLevel)) + "</option>"; }).join("");
+    document.getElementById("login-screen").style.display = "flex";
   }
-  function saveIdentityHandler() {
-    var hasUsers = data.users.length > 0;
-    var userObj, isNewUser = false;
-    if (!hasUsers) {
-      var newName = document.getElementById("f-identity-new-name").value.trim();
-      if (!newName) { alert("Please enter your name."); return; }
-      userObj = { id: uid("user"), name: newName, accessLevel: "developer" };
-      data.users.push(userObj);
-      isNewUser = true;
-    } else {
-      var selVal = document.getElementById("f-identity-user").value;
-      userObj = data.users.find(function (u) { return u.id === selVal; });
-      if (!userObj) { alert("Please choose your name from the list."); return; }
-    }
-    var dlg = document.getElementById("dlg-identity");
-    var wasMandatory = dlg.dataset.mandatory === "1";
-    var previousUser = resolveIdentityUser();
+  function hideLoginScreen() { document.getElementById("login-screen").style.display = "none"; }
+  function loginAsUser(userId) {
+    var userObj = data.users.find(function (u) { return u.id === userId; });
+    if (!userObj) return;
     identity = { userId: userObj.id };
     localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
-    if (isNewUser) logChange("create", "user", userObj.name, 'Added team member "' + userObj.name + '" (Developer — first user)');
-    if (!wasMandatory && previousUser && previousUser.id !== userObj.id) logChange("update", "user", "Switched user", 'User changed from "' + previousUser.name + '" to "' + userObj.name + '" on this device');
-    persist();
-    dlg.close();
+    hideLoginScreen();
     renderIdentityBadge();
     applyGlobalRolePermissions();
-    if (wasMandatory) finishInit();
-    else {
-      renderAuditView(); renderSettingsView();
-      // Unread message badges/dots are per-viewer, not global — a plain user switch has to
-      // refresh them (and whichever paragraph card/tab happens to be showing) same as if the
-      // whole app had just reloaded under the new identity.
-      renderCoverageView(); updateMessagesTabBadge();
-      if (state.view === "messages") renderMessagesView();
-    }
+    if (!appInitialized) { finishInit(); return; }
+    // Coming back from a logout rather than a fresh load — refresh everything that's
+    // per-viewer (unread badges, whichever card/tab is showing) as if the page had reloaded.
+    renderAuditView(); renderSettingsView(); renderCoverageView(); updateMessagesTabBadge();
+    if (state.view === "messages") renderMessagesView();
   }
-  function wireIdentityDialog() {
-    var dlg = document.getElementById("dlg-identity");
-    document.getElementById("save-identity-btn").addEventListener("click", saveIdentityHandler);
-    dlg.addEventListener("cancel", function (e) { if (dlg.dataset.mandatory === "1") e.preventDefault(); });
-    dlg.addEventListener("click", function (e) { if (e.target === dlg && dlg.dataset.mandatory !== "1") dlg.close(); });
+  function logout() {
+    localStorage.removeItem(IDENTITY_KEY);
+    identity = null;
+    renderIdentityBadge();
+    showLoginScreen();
+  }
+  function wireLoginScreen() {
+    document.getElementById("login-btn").addEventListener("click", function () {
+      var sel = document.getElementById("login-user-select");
+      if (!sel.value) { alert("Please choose your name from the list."); return; }
+      loginAsUser(sel.value);
+    });
   }
 
   function applyGlobalRolePermissions() {
@@ -4208,6 +4247,10 @@
     document.getElementById("filter-status").addEventListener("change", function (e) { state.statusFilter = e.target.value; renderCoverageView(); });
     document.getElementById("filter-wp-status").addEventListener("change", function (e) { state.wpStatusFilter = e.target.value; renderCoverageView(); });
     document.getElementById("search-input").addEventListener("input", function (e) { state.search = e.target.value.trim(); renderCoverageView(); });
+    // A plain page reload is the most reliable way to "un-stick" the view — it re-reads
+    // everything fresh from localStorage (picking up changes made in another tab/window, or
+    // after switching identity there) without touching the stored data itself at all.
+    document.getElementById("refresh-app-btn").addEventListener("click", function () { location.reload(); });
     document.getElementById("expand-all-std-btn").addEventListener("click", function () {
       data.standards.forEach(function (std) {
         state.standardCollapse[std.id] = false;
@@ -4232,7 +4275,7 @@
     document.getElementById("save-paragraph-btn").addEventListener("click", saveParagraph);
 
     document.querySelectorAll("[data-close]").forEach(function (b) { b.addEventListener("click", closeDialog); });
-    document.querySelectorAll("dialog:not(#dlg-identity)").forEach(function (dlg) { dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); }); });
+    document.querySelectorAll("dialog").forEach(function (dlg) { dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); }); });
 
     document.getElementById("settings-download-backup-btn").addEventListener("click", downloadBackup);
     document.getElementById("settings-restore-backup-btn").addEventListener("click", function () { document.getElementById("import-file").click(); });
@@ -4344,10 +4387,11 @@
     data = load();
     maybeCreateDailyAutoBackup();
     tryRestoreBackupDirHandle();
-    wireIdentityDialog();
+    wireLoginScreen();
+    ensureBootstrapUser();
     identity = resolveSessionIdentity();
     if (identity) { renderIdentityBadge(); finishInit(); }
-    else { openIdentityModal(true); }
+    else { showLoginScreen(); }
   });
 })();
 </script>
