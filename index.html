@@ -11,25 +11,26 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
   :root {
     color-scheme: light;
-    --surface-page:   #f8fafc;
+    --surface-page:   #ECF1F8;
     --surface-1:      #ffffff;
     --surface-2:      #f1f5f9;
     --surface-hover:  #e2e8f0;
-    --text-primary:   #1e293b;
+    --text-primary:   #222222;
     --text-secondary: #475569;
     --text-muted:     #94a3b8;
     --border:         #e2e8f0;
     --border-strong:  #cbd5e1;
 
-    --header-bg:          #1e3a5f;
+    --header-bg:          #222222;
     --header-text:        #ffffff;
     --header-text-muted:  rgba(255,255,255,0.7);
     --header-border:      rgba(255,255,255,0.12);
     --header-hover-bg:    rgba(255,255,255,0.10);
 
-    --cat-1: #2196f3; --cat-2: #f59e0b; --cat-3: #22c55e; --cat-4: #6c63ff;
+    --cat-1: #5AB3E8; --cat-2: #f59e0b; --cat-3: #22c55e; --cat-4: #6c63ff;
     --cat-5: #ef4444; --cat-6: #06b6d4; --cat-7: #ec4899; --cat-8: #64748b;
 
     /* The comparison status a paragraph is automatically given from the last PDF import
@@ -65,7 +66,7 @@
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
-  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--surface-page); color: var(--text-primary); }
+  body { margin: 0; font-family: 'Inter', sans-serif; background: var(--surface-page); color: var(--text-primary); }
   button, input, select, textarea { font: inherit; color: inherit; }
   table { font-variant-numeric: tabular-nums; }
 
@@ -823,6 +824,7 @@
 
   var STORAGE_KEY = "dwx-standards-tracker-v1";
   var IDENTITY_KEY = "dwx-standards-tracker-identity";
+  var LAST_USER_KEY = "dwx-standards-tracker-last-user";
   var CATS = ["--cat-1","--cat-2","--cat-3","--cat-4","--cat-5","--cat-6","--cat-7","--cat-8"];
   var FAMILIES = ["ISA", "ISAE 3000", "ISRS 4400", "ISRS 4410", "ISRE 2400", "LPC Rules", "PPRA Rules"];
   // Each of the six built-in methodologies only ever works with a fixed set of standard
@@ -834,6 +836,14 @@
     "Property Practitioner": ["ISAE 3000", "PPRA Rules"],
     "Compilation": ["ISRS 4410"],
     "AUP": ["ISRS 4400"]
+  };
+  var DEFAULT_METHODOLOGY_DESCRIPTIONS = {
+    "RAC": "Draftworx methodology pack — RAC.",
+    "Review+": "Draftworx methodology pack for independent review engagements.",
+    "Compilation": "Draftworx methodology pack for compilation engagements.",
+    "AUP": "Draftworx methodology pack for agreed-upon procedures engagements.",
+    "Legal Practitioner": "Draftworx methodology pack for legal practitioner trust account engagements.",
+    "Property Practitioner": "Draftworx methodology pack for property practitioner trust account engagements."
   };
 
   // The status shown per paragraph is now the automated PDF-vs-tracker COMPARISON state, not a
@@ -1258,6 +1268,20 @@
       if (!Array.isArray(meth.standardIds)) meth.standardIds = [];
     });
 
+    // Self-heal: a methodology's explicit standardIds picks take priority over allowedFamilies
+    // (see methodologyIncludesStandard) — but if every one of those picked IDs has gone stale
+    // (the standard was deleted/recreated, data got out of sync, etc.), that override left the
+    // methodology pointing at nothing instead of falling back. Clearing standardIds here means it
+    // drops back to allowedFamilies, which was just reset to the fixed default above for the six
+    // known methodologies — so RAC/Review+/Legal Practitioner/Property Practitioner/Compilation/AUP
+    // always resolve to their correct standards again, and PDF/Excel import always has a target.
+    d.methodologies.forEach(function (meth) {
+      var resolvesToRealStandard = Array.isArray(meth.standardIds) && meth.standardIds.length
+        ? d.standards.some(function (s) { return meth.standardIds.indexOf(s.id) !== -1; })
+        : d.standards.some(function (s) { return (meth.allowedFamilies || []).indexOf(s.family) !== -1; });
+      if (!resolvesToRealStandard) meth.standardIds = [];
+    });
+
     d.standards.forEach(function (std) {
       delete std.applicableMethodologyIds;
       std.paragraphs.forEach(function (p) {
@@ -1500,6 +1524,33 @@
   }
 
   // ---------- Developer tab: Danger Zone ----------
+  // Recreates any of the six fixed-mapping methodologies (RAC/Review+/Legal Practitioner/
+  // Property Practitioner/Compilation/AUP) that a Danger Zone clear just wiped out, and re-syncs
+  // allowedFamilies/standardIds for any that survived — called right after "Clear All
+  // Methodologies", "Clear All Standards" and "Clear All Data" so the fixed mapping is restored
+  // immediately in this same session, rather than only self-healing the next time the app loads
+  // (migrateData does the equivalent self-heal on load — see there for why standardIds, not just
+  // allowedFamilies, needs checking).
+  function ensureDefaultMethodologies() {
+    Object.keys(KNOWN_ALLOWED_FAMILIES).forEach(function (name) {
+      var meth = data.methodologies.find(function (m) { return m.name === name; });
+      if (!meth) {
+        if (typeof data.nextColorIndex !== "number") data.nextColorIndex = data.methodologies.length;
+        meth = { id: uid("meth"), name: name, description: DEFAULT_METHODOLOGY_DESCRIPTIONS[name] || "", colorIndex: data.nextColorIndex, allowedFamilies: KNOWN_ALLOWED_FAMILIES[name].slice(), standardIds: [] };
+        data.methodologies.push(meth);
+        data.nextColorIndex += 1;
+      } else {
+        meth.allowedFamilies = KNOWN_ALLOWED_FAMILIES[name].slice();
+        if (!Array.isArray(meth.standardIds)) meth.standardIds = [];
+      }
+    });
+    data.methodologies.forEach(function (meth) {
+      var resolvesToRealStandard = Array.isArray(meth.standardIds) && meth.standardIds.length
+        ? data.standards.some(function (s) { return meth.standardIds.indexOf(s.id) !== -1; })
+        : data.standards.some(function (s) { return (meth.allowedFamilies || []).indexOf(s.family) !== -1; });
+      if (!resolvesToRealStandard) meth.standardIds = [];
+    });
+  }
   // Every Danger Zone action goes through this: confirm, take a safety backup FIRST (so it's
   // always undoable via the backup list even though the action itself has no direct "undo"),
   // then run the actual clear.
@@ -1518,15 +1569,22 @@
   function clearAllData() {
     runDangerAction("All Data", function () {
       data.methodologies = []; data.standards = []; data.pendingFlags = []; data.changeLog = []; data.lastImport = null; data.messages = [];
+      ensureDefaultMethodologies();
     });
   }
   function clearAllMethodologies() {
     runDangerAction("All Methodologies", function () {
       data.methodologies = [];
       data.standards.forEach(function (s) { s.paragraphs.forEach(function (p) { p.coverage = {}; }); });
+      ensureDefaultMethodologies();
     });
   }
-  function clearAllStandards() { runDangerAction("All Standards", function () { data.standards = []; }); }
+  function clearAllStandards() {
+    runDangerAction("All Standards", function () {
+      data.standards = [];
+      ensureDefaultMethodologies();
+    });
+  }
   function clearAllParagraphs() { runDangerAction("All Paragraphs", function () { data.standards.forEach(function (s) { s.paragraphs = []; }); }); }
   function clearAllPdfImports() {
     runDangerAction("All PDF Imports", function () {
@@ -1580,6 +1638,7 @@
     data.users.push(joani);
     identity = { userId: joani.id };
     localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
+    localStorage.setItem(LAST_USER_KEY, joani.id);
     logChange("create", "user", joani.name, 'Added team member "Joani" (Developer — auto-created on first run)');
     persist();
   }
@@ -3559,11 +3618,10 @@
   }
   function renderReviewView() {
     var scopeEl = document.getElementById("import-scope-info");
-    var activeMeth = data.methodologies.find(function (m) { return m.id === state.activeMethodologyId; });
-    var scopedStds = activeMeth ? applicableStandardsFor(activeMeth) : [];
-    scopeEl.innerHTML = activeMeth
-      ? "Importing for <strong>" + escapeHtml(activeMeth.name) + "</strong> — only scans for " + (scopedStds.length ? escapeHtml(scopedStds.map(function (s) { return s.code; }).join(", ")) : "no standards yet (add some via ✎ Edit methodology first)") + ". Switch methodology in the sidebar to import for a different one."
-      : "Select a methodology in the sidebar first — the scanner only ever looks for that methodology's own standards.";
+    // The methodology an import goes to is picked in the import dialog itself (Step 1/Step 2
+    // each open a methodology dropdown before the file picker) — never from the sidebar, so this
+    // note stays generic rather than describing whichever methodology happens to be active there.
+    scopeEl.innerHTML = "You'll choose which methodology this import is for inside the dialog when you click either button below — it only scans for that methodology's own standards.";
     var infoEl = document.getElementById("last-import-info");
     if (data.lastImport) {
       infoEl.innerHTML = "Last imported <strong>" + escapeHtml(data.lastImport.fileName) + "</strong>" +
@@ -3631,7 +3689,7 @@
     if (typeof pdfjsLib === "undefined") { alert("The PDF engine failed to load (this feature needs an internet connection to fetch pdf.js from its CDN). Please check your connection and try again."); return; }
     var preflightMeth = data.methodologies.find(function (m) { return m.id === state.activeMethodologyId; });
     if (!preflightMeth || !applicableStandardsFor(preflightMeth).length) {
-      alert("Select a methodology in the sidebar that has at least one standard added to it first — the scanner only ever looks for that methodology's own standards.");
+      alert("The methodology you selected in the import dialog doesn't have any standards added to it yet. Pick a different methodology next time, or add standards to this one first (via ✎ Edit methodology), then try the import again.");
       return;
     }
     var progressWrap = document.getElementById("import-progress");
@@ -4190,6 +4248,10 @@
   function showLoginScreen() {
     var sel = document.getElementById("login-user-select");
     sel.innerHTML = data.users.map(function (u) { return '<option value="' + escapeAttr(u.id) + '">' + escapeHtml(u.name) + " — " + escapeHtml(accessLevelLabel(u.accessLevel)) + "</option>"; }).join("");
+    // Pre-select whoever logged in last on this browser, so returning to this screen (after a
+    // fresh load or a logout) is just one click of Login rather than hunting for your name again.
+    var lastUserId = localStorage.getItem(LAST_USER_KEY);
+    if (lastUserId && data.users.some(function (u) { return u.id === lastUserId; })) sel.value = lastUserId;
     document.getElementById("login-screen").style.display = "flex";
   }
   function hideLoginScreen() { document.getElementById("login-screen").style.display = "none"; }
@@ -4198,6 +4260,7 @@
     if (!userObj) return;
     identity = { userId: userObj.id };
     localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
+    localStorage.setItem(LAST_USER_KEY, userObj.id);
     hideLoginScreen();
     renderIdentityBadge();
     applyGlobalRolePermissions();
