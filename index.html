@@ -1251,6 +1251,7 @@
     d.users.forEach(function (u, idx) {
       if (LEGACY_ACCESS_LEVEL_MAP.hasOwnProperty(u.accessLevel)) u.accessLevel = LEGACY_ACCESS_LEVEL_MAP[u.accessLevel];
       if (typeof u.accessLevel === "undefined") u.accessLevel = idx === 0 ? "developer" : "readOnly";
+      if (!u.pinHash) u.pinHash = hashPin("1234");
     });
     if (d.users.length && !d.users.some(function (u) { return u.accessLevel === "developer"; })) d.users[0].accessLevel = "developer";
 
@@ -1645,6 +1646,7 @@
   function ensureBootstrapUser() {
     if (data.users.length > 0) return;
     var joani = { id: uid("user"), name: "Joani", accessLevel: "developer", pinHash: hashPin("1234") };
+    console.log("[PIN debug] bootstrap created Joani with pinHash:", joani.pinHash);
     data.users.push(joani);
     identity = { userId: joani.id };
     localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
@@ -4332,6 +4334,7 @@
       var pinInput = document.getElementById("login-pin-input");
       var pinError = document.getElementById("login-pin-error");
       var userObj = data.users.find(function (u) { return u.id === sel.value; });
+      console.log("[PIN debug] entered PIN hashes to:", hashPin(pinInput.value.trim()), "| stored pinHash for", userObj && userObj.name, "is:", userObj && userObj.pinHash);
       if (!userObj || hashPin(pinInput.value.trim()) !== userObj.pinHash) {
         pinError.style.display = "";
         pinInput.value = "";
