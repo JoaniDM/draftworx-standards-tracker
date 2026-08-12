@@ -653,6 +653,11 @@
       <select id="login-user-select"></select>
       <div class="readonly-note">Don't see your name? Ask a Developer to add you in Settings.</div>
     </div>
+    <div class="field">
+      <label>PIN</label>
+      <input type="password" id="login-pin-input" maxlength="4" inputmode="numeric" pattern="\d{4}">
+      <div class="readonly-note" id="login-pin-error" style="display:none; color:#dc2626;">Incorrect PIN — please try again</div>
+    </div>
     <button type="button" class="btn primary" id="login-btn" style="width:100%; justify-content:center;">Login</button>
   </div>
 </div>
@@ -669,6 +674,7 @@
           <option value="developer">Developer — full access, including the Developer tab, Settings and user management</option>
         </select>
       </div>
+      <div class="field"><label>PIN (4 digits)</label><input type="password" id="f-user-pin" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="Leave blank to keep current PIN"></div>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
@@ -1638,7 +1644,7 @@
   // Management instead of by typing a name into a login prompt.
   function ensureBootstrapUser() {
     if (data.users.length > 0) return;
-    var joani = { id: uid("user"), name: "Joani", accessLevel: "developer" };
+    var joani = { id: uid("user"), name: "Joani", accessLevel: "developer", pinHash: hashPin("1234") };
     data.users.push(joani);
     identity = { userId: joani.id };
     localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
@@ -3030,6 +3036,11 @@
     list.querySelectorAll("[data-edit-user]").forEach(function (b) { b.addEventListener("click", function () { openUserModal(b.getAttribute("data-edit-user")); }); });
     list.querySelectorAll("[data-del-user]").forEach(function (b) { b.addEventListener("click", function () { deleteUser(b.getAttribute("data-del-user")); }); });
   }
+  function hashPin(pin) {
+    var hash = 0;
+    for (var i = 0; i < pin.length; i++) { hash = (hash * 31 + pin.charCodeAt(i)) | 0; }
+    return String(hash);
+  }
   function openUserModal(id) {
     state.editing.userId = id || null;
     var dlg = document.getElementById("dlg-user");
@@ -3037,12 +3048,16 @@
     document.getElementById("dlg-user-title").textContent = u ? "Edit user" : "Add user";
     document.getElementById("f-user-name").value = u ? u.name : "";
     document.getElementById("f-user-accesslevel").value = u ? u.accessLevel : "readOnly";
+    document.getElementById("f-user-pin").value = "";
     dlg.showModal();
   }
   function saveUser() {
     var name = document.getElementById("f-user-name").value.trim();
     if (!name) return;
     var accessLevel = document.getElementById("f-user-accesslevel").value;
+    var pin = document.getElementById("f-user-pin").value.trim();
+    if (pin && !/^\d{4}$/.test(pin)) { alert("PIN must be exactly 4 digits."); return; }
+    if (!state.editing.userId && !pin) { alert("Please set a 4-digit PIN for this user."); return; }
     if (state.editing.userId) {
       var u = data.users.find(function (x) { return x.id === state.editing.userId; });
       if (u.accessLevel === "developer" && accessLevel !== "developer" && data.users.filter(function (x) { return x.accessLevel === "developer"; }).length <= 1) {
@@ -3051,13 +3066,14 @@
       }
       var oldName = u.name, oldAccess = u.accessLevel;
       u.name = name; u.accessLevel = accessLevel;
+      if (pin) u.pinHash = hashPin(pin);
       logChange("update", "user", name, "Updated team member" +
         (oldName !== name ? (' name to "' + name + '"') : "") +
         (oldAccess !== accessLevel ? (", access level to " + accessLevelLabel(accessLevel)) : ""));
       if (identity && identity.userId === u.id) { renderIdentityBadge(); }
     } else {
       if (data.users.some(function (x) { return x.name.toLowerCase() === name.toLowerCase(); })) { alert("That name is already in the list."); return; }
-      var newUser = { id: uid("user"), name: name, accessLevel: accessLevel };
+      var newUser = { id: uid("user"), name: name, accessLevel: accessLevel, pinHash: hashPin(pin) };
       data.users.push(newUser);
       logChange("create", "user", name, 'Added team member "' + name + '" (' + accessLevelLabel(newUser.accessLevel) + ")");
     }
@@ -4283,6 +4299,8 @@
     // fresh load or a logout) is just one click of Login rather than hunting for your name again.
     var lastUserId = localStorage.getItem(LAST_USER_KEY);
     if (lastUserId && data.users.some(function (u) { return u.id === lastUserId; })) sel.value = lastUserId;
+    document.getElementById("login-pin-input").value = "";
+    document.getElementById("login-pin-error").style.display = "none";
     document.getElementById("login-screen").style.display = "flex";
   }
   function hideLoginScreen() { document.getElementById("login-screen").style.display = "none"; }
@@ -4311,6 +4329,15 @@
     document.getElementById("login-btn").addEventListener("click", function () {
       var sel = document.getElementById("login-user-select");
       if (!sel.value) { alert("Please choose your name from the list."); return; }
+      var pinInput = document.getElementById("login-pin-input");
+      var pinError = document.getElementById("login-pin-error");
+      var userObj = data.users.find(function (u) { return u.id === sel.value; });
+      if (!userObj || hashPin(pinInput.value.trim()) !== userObj.pinHash) {
+        pinError.style.display = "";
+        pinInput.value = "";
+        return;
+      }
+      pinError.style.display = "none";
       loginAsUser(sel.value);
     });
   }
