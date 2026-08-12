@@ -305,7 +305,7 @@
      state.paraActiveTab). The tab bar itself is never hidden or gated — only the content of
      whichever panel is open reacts to there being nothing to compare yet. */
   .compare-tabs { display: flex; gap: 6px; padding: 12px 16px; background: var(--surface-page); }
-  .compare-tab-btn { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .compare-tab-btn { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border-strong); background: var(--surface-1); color: var(--text-secondary); border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
   .compare-tab-status { font-weight: 500; opacity: 0.85; }
   .compare-tab-btn.active { background: var(--cat-1); color: #fff; border-color: var(--cat-1); }
   .tab-status-controls { padding: 0 16px 14px; }
@@ -2299,10 +2299,6 @@
 
     var flagBadgeInline = pendingFlag ? flagBadgeHtml(pendingFlag.type, ' data-jump-to-flag-inline="' + p.id + '"') : "";
 
-    var wpMapKey = wpMappingStatus(p, cov);
-    var wpMapBadgeHtml = '<span class="status-dot-pill" title="WP extract coverage of the official text">' +
-      '<span class="status-dot status-dot--wp-' + wpMapKey + '"></span>' + WP_MAP_STATUS[wpMapKey].label + "</span>";
-
     var row = document.createElement("div");
     row.className = "para-row-collapsed";
     row.setAttribute("data-toggle-para", p.id);
@@ -2312,7 +2308,6 @@
       '<span class="para-row-spacer"></span>' +
       sourceBadgeHtml +
       flagBadgeInline +
-      wpMapBadgeHtml +
       '<span class="status-dot-pill" title="Handbook comparison status"><span class="status-dot status-dot--' + cov.status + '"></span>' + STATUS[cov.status].label + "</span>";
     item.appendChild(row);
 
@@ -2458,7 +2453,6 @@
 
     // ---- Tab 2 content: baseline (left) vs the current Draftworx WP procedure (right), with
     // the word-overlap % as the compliance signal. ----
-    var wpMapKey = wpMappingStatus(p, cov);
     var excelCoverageHtml;
     if (!p.text) excelCoverageHtml = '<div class="readonly-note">Import the handbook PDF first to compare this against the official text.</div>';
     else if (!cov.wpExtract) excelCoverageHtml = '<div class="not-mapped-warning">⚠ Not mapped in Excel — no WP extract captured for this paragraph yet.</div>';
@@ -2468,7 +2462,6 @@
     }
     var wpExtractColHtml = '<div class="compare-card compare-card--excel">' +
         '<div class="compare-card-header">Current WP Procedure <span class="compare-card-header-sub">— ' + escapeHtml(meth.name) + "</span></div>" +
-        '<span class="wp-status-pill"><span class="status-dot status-dot--wp-' + wpMapKey + '"></span>' + WP_MAP_STATUS[wpMapKey].label + "</span>" +
         '<input type="text" class="review-textarea" spellcheck="false" style="min-height:auto; padding:6px 8px;" data-wpref-field placeholder="WP reference (e.g. 10.02)" value="' + escapeAttr(cov.wpReference || "") + '"' + ro + ">" +
         '<textarea class="review-textarea" spellcheck="false" data-wp-field placeholder="Paste or type the working paper procedure/extract that addresses this paragraph..."' + ro + ">" + escapeHtml(cov.wpExtract || "") + "</textarea>" +
         excelCoverageHtml +
@@ -2478,7 +2471,7 @@
     var COMPARE_TABS = [
       { key: "handbook", label: "Handbook Compare", html: handbookPanelHtml, badge: null },
       { key: "excel", label: "Excel Compare", html: excelPanelHtml, badge: { dot: cov.excelStatus || "notSure", label: STATUS[cov.excelStatus || "notSure"].label } },
-      { key: "wp", label: "WP Compliance", html: wpPanelHtml, badge: { dot: "wp-" + wpMapKey, label: WP_MAP_STATUS[wpMapKey].label } }
+      { key: "wp", label: "WP Compliance", html: wpPanelHtml, badge: (cov.status !== "matched" || (cov.excelStatus || "notSure") !== "matched") ? { dot: "updateBody", label: "Needs Updating" } : null }
     ];
     var compareTabsBarHtml = '<div class="compare-tabs">' +
       COMPARE_TABS.map(function (t) {
@@ -3318,18 +3311,35 @@
     if (token === "i") return { depth: stack.length + 1, kind: "roman" };
     return null;
   }
+  // A different marker style used at one specific nesting point in the real handbook: a bare
+  // lowercase letter followed by a period ("a." "b.") instead of parenthesized ("(a)" "(b)") —
+  // but only ever nested directly one level below an already-open roman-numeral level (e.g.
+  // 25.d.iii.a). Never accepted anywhere else, and never used to open any OTHER kind of level.
+  function resolveBareLetterMarker(token, stack) {
+    var top = stack[stack.length - 1];
+    if (top && top.kind === "letter" && stack.length >= 2 && stack[stack.length - 2].kind === "roman" && token === nextLetter(top.value)) {
+      return { depth: stack.length, kind: "letter" };
+    }
+    if (top && top.kind === "roman" && token === "a") {
+      return { depth: stack.length + 1, kind: "letter" };
+    }
+    return null;
+  }
   // Splits one main paragraph's own body text into itself plus every (a)/(b)/(i)/(ii)/etc.
   // sub-paragraph nested inside it, producing the same dot-notation hierarchy the Excel WP
   // mapping already uses: 25 -> 25.a -> 25.d -> 25.d.i -> 25.d.iii.a.
   function extractSubParagraphs(mainNumber, body) {
-    var subMarkerRe = /\(([a-z]{1,3}|[ivxlcdm]{1,4})\)/gi;
+    var subMarkerRe = /\(([a-z]{1,3}|[ivxlcdm]{1,4})\)|\b([a-z])\.(?=\s)/gi;
     var raw = [], m;
-    while ((m = subMarkerRe.exec(body))) raw.push({ token: m[1].toLowerCase(), markerStart: m.index, textStart: m.index + m[0].length });
+    while ((m = subMarkerRe.exec(body))) {
+      if (m[1] !== undefined) raw.push({ token: m[1].toLowerCase(), bare: false, markerStart: m.index, textStart: m.index + m[0].length });
+      else raw.push({ token: m[2].toLowerCase(), bare: true, markerStart: m.index, textStart: m.index + m[0].length });
+    }
 
     var stack = [];
     var items = [{ ref: mainNumber, markerStart: -1, textStart: 0 }];
     raw.forEach(function (mk) {
-      var resolved = resolveSubMarker(mk.token, stack);
+      var resolved = mk.bare ? resolveBareLetterMarker(mk.token, stack) : resolveSubMarker(mk.token, stack);
       if (!resolved) return;
       stack.length = resolved.depth - 1;
       stack.push({ kind: resolved.kind, value: mk.token });
@@ -3347,7 +3357,8 @@
       // standard's real section in buildExtractionSections, for the same reason. Without this,
       // a large real PDF can produce hundreds of garbage "paragraphs" that silently overwrite
       // real ones with near-empty, repeated filler text.
-      if (chunk && chunk.split(" ").filter(Boolean).length >= 8 && !looksLikeDefinitionOnly(chunk)) result.push({ number: items[i].ref, text: chunk });
+      var hasNestedChild = (i + 1 < items.length) && items[i + 1].ref.indexOf(items[i].ref + ".") === 0;
+      if (chunk && (hasNestedChild || chunk.split(" ").filter(Boolean).length >= 8) && !looksLikeDefinitionOnly(chunk)) result.push({ number: items[i].ref, text: chunk });
     }
     return result;
   }
@@ -3776,6 +3787,7 @@
       var createdCount = 0, updatedCount = 0, flaggedCount = 0;
       var touchedStandards = []; // for the diagnostic log + so we can jump to a methodology that can actually see the result
       var skippedStandards = []; // standards found in the PDF but skipped because this button's step didn't apply to them
+      var unchangedStandards = []; // standards whose header WAS found, but this import made no changes (e.g. already up to date)
       var newPdfFlags = [];
       sections.forEach(function (sec) {
         // A standard with NO paragraph carrying a sourceDoc yet has never had a PDF baseline.
@@ -3829,6 +3841,7 @@
           flaggedCount += stdFlagged;
         }
         if (stdCreated || stdUpdated || stdFlagged) touchedStandards.push({ std: sec.std, created: stdCreated, updated: stdUpdated, flagged: stdFlagged, isNewVersion: hasBaseline });
+        else unchangedStandards.push(sec.std);
       });
       // A fresh PDF import's comparison fully supersedes whatever the previous PDF import
       // flagged, but must not clobber still-open flags raised by an Excel WP-mapping import.
@@ -3866,7 +3879,9 @@
       alert((mode === "baseline" ? "Baseline import — " : "New version comparison — ") + handbookName + ": " + createdCount + " new paragraph(s) baselined, " + updatedCount + " existing baseline paragraph(s) updated." +
         (flaggedCount ? " " + flaggedCount + " difference(s) flagged against the existing baseline — review and Accept/Dismiss each on Coverage Review (or Import & Compare)." : "") +
         (newlyCreatedStandards.length ? " Added " + newlyCreatedStandards.length + " new standard(s) found in the PDF: " + newlyCreatedStandards.map(function (s) { return s.code; }).join(", ") + " — double-check the family/title on each (Coverage Review > ✎ Edit standard)." : "") +
-        (touchedStandards.length ? " Standards touched: " + touchedStandards.map(function (t) { return t.std.code; }).join(", ") + "." : " No matching standard headers were found in this PDF, so nothing could be written — check the standard codes in Coverage Review match the handbook's wording.") +
+        (touchedStandards.length ? " Standards touched: " + touchedStandards.map(function (t) { return t.std.code; }).join(", ") + "." :
+          unchangedStandards.length ? " No changes found for: " + unchangedStandards.map(function (s) { return s.code; }).join(", ") + " — already up to date." :
+          " No matching standard headers were found in this PDF, so nothing could be written — check the standard codes in Coverage Review match the handbook's wording.") +
         (skippedStandards.length ? " Skipped (" + (mode === "baseline" ? "already baselined" : "no baseline yet") + "): " + skippedStandards.map(function (s) { return s.std.code; }).join(", ") + "." : "") +
         (notFoundStandards.length ? " Not found in this PDF: " + notFoundStandards.map(function (s) { return s.code; }).join(", ") + "." : "") +
         " Full details (per-standard counts and a text sample) were printed to the browser console.");
