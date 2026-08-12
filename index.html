@@ -1218,13 +1218,17 @@
     };
     var methodologyRenamed = false;
     d.methodologies.forEach(function (m) { if (renameMap[m.name]) { m.name = renameMap[m.name]; methodologyRenamed = true; } });
-    var hasProperty = d.methodologies.some(function (m) { return m.name === "Property Practitioner"; });
-    if (!hasProperty) {
+    // Guarantees all six default methodologies exist on every load, not just "Property
+    // Practitioner" (the one this used to check for) — if a methodology ever went missing
+    // (an old export predating it, data got out of sync, etc.), the import dialog's "Add a
+    // methodology first" guard could fire with none of the expected six actually present.
+    Object.keys(KNOWN_ALLOWED_FAMILIES).forEach(function (name) {
+      if (d.methodologies.some(function (m) { return m.name === name; })) return;
       var nextIdx = typeof d.nextColorIndex === "number" ? d.nextColorIndex : d.methodologies.length;
-      d.methodologies.push({ id: uid("meth"), name: "Property Practitioner", description: "Draftworx methodology pack for property practitioner trust account engagements.", colorIndex: nextIdx });
+      d.methodologies.push({ id: uid("meth"), name: name, description: DEFAULT_METHODOLOGY_DESCRIPTIONS[name] || "", colorIndex: nextIdx, allowedFamilies: KNOWN_ALLOWED_FAMILIES[name].slice(), standardIds: [] });
       d.nextColorIndex = nextIdx + 1;
       methodologyRenamed = true;
-    }
+    });
     if (!Array.isArray(d.auditLog)) d.auditLog = [];
     if (!Array.isArray(d.pendingFlags)) d.pendingFlags = [];
     if (!Array.isArray(d.changeLog)) d.changeLog = [];
@@ -3164,6 +3168,17 @@
     }
     return null;
   }
+  // A standard's code can be stored with or without a space between the letters and the number
+  // ("ISRE 2400" vs "ISRE2400") and the PDF itself might use either form regardless of which one
+  // is stored — so every header search tries BOTH variants rather than assuming they match.
+  // Codes with no digits at all (e.g. "LPC Rules") have nothing to split, so they're returned
+  // as-is, unchanged.
+  function headerSpaceVariants(header) {
+    var m = /^([A-Za-z]+)\s*(\d.*)$/.exec(header);
+    if (!m) return [header];
+    var withSpace = m[1] + " " + m[2], noSpace = m[1] + m[2];
+    return withSpace === noSpace ? [header] : [withSpace, noSpace];
+  }
   // standardsScope narrows WHICH standards this import is even allowed to write to (e.g. only
   // the ones picked for the methodology that's currently active when the import happens) —
   // allHeaders below still comes from the FULL standards list regardless, since spotting a
@@ -3171,19 +3186,25 @@
   // hasSiblingHeaderNearby uses to reject a listing/cross-reference, not a real chapter opening.
   function buildExtractionSections(fullText, standardsScope) {
     var lowerText = fullText.toLowerCase();
-    var allHeaders = data.standards.map(function (s) { return s.code.replace(/\s*\(.*?\)\s*$/, "").trim().toLowerCase(); });
+    var allHeaders = data.standards.reduce(function (acc, s) {
+      var header = s.code.replace(/\s*\(.*?\)\s*$/, "").trim();
+      return acc.concat(headerSpaceVariants(header).map(function (v) { return v.toLowerCase(); }));
+    }, []);
     var sections = [];
     (standardsScope || data.standards).forEach(function (std) {
       var header = std.code.replace(/\s*\(.*?\)\s*$/, "").trim();
-      var headerLower = header.toLowerCase();
-      var bestIdx = -1, bestScore = -Infinity, searchFrom = 0, idx;
-      while ((idx = lowerText.indexOf(headerLower, searchFrom)) !== -1) {
-        if (!looksLikeLineStart(fullText, idx)) { searchFrom = idx + headerLower.length; continue; }
-        var score = markerQualityAt(fullText, idx) - (hasSiblingHeaderNearby(lowerText, allHeaders, idx, headerLower, headerLower.length) ? 1000 : 0);
-        if (score > bestScore) { bestScore = score; bestIdx = idx; }
-        searchFrom = idx + headerLower.length;
-      }
-      if (bestIdx !== -1) sections.push({ std: std, index: bestIdx, header: header });
+      var bestIdx = -1, bestScore = -Infinity, bestHeader = header;
+      headerSpaceVariants(header).forEach(function (variant) {
+        var variantLower = variant.toLowerCase();
+        var searchFrom = 0, idx;
+        while ((idx = lowerText.indexOf(variantLower, searchFrom)) !== -1) {
+          if (!looksLikeLineStart(fullText, idx)) { searchFrom = idx + variantLower.length; continue; }
+          var score = markerQualityAt(fullText, idx) - (hasSiblingHeaderNearby(lowerText, allHeaders, idx, variantLower, variantLower.length) ? 1000 : 0);
+          if (score > bestScore) { bestScore = score; bestIdx = idx; bestHeader = variant; }
+          searchFrom = idx + variantLower.length;
+        }
+      });
+      if (bestIdx !== -1) sections.push({ std: std, index: bestIdx, header: bestHeader });
     });
     sections.sort(function (a, b) { return a.index - b.index; });
     sections.forEach(function (sec, i) {
@@ -3208,7 +3229,10 @@
   var STANDARD_CODE_SCAN_RE = /(?:ISA|ISAE|ISRS|ISRE)\s*\d{3,4}(?:\s*\([^)]{0,40}\))?|(?:LPC|PPRA)\s+Rules/gi;
   function discoverNewStandardsInPdf(fullText) {
     var lowerText = fullText.toLowerCase();
-    var allHeaders = data.standards.map(function (s) { return s.code.replace(/\s*\(.*?\)\s*$/, "").trim().toLowerCase(); });
+    var allHeaders = data.standards.reduce(function (acc, s) {
+      var header = s.code.replace(/\s*\(.*?\)\s*$/, "").trim();
+      return acc.concat(headerSpaceVariants(header).map(function (v) { return v.toLowerCase(); }));
+    }, []);
     var re = new RegExp(STANDARD_CODE_SCAN_RE.source, "gi");
     var seen = {}, m;
     while ((m = re.exec(fullText))) {
@@ -3907,8 +3931,15 @@
     return core + "." + bare;
   }
   function findOrCreateStandard(refInfo, rawCode) {
-    var target = (refInfo.prefix + " " + refInfo.num).trim().toLowerCase();
-    var existing = data.standards.find(function (s) { return s.code.toLowerCase().indexOf(target) === 0; });
+    // Same space/no-space tolerance as headerSpaceVariants — an existing standard's code might
+    // be stored either way, and this match shouldn't create a duplicate standard just because
+    // the spacing differs from however refInfo happened to be normalized.
+    var withSpace = (refInfo.prefix + " " + refInfo.num).trim().toLowerCase();
+    var noSpace = (refInfo.prefix + refInfo.num).trim().toLowerCase();
+    var existing = data.standards.find(function (s) {
+      var codeLower = s.code.toLowerCase();
+      return codeLower.indexOf(withSpace) === 0 || codeLower.indexOf(noSpace) === 0;
+    });
     if (existing) return existing;
     var std = { id: uid("std"), family: refInfo.family, code: normalizeWs(rawCode), title: "Imported standard — click ✎ to edit the title", paragraphs: [] };
     data.standards.push(std);
