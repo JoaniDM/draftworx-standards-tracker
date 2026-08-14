@@ -1505,7 +1505,7 @@
       var evictIds = sameKind.slice(0, sameKind.length - MAX_BACKUPS_PER_KIND).map(function (b) { return b.id; });
       list = list.filter(function (b) { return evictIds.indexOf(b.id) === -1; });
     }
-    saveBackupsList(list);
+    try { saveBackupsList(list); } catch (e) { console.log("[backup] could not save to the backups list (localStorage may be full):", e); }
     data.lastBackupAt = entry.createdAt;
     persist();
     writeBackupFileToChosenFolder(entry);
