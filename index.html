@@ -401,6 +401,22 @@
   .field input, .field select, .field textarea { border: 1px solid var(--border); background: var(--surface-2); border-radius: var(--radius); padding: 8px 10px; font-size: 13px; }
   .field textarea { resize: vertical; min-height: 60px; }
   .readonly-note { font-size: 12px; color: var(--text-muted); background: var(--surface-2); padding: 8px 10px; border-radius: var(--radius); }
+  .wp-save-block { margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+  .wp-save-confirm { font-size: 12px; font-weight: 600; color: var(--status-matched-text, #16a34a); }
+  .wp-signoff-block { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .wp-signoff-btn { align-self: flex-start; }
+  .wp-signoff-record { font-size: 12px; font-weight: 600; color: var(--status-matched-text, #16a34a); background: var(--surface-2); padding: 8px 10px; border-radius: var(--radius); }
+  .wp-signoff-record--stale { color: var(--status-updatebody-text, #b45309); }
+  .wp-history-block { margin-top: 6px; }
+  .wp-history-link { font-size: 12px; color: var(--cat-1); cursor: pointer; text-decoration: none; }
+  .wp-history-link:hover { text-decoration: underline; }
+  .wp-history-list { margin-top: 6px; display: flex; flex-direction: column; gap: 6px; }
+  .wp-history-item { font-size: 12px; background: var(--surface-2); border-radius: var(--radius); padding: 8px 10px; }
+  .wp-history-meta { color: var(--text-muted); font-size: 11px; margin-bottom: 3px; }
+  .wp-history-text { color: var(--text-secondary); white-space: pre-wrap; }
+  .wp-coverage-prompt { margin-top: 8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .wp-coverage-prompt-text { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+  .wp-coverage-prompt-buttons { display: flex; gap: 8px; }
 
   @media (max-width: 760px) {
     .sidebar { display: none; }
@@ -1261,6 +1277,9 @@
     paraExpanded: {},
     childrenExpanded: {},
     paraActiveTab: {},
+    wpHistoryExpanded: {},
+    wpCoveragePromptOpen: {},
+    wpSaveConfirmShown: {},
     editing: { methodologyId: null, standardId: null, messageParagraphId: null, messageReplyToId: null, pdfImportMode: null },
     messagesJumpTo: null
   };
@@ -2469,11 +2488,57 @@
       var overlapPct = textOverlapPct(p.text, cov.wpExtract);
       excelCoverageHtml = overlapPct === null ? "" : '<div class="readonly-note">~' + overlapPct + "% word overlap with the current baseline (rough guide only).</div>";
     }
+
+    // ---- Coverage prompt: shown once right after the WP extract textarea is edited and blurred,
+    // so the reviewer can immediately mark whether the new text now covers the requirement. ----
+    var wpCoveragePromptHtml = (canEditCoverage && state.wpCoveragePromptOpen[p.id])
+      ? '<div class="wp-coverage-prompt"><div class="wp-coverage-prompt-text">Does this WP extract now cover the requirement?</div>' +
+          '<div class="wp-coverage-prompt-buttons">' +
+            '<button type="button" class="btn" data-wp-coverage-yes="' + p.id + '">Yes</button>' +
+            '<button type="button" class="btn" data-wp-coverage-partial="' + p.id + '">Partial</button>' +
+            '<button type="button" class="btn" data-wp-coverage-no="' + p.id + '">No</button>' +
+          "</div></div>"
+      : "";
+
+    // ---- WP extract sign-off: records who confirmed the extract addresses this paragraph, and
+    // flags when the extract has since changed so it can be re-signed. ----
+    var signOff = cov.wpSignOff;
+    var extractChangedSinceSignOff = !!(signOff && signOff.textAtSignOff !== (cov.wpExtract || ""));
+    var signOffRecordHtml = signOff
+      ? '<div class="wp-signoff-record' + (extractChangedSinceSignOff ? " wp-signoff-record--stale" : "") + '">' +
+          (extractChangedSinceSignOff ? "⚠ " : "✓ ") + "Signed off by " + escapeHtml(signOff.name) + " on " + new Date(signOff.at).toLocaleString() +
+          (extractChangedSinceSignOff ? " — WP extract has changed since sign-off." : "") +
+        "</div>"
+      : "";
+    var signOffBtnHtml = canEditCoverage && (!signOff || extractChangedSinceSignOff)
+      ? '<button type="button" class="btn wp-signoff-btn" data-signoff-wp="' + p.id + '">' + (signOff ? "Re-sign" : "Sign Off") + "</button>"
+      : "";
+    var signOffBlockHtml = '<div class="wp-signoff-block">' + signOffBtnHtml + signOffRecordHtml + "</div>";
+
+    // ---- WP extract version history: every previous value, most-recent first, revealed on demand. ----
+    var wpHistory = cov.wpExtractHistory || [];
+    var wpHistoryLinkHtml = wpHistory.length
+      ? '<a href="#" class="wp-history-link" data-toggle-wp-history="' + p.id + '">' + (state.wpHistoryExpanded[p.id] ? "Hide history" : "View history (" + wpHistory.length + ")") + "</a>"
+      : "";
+    var wpHistoryListHtml = (state.wpHistoryExpanded[p.id] && wpHistory.length)
+      ? '<div class="wp-history-list">' + wpHistory.slice().reverse().map(function (v) {
+          return '<div class="wp-history-item"><div class="wp-history-meta">' + (v.updatedAt ? new Date(v.updatedAt).toLocaleString() : "Unknown date") + (v.updatedBy ? " · " + escapeHtml(v.updatedBy) : "") + '</div><div class="wp-history-text">' + escapeHtml(v.text || "") + "</div></div>";
+        }).join("") + "</div>"
+      : "";
+    var wpHistoryBlockHtml = wpHistoryLinkHtml ? '<div class="wp-history-block">' + wpHistoryLinkHtml + wpHistoryListHtml + "</div>" : "";
+
+    var wpSaveConfirmHtml = state.wpSaveConfirmShown[p.id] ? '<span class="wp-save-confirm">Saved!</span>' : "";
+    var wpSaveBlockHtml = canEditCoverage ? '<div class="wp-save-block"><button type="button" class="btn" data-save-wp="' + p.id + '">Save</button>' + wpSaveConfirmHtml + "</div>" : "";
+
     var wpExtractColHtml = '<div class="compare-card compare-card--excel">' +
         '<div class="compare-card-header">Current WP Procedure <span class="compare-card-header-sub">— ' + escapeHtml(meth.name) + "</span></div>" +
         '<input type="text" class="review-textarea" spellcheck="false" style="min-height:auto; padding:6px 8px;" data-wpref-field placeholder="WP reference (e.g. 10.02)" value="' + escapeAttr(cov.wpReference || "") + '"' + ro + ">" +
         '<textarea class="review-textarea" spellcheck="false" data-wp-field placeholder="Paste or type the working paper procedure/extract that addresses this paragraph..."' + ro + ">" + escapeHtml(cov.wpExtract || "") + "</textarea>" +
+        wpSaveBlockHtml +
         excelCoverageHtml +
+        wpCoveragePromptHtml +
+        signOffBlockHtml +
+        wpHistoryBlockHtml +
       "</div>";
     var wpPanelHtml = '<div class="compare-pair">' + baselineColHtml + wpExtractColHtml + "</div>";
 
@@ -2565,7 +2630,22 @@
         btn.addEventListener("click", function () { setExcelComparisonStatus(paraId, state.activeMethodologyId, btn.getAttribute("data-set-excel-status")); });
       });
       var wp = card.querySelector("[data-wp-field]");
-      if (wp) wp.addEventListener("blur", function () { saveCoverageField(paraId, state.activeMethodologyId, "wpExtract", wp.value, "Updated Draftworx WP extract text"); });
+      if (wp) wp.addEventListener("blur", function () {
+        if (wp.value !== wp.defaultValue && wp.value.trim() !== "") state.wpCoveragePromptOpen[paraId] = true;
+        saveCoverageField(paraId, state.activeMethodologyId, "wpExtract", wp.value, "Updated Draftworx WP extract text");
+      });
+      card.querySelectorAll("[data-save-wp]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          saveCoverageField(paraId, state.activeMethodologyId, "wpExtract", wp.value, "Updated Draftworx WP extract text");
+          state.wpCoveragePromptOpen[paraId] = true;
+          state.wpSaveConfirmShown[paraId] = true;
+          withScrollPreserved(renderCoverageView);
+          setTimeout(function () {
+            state.wpSaveConfirmShown[paraId] = false;
+            withScrollPreserved(renderCoverageView);
+          }, 1500);
+        });
+      });
       var wpref = card.querySelector("[data-wpref-field]");
       if (wpref) wpref.addEventListener("blur", function () { saveCoverageField(paraId, state.activeMethodologyId, "wpReference", wpref.value, "Updated WP reference"); });
       var notes = card.querySelector("[data-notes-field]");
@@ -2575,6 +2655,36 @@
       });
       card.querySelectorAll("[data-apply-flag]").forEach(function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); applyFlag(b.getAttribute("data-apply-flag"), "apply"); }); });
       card.querySelectorAll("[data-dismiss-flag]").forEach(function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); applyFlag(b.getAttribute("data-dismiss-flag"), "dismiss"); }); });
+      card.querySelectorAll("[data-signoff-wp]").forEach(function (b) {
+        b.addEventListener("click", function () { signOffWpExtract(paraId, state.activeMethodologyId); });
+      });
+      card.querySelectorAll("[data-toggle-wp-history]").forEach(function (a) {
+        a.addEventListener("click", function (e) {
+          e.preventDefault();
+          state.wpHistoryExpanded[paraId] = !state.wpHistoryExpanded[paraId];
+          withScrollPreserved(renderCoverageView);
+        });
+      });
+      card.querySelectorAll("[data-wp-coverage-yes]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          delete state.wpCoveragePromptOpen[paraId];
+          setCoverageStatus(paraId, state.activeMethodologyId, "matched");
+          withScrollPreserved(renderCoverageView);
+        });
+      });
+      card.querySelectorAll("[data-wp-coverage-partial]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          delete state.wpCoveragePromptOpen[paraId];
+          setCoverageStatus(paraId, state.activeMethodologyId, "updateBody");
+          withScrollPreserved(renderCoverageView);
+        });
+      });
+      card.querySelectorAll("[data-wp-coverage-no]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          delete state.wpCoveragePromptOpen[paraId];
+          withScrollPreserved(renderCoverageView);
+        });
+      });
     });
     container.querySelectorAll("[data-del-para]").forEach(function (b) { b.addEventListener("click", function () { deleteParagraph(b.getAttribute("data-del-para")); }); });
     // The bubble icon sits on the collapsed row itself, so it must stop the click from also
@@ -2657,8 +2767,21 @@
     var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
     var cov = ensureCoverageEntry(found.para, methodologyId);
     if ((cov[field] || "") === value) return;
+    // Keep the outgoing WP extract as a version-history entry before overwriting it.
+    if (field === "wpExtract" && cov.wpExtract) {
+      if (!Array.isArray(cov.wpExtractHistory)) cov.wpExtractHistory = [];
+      cov.wpExtractHistory.push({ text: cov.wpExtract, updatedAt: cov.updatedAt, updatedBy: cov.updatedBy });
+    }
     cov[field] = value; cov.source = "manual"; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
     logChange("update", "coverage", found.std.code + " " + found.para.number + " — " + (meth ? meth.name : ""), summaryLabel);
+    persist();
+    withScrollPreserved(renderCoverageView);
+  }
+  function signOffWpExtract(paragraphId, methodologyId) {
+    var found = findParagraph(paragraphId);
+    if (!found) return;
+    var cov = ensureCoverageEntry(found.para, methodologyId);
+    cov.wpSignOff = { name: identityName(), at: new Date().toISOString(), textAtSignOff: cov.wpExtract || "" };
     persist();
     withScrollPreserved(renderCoverageView);
   }
