@@ -132,10 +132,22 @@
 
   .notify-banner { display: none; align-items: center; gap: 12px; background: rgba(33,150,243,0.10); border: 1px solid var(--cat-1); color: var(--text-primary); padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
 
-  .dashboard-alert-panel { background: rgba(217,119,6,0.08); border: 2px solid var(--status-updatebody); border-left-width: 5px; border-radius: var(--radius); padding: 14px 18px; margin-bottom: 16px; box-shadow: var(--shadow); }
-  .dashboard-alert-panel h3 { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: var(--status-updatebody-text); }
-  .dashboard-alert-row { display: flex; align-items: center; gap: 10px; font-size: 12px; padding: 4px 0; }
-  .dashboard-alert-row strong { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; padding: 2px 7px; background: var(--status-updatebody); color: #fff; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .dashboard-greeting { margin-bottom: 20px; }
+  .dashboard-greeting h2 { margin: 0 0 4px; font-size: 22px; font-weight: 700; }
+  .dashboard-greeting p { margin: 0; font-size: 13px; color: var(--text-muted); }
+
+  .dashboard-action-cards { display: flex; gap: 16px; margin-bottom: 20px; }
+  .dashboard-action-card { flex: 1; background: var(--surface-1); border-radius: 12px; box-shadow: 0 2px 4px rgba(15,23,42,0.06), 0 8px 24px rgba(15,23,42,0.10); padding: 20px 22px; border-top: 4px solid var(--border-strong); }
+  .dashboard-action-card-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .dashboard-action-card-number { font-size: 34px; font-weight: 700; line-height: 1; margin-top: 8px; color: var(--text-primary); }
+  .dashboard-action-card-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; margin-bottom: 14px; }
+  .dashboard-action-card--amber { border-top-color: var(--status-updatebody); }
+  .dashboard-action-card--amber .dashboard-action-card-number { color: var(--status-updatebody); }
+  .dashboard-action-card--blue { border-top-color: var(--cat-1); }
+  .dashboard-action-card--blue .dashboard-action-card-number { color: var(--cat-1); }
+  .dashboard-action-card--purple { border-top-color: #7c3aed; }
+  .dashboard-action-card--purple .dashboard-action-card-number { color: #7c3aed; }
+  .hbar-count { width: 100px; text-align: right; font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
   .dash-stat-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
   .dash-stat-row .status-pill, .dash-stat-row .wp-status-pill { cursor: default; }
   .dash-stat-row .status-pill.active-updateBody { background: rgba(217,119,6,0.10); border-color: transparent; color: var(--status-updatebody-text); }
@@ -252,6 +264,9 @@
   .source-badge--pdf { color: var(--cat-4); border-color: var(--cat-4); }
   .source-badge--manual { color: var(--text-secondary); border-color: var(--border-strong); }
   .para-provenance { padding: 0 14px 8px 52px; margin-top: -6px; font-size: 11px; color: var(--text-muted); }
+  .bookmark-toggle-btn { flex-shrink: 0; border: none; background: none; padding: 6px 8px; font-size: 18px; line-height: 1; cursor: pointer; color: #c1c8d1; opacity: .7; transition: opacity .15s, color .15s; }
+  .bookmark-toggle-btn:hover { opacity: 1; }
+  .bookmark-toggle-btn.active { color: #f59e0b; opacity: 1; }
   .status-dot-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); flex-shrink: 0; white-space: nowrap; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
   .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
   .status-dot--matched { background: var(--status-matched); }
@@ -435,13 +450,41 @@
       <div class="notify-banner" id="notify-banner"></div>
 
       <section class="view active" id="view-dashboard">
-        <div class="page-head"><h2>Overview</h2><p id="overview-sub"></p><p id="overview-last-backup" style="margin:2px 0 0; font-size:12px; color:var(--text-muted);"></p></div>
-        <div id="dashboard-alerts"></div>
-        <div id="dashboard-panels"></div>
+        <div class="dashboard-greeting">
+          <h2 id="dashboard-greeting-text"></h2>
+          <p id="dashboard-greeting-role"></p>
+        </div>
+
+        <div class="dashboard-action-cards">
+          <div class="dashboard-action-card dashboard-action-card--amber">
+            <div class="dashboard-action-card-label">Handbook Changes</div>
+            <div class="dashboard-action-card-number" id="dashboard-card-handbook-count">0</div>
+            <div class="dashboard-action-card-sub">pending review</div>
+            <button type="button" class="btn" id="dashboard-card-handbook-btn">Review now</button>
+          </div>
+          <div class="dashboard-action-card dashboard-action-card--blue">
+            <div class="dashboard-action-card-label">Unread Messages</div>
+            <div class="dashboard-action-card-number" id="dashboard-card-messages-count">0</div>
+            <div class="dashboard-action-card-sub">waiting for you</div>
+            <button type="button" class="btn" id="dashboard-card-messages-btn">View messages</button>
+          </div>
+          <div class="dashboard-action-card dashboard-action-card--purple">
+            <div class="dashboard-action-card-label">Bookmarked</div>
+            <div class="dashboard-action-card-number" id="dashboard-card-bookmarked-count">0</div>
+            <div class="dashboard-action-card-sub">paragraphs to follow up</div>
+            <button type="button" class="btn" id="dashboard-card-bookmarked-btn">View bookmarks</button>
+          </div>
+        </div>
+
         <div class="family-panel activity-feed-panel">
-          <h3>Recent activity</h3>
+          <h3>Recent Activity</h3>
           <div class="fp-sub">The last 5 changes made by anyone, across every methodology. <a href="#" id="dashboard-view-full-audit-link">View full audit trail</a>.</div>
           <div id="dashboard-activity-list"></div>
+        </div>
+
+        <div class="family-panel">
+          <h3>Methodology Coverage</h3>
+          <div id="dashboard-panels"></div>
         </div>
       </section>
 
@@ -875,7 +918,7 @@
   };
   // "New Paragraph" isn't offered as a manual pill choice — it's only ever set automatically the
   // moment a PDF "new" flag is accepted, since manually claiming a paragraph is "new" makes no sense.
-  var STATUS_ORDER = ["matched", "updateBody", "renumbered", "removed", "notSure", "na", "bookmark"];
+  var STATUS_ORDER = ["matched", "updateBody", "renumbered", "removed", "notSure", "na"];
   // Best-effort carry-over so existing saved data doesn't just collapse to "Not Sure" wholesale —
   // approximate old compliance judgments as the closest new comparison state.
   var LEGACY_STATUS_MAP = {
@@ -1311,6 +1354,12 @@
           if (typeof c.source === "undefined") c.source = null;
           if (typeof c.excelStatus === "undefined") c.excelStatus = "notSure";
           if (LEGACY_STATUS_MAP[c.excelStatus]) c.excelStatus = LEGACY_STATUS_MAP[c.excelStatus];
+          // Bookmark used to be a comparison-status value (mutually exclusive with Matched/Update
+          // Body/etc). It's now an independent flag, so any paragraph previously left in that state
+          // carries the flag forward and falls back to Not Sure for its actual comparison status.
+          if (typeof c.bookmarked === "undefined") c.bookmarked = c.status === "bookmark" || c.excelStatus === "bookmark";
+          if (c.status === "bookmark") c.status = "notSure";
+          if (c.excelStatus === "bookmark") c.excelStatus = "notSure";
           if (!c.tickMarks || typeof c.tickMarks !== "object") c.tickMarks = emptyTickMarks();
           else TICK_MARK_DEFS.forEach(function (d) { if (typeof c.tickMarks[d.key] === "undefined") c.tickMarks[d.key] = false; });
           if (LEGACY_STATUS_MAP[c.status]) c.status = LEGACY_STATUS_MAP[c.status];
@@ -1698,7 +1747,10 @@
   function matchesFilters(std, para) {
     if (!isStandardApplicable(std, state.activeMethodologyId)) return false;
     if (state.familyFilter !== "all" && std.family !== state.familyFilter) return false;
-    if (state.statusFilter !== "all") {
+    if (state.statusFilter === "bookmark") {
+      var covBookmark = para.coverage[state.activeMethodologyId];
+      if (!covBookmark || !covBookmark.bookmarked) return false;
+    } else if (state.statusFilter !== "all") {
       var s = getStatus(para, state.activeMethodologyId);
       if (s !== state.statusFilter) return false;
     }
@@ -1721,15 +1773,20 @@
     data.standards.forEach(function (std) {
       if (familyFilter && std.family !== familyFilter) return;
       if (!isStandardApplicable(std, methodologyId)) return;
-      std.paragraphs.forEach(function (p) { counts[getStatus(p, methodologyId)]++; });
+      std.paragraphs.forEach(function (p) {
+        counts[getStatus(p, methodologyId)]++;
+        var cov = p.coverage[methodologyId];
+        if (cov && cov.bookmarked) counts.bookmark++;
+      });
     });
     return counts;
   }
   // The dashboard bar now reads "how much of the tracker is in sync with the last handbook
   // import" — % Matched — rather than a manual compliance judgment. N/A paragraphs are excluded
-  // from the denominator (not applicable to this methodology at all).
+  // from the denominator (not applicable to this methodology at all). Bookmark is a personal flag,
+  // not one of the mutually-exclusive comparison statuses, so it is never part of this sum.
   function coveragePercent(counts) {
-    var applicable = counts.matched + counts.updateBody + counts.newParagraph + counts.renumbered + counts.removed + counts.notSure + counts.bookmark;
+    var applicable = counts.matched + counts.updateBody + counts.newParagraph + counts.renumbered + counts.removed + counts.notSure;
     if (applicable === 0) return null;
     return Math.round((counts.matched / applicable) * 100);
   }
@@ -2040,95 +2097,38 @@
   }
 
   function renderDashboard() {
-    var totalParas = allParagraphs().length;
-    document.getElementById("overview-sub").textContent =
-      data.methodologies.length + " methodologies tracked across " + data.standards.length + " standards and " + totalParas + " paragraphs.";
-    document.getElementById("overview-last-backup").textContent =
-      "Last backup: " + (data.lastBackupAt ? new Date(data.lastBackupAt).toLocaleString() : "never — see the Developer tab or Settings > Download Backup.");
+    // ---- Greeting: time-of-day + the currently logged in user's name and role ----
+    var hour = new Date().getHours();
+    var greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    document.getElementById("dashboard-greeting-text").textContent = greeting + ", " + identityName();
+    document.getElementById("dashboard-greeting-role").textContent = accessLevelLabel(currentAccessLevel());
 
-    // ---- Alerts: aggregated across every methodology, only shown when there's something to flag ----
-    var alertsEl = document.getElementById("dashboard-alerts");
-    var flagRows = [], notMappedRows = [];
+    // ---- Three action cards, aggregated across every methodology from the exact same
+    // per-methodology calculations the dashboard already used. ----
+    var aggAttention = 0, aggBookmarked = 0;
     data.methodologies.forEach(function (meth) {
-      var openFlags = openHandbookFlagsFor(meth.id);
-      if (openFlags.length) flagRows.push({ meth: meth, count: openFlags.length });
-      var wpCounts = computeWpMappingCounts(meth.id);
-      if (wpCounts.notMapped) notMappedRows.push({ meth: meth, count: wpCounts.notMapped });
+      aggAttention += openHandbookFlagsFor(meth.id).length;
+      aggBookmarked += computeCounts(meth.id, null).bookmark;
     });
-    var alertBlocks = [];
-    if (flagRows.length) {
-      var totalFlags = flagRows.reduce(function (s, r) { return s + r.count; }, 0);
-      alertBlocks.push('<div class="dashboard-alert-row"><span>⚠ <strong>' + totalFlags + "</strong> handbook change(s) not yet accepted — " +
-        flagRows.map(function (r) { return escapeHtml(r.meth.name) + " (" + r.count + ")"; }).join(", ") + '</span><span class="spacer"></span>' +
-        '<button class="btn" data-goto-review="1">Review now</button></div>');
-    }
-    if (notMappedRows.length) {
-      var totalNotMapped = notMappedRows.reduce(function (s, r) { return s + r.count; }, 0);
-      alertBlocks.push('<div class="dashboard-alert-row"><span>⚠ <strong>' + totalNotMapped + "</strong> paragraph(s) with no Excel/WP mapping yet — " +
-        notMappedRows.map(function (r) { return escapeHtml(r.meth.name) + " (" + r.count + ")"; }).join(", ") + '</span><span class="spacer"></span>' +
-        '<button class="btn" data-goto-notmapped="1">Review now</button></div>');
-    }
-    if (alertBlocks.length) {
-      alertsEl.innerHTML = '<div class="dashboard-alert-panel"><h3>⚠ Needs attention</h3>' + alertBlocks.join("") + "</div>";
-      var reviewBtn = alertsEl.querySelector("[data-goto-review]");
-      if (reviewBtn) reviewBtn.addEventListener("click", function () { switchToView("review"); });
-      var notMappedBtn = alertsEl.querySelector("[data-goto-notmapped]");
-      if (notMappedBtn) notMappedBtn.addEventListener("click", function () {
-        state.wpStatusFilter = "notMapped";
-        var wpSel = document.getElementById("filter-wp-status");
-        if (wpSel) wpSel.value = "notMapped";
-        switchToView("coverage");
-      });
-    } else {
-      alertsEl.innerHTML = "";
-    }
+    document.getElementById("dashboard-card-handbook-count").textContent = aggAttention;
+    document.getElementById("dashboard-card-messages-count").textContent = totalUnreadMessageCount();
+    document.getElementById("dashboard-card-bookmarked-count").textContent = aggBookmarked;
 
+    // ---- Bottom row: one coverage bar per methodology (name, % matched, paragraph count) ----
     var panels = document.getElementById("dashboard-panels");
     panels.innerHTML = "";
     if (data.methodologies.length === 0) {
       panels.innerHTML = '<div class="empty-state">No methodologies yet. Add one from the sidebar to start tracking coverage.</div>';
     } else {
-      // One panel per methodology, limited to the families it actually uses — a methodology
-      // never shows a bar for a family it has nothing to do with, and a family it hasn't added
-      // any standards for yet shows a note instead of a dead 0% bar.
-      data.methodologies.forEach(function (meth) {
+      panels.innerHTML = data.methodologies.map(function (meth) {
         var methStds = applicableStandardsFor(meth);
-        var families = uniqueFamiliesInOrder(methStds);
         var methTotalParas = methStds.reduce(function (sum, s) { return sum + s.paragraphs.length; }, 0);
-        var counts = computeCounts(meth.id, null);
-        var wpCounts = computeWpMappingCounts(meth.id);
-        var overallPct = coveragePercent(counts);
-        var lastUpdated = lastUpdatedFor(meth.id);
-        var panel = document.createElement("div");
-        panel.className = "family-panel";
-        var rows = families.map(function (fam) {
-          var famStandardCount = methStds.filter(function (s) { return s.family === fam; }).length;
-          if (famStandardCount === 0) {
-            return '<div class="hbar-row"><div class="hbar-label" title="' + escapeAttr(fam) + '">' + escapeHtml(fam) + '</div><div class="fp-sub" style="flex:1; margin:0;">No standards added yet</div></div>';
-          }
-          var pct = coveragePercent(computeCounts(meth.id, fam));
-          return '<div class="hbar-row"><div class="hbar-label" title="' + escapeAttr(fam) + '">' + escapeHtml(fam) + '</div>' +
-            '<div class="hbar-track"><div class="hbar-fill" style="width:' + (pct || 0) + "%; background:" + catColor(meth.colorIndex) + ';"></div></div>' +
-            '<div class="hbar-pct">' + (pct === null ? "–" : pct + "%") + "</div></div>";
-        }).join("");
-        // Exactly the six statuses that matter for an at-a-glance dashboard read — the ones that
-        // mean "something needs a look" (Matched/Not Sure/N/A/Bookmark are the calm, nothing-to-
-        // do-yet states already summed up in the % Matched bar above).
-        var statChips = '<div class="dash-stat-row">' +
-          '<span class="wp-status-pill"><span class="status-dot status-dot--wp-covered"></span>Covered: ' + wpCounts.covered + "</span>" +
-          '<span class="wp-status-pill"><span class="status-dot status-dot--wp-partial"></span>Partial: ' + wpCounts.partial + "</span>" +
-          '<span class="wp-status-pill"><span class="status-dot status-dot--wp-notMapped"></span>Not Mapped: ' + wpCounts.notMapped + "</span>" +
-          '<span class="status-pill active-updateBody">' + STATUS.updateBody.icon + " Update Body: " + counts.updateBody + "</span>" +
-          '<span class="status-pill active-renumbered">' + STATUS.renumbered.icon + " Renumbered: " + counts.renumbered + "</span>" +
-          '<span class="status-pill active-removed">' + STATUS.removed.icon + " Not Found: " + counts.removed + "</span>" +
-          "</div>";
-        var lastUpdatedHtml = lastUpdated
-          ? '<div class="fp-sub" style="margin-top:2px;">Last updated ' + new Date(lastUpdated.updatedAt).toLocaleString() + (lastUpdated.updatedBy ? " by " + escapeHtml(lastUpdated.updatedBy) : "") + "</div>"
-          : '<div class="fp-sub" style="margin-top:2px;">No coverage edits yet</div>';
-        panel.innerHTML = "<h3>" + escapeHtml(meth.name) + " — " + (overallPct === null ? "–" : overallPct + "% Matched") + "</h3>" +
-          '<div class="fp-sub">' + escapeHtml(families.join(", ")) + " · " + methTotalParas + " paragraph(s) tracked</div>" + rows + statChips + lastUpdatedHtml;
-        panels.appendChild(panel);
-      });
+        var pct = coveragePercent(computeCounts(meth.id, null));
+        return '<div class="hbar-row"><div class="hbar-label" title="' + escapeAttr(meth.name) + '">' + escapeHtml(meth.name) + '</div>' +
+          '<div class="hbar-track"><div class="hbar-fill" style="width:' + (pct || 0) + "%; background:" + catColor(meth.colorIndex) + ';"></div></div>' +
+          '<div class="hbar-pct">' + (pct === null ? "–" : pct + "%") + "</div>" +
+          '<div class="hbar-count">' + methTotalParas + " paragraph(s)</div></div>";
+      }).join("");
     }
 
     // ---- Recent activity: last 5 changes, any user, any methodology ----
@@ -2282,7 +2282,7 @@
   // flag start expanded automatically so the user notices them. If it has sub-paragraphs, a
   // separate tree-toggle chevron reveals/hides them independently of the detail view.
   function renderParagraphCard(std, p, meth, depth, hasChildren, childrenOpen) {
-    var cov = p.coverage[meth.id] || { status: "notSure", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
+    var cov = p.coverage[meth.id] || { status: "notSure", bookmarked: false, wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
     var pendingFlag = (data.pendingFlags || []).find(function (fl) { return fl.status === "open" && fl.paragraphId === p.id; });
     var resolvedChange = pendingFlag ? null : latestChangeLogEntryFor(p.id);
     var isExpanded = state.paraExpanded.hasOwnProperty(p.id) ? state.paraExpanded[p.id] : !!pendingFlag;
@@ -2305,6 +2305,8 @@
 
     var flagBadgeInline = pendingFlag ? flagBadgeHtml(pendingFlag.type, ' data-jump-to-flag-inline="' + p.id + '"') : "";
 
+    var bookmarkToggleHtml = '<button type="button" class="bookmark-toggle-btn' + (cov.bookmarked ? " active" : "") + '" data-toggle-bookmark="' + p.id + '" title="' + (cov.bookmarked ? "Remove bookmark" : "Bookmark this paragraph") + '">⚑</button>';
+
     var row = document.createElement("div");
     row.className = "para-row-collapsed";
     row.setAttribute("data-toggle-para", p.id);
@@ -2314,6 +2316,7 @@
       '<span class="para-row-spacer"></span>' +
       sourceBadgeHtml +
       flagBadgeInline +
+      bookmarkToggleHtml +
       '<span class="status-dot-pill" title="Handbook comparison status"><span class="status-dot status-dot--' + cov.status + '"></span>' + STATUS[cov.status].label + "</span>";
     item.appendChild(row);
 
@@ -2528,6 +2531,12 @@
         withScrollPreserved(renderCoverageView);
       });
     });
+    container.querySelectorAll("[data-toggle-bookmark]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        toggleBookmark(btn.getAttribute("data-toggle-bookmark"), state.activeMethodologyId);
+      });
+    });
     container.querySelectorAll("[data-toggle-para]").forEach(function (row) {
       row.addEventListener("click", function () {
         var id = row.getAttribute("data-toggle-para");
@@ -2606,7 +2615,7 @@
   }
 
   function ensureCoverageEntry(para, methodologyId) {
-    if (!para.coverage[methodologyId]) para.coverage[methodologyId] = { status: "notSure", excelStatus: "notSure", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
+    if (!para.coverage[methodologyId]) para.coverage[methodologyId] = { status: "notSure", excelStatus: "notSure", bookmarked: false, wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
     return para.coverage[methodologyId];
   }
 
@@ -2619,6 +2628,14 @@
     var prevLabel = STATUS[cov.status].label;
     cov.status = status; cov.source = "manual"; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
     logChange("update", "coverage", found.std.code + " " + found.para.number + " — " + (meth ? meth.name : ""), "Status: " + prevLabel + " → " + STATUS[status].label);
+    persist();
+    withScrollPreserved(renderCoverageView);
+  }
+  function toggleBookmark(paragraphId, methodologyId) {
+    var found = findParagraph(paragraphId);
+    if (!found) return;
+    var cov = ensureCoverageEntry(found.para, methodologyId);
+    cov.bookmarked = !cov.bookmarked;
     persist();
     withScrollPreserved(renderCoverageView);
   }
@@ -4511,6 +4528,20 @@
     });
 
     document.getElementById("dashboard-view-full-audit-link").addEventListener("click", function (e) { e.preventDefault(); switchToView("audit"); });
+
+    document.getElementById("dashboard-card-handbook-btn").addEventListener("click", function () {
+      state.statusFilter = "updateBody";
+      var statusSel = document.getElementById("filter-status");
+      if (statusSel) statusSel.value = "updateBody";
+      switchToView("coverage");
+    });
+    document.getElementById("dashboard-card-messages-btn").addEventListener("click", function () { switchToView("messages"); });
+    document.getElementById("dashboard-card-bookmarked-btn").addEventListener("click", function () {
+      state.statusFilter = "bookmark";
+      var statusSel = document.getElementById("filter-status");
+      if (statusSel) statusSel.value = "bookmark";
+      switchToView("coverage");
+    });
 
     document.getElementById("clear-audit-btn").addEventListener("click", clearAuditTrail);
 
