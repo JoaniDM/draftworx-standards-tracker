@@ -704,6 +704,12 @@
           <div id="users-list"></div>
           <button class="btn primary" id="add-user-btn" style="margin-top:12px;">+ Add user</button>
         </div>
+        <div class="family-panel">
+          <h3>Working Papers</h3>
+          <div class="fp-sub">Working papers available per methodology — shown as a dropdown on the WP Compliance tab.</div>
+          <div id="workingpapers-list"></div>
+          <button class="btn primary" id="add-workingpaper-btn" style="margin-top:12px;">+ Add working paper</button>
+        </div>
       </section>
     </main>
   </div>
@@ -744,6 +750,23 @@
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
       <button type="button" class="btn primary" id="save-user-btn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-workingpaper">
+  <form method="dialog">
+    <div class="modal-head"><h3 id="dlg-workingpaper-title">Add working paper</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Methodology</label>
+        <select id="f-workingpaper-methodology"></select>
+      </div>
+      <div class="field"><label>WP Reference</label><input type="text" id="f-workingpaper-reference" placeholder="e.g. 10.05" required></div>
+      <div class="field"><label>WP Name</label><input type="text" id="f-workingpaper-name" placeholder="e.g. Planning Checklist" required></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="button" class="btn primary" id="save-workingpaper-btn">Save</button>
     </div>
   </form>
 </dialog>
@@ -1280,7 +1303,7 @@
     wpHistoryExpanded: {},
     wpCoveragePromptOpen: {},
     wpSaveConfirmShown: {},
-    editing: { methodologyId: null, standardId: null, messageParagraphId: null, messageReplyToId: null, pdfImportMode: null },
+    editing: { methodologyId: null, standardId: null, messageParagraphId: null, messageReplyToId: null, pdfImportMode: null, workingPaperId: null },
     messagesJumpTo: null
   };
   var STANDARD_COLLAPSE_THRESHOLD = 5;
@@ -1306,6 +1329,7 @@
     if (!Array.isArray(d.auditLog)) d.auditLog = [];
     if (!Array.isArray(d.pendingFlags)) d.pendingFlags = [];
     if (!Array.isArray(d.changeLog)) d.changeLog = [];
+    if (!Array.isArray(d.workingPapers)) d.workingPapers = [];
     if (typeof d.lastImport === "undefined") d.lastImport = null;
     if (typeof d.lastBackupAt === "undefined") d.lastBackupAt = null;
     if (!Array.isArray(d.messages)) d.messages = [];
@@ -2530,9 +2554,24 @@
     var wpSaveConfirmHtml = state.wpSaveConfirmShown[p.id] ? '<span class="wp-save-confirm">Saved!</span>' : "";
     var wpSaveBlockHtml = canEditCoverage ? '<div class="wp-save-block"><button type="button" class="btn" data-save-wp="' + p.id + '">Save</button>' + wpSaveConfirmHtml + "</div>" : "";
 
+    // ---- WP reference: a dropdown of working papers set up for this methodology in Settings,
+    // with a manual text fallback for references that aren't (yet) in that list. ----
+    var wpOptionsForMeth = (data.workingPapers || []).filter(function (wp) { return wp.methodologyId === meth.id; });
+    var matchingWp = wpOptionsForMeth.find(function (wp) { return wp.reference === (cov.wpReference || ""); });
+    var wpRefIsManual = !!(cov.wpReference && !matchingWp);
+    var wpRefSelectHtml = '<select class="review-textarea" style="min-height:auto; padding:6px 8px;" data-wpref-select' + ro + '>' +
+        '<option value=""' + (!cov.wpReference ? " selected" : "") + '>— No WP reference selected —</option>' +
+        wpOptionsForMeth.map(function (wp) {
+          return '<option value="' + escapeAttr(wp.reference) + '"' + (matchingWp && matchingWp.id === wp.id ? " selected" : "") + '>' + escapeHtml(wp.reference) + " — " + escapeHtml(wp.name) + "</option>";
+        }).join("") +
+        '<option value="__manual__"' + (wpRefIsManual ? " selected" : "") + '>Other / manual entry…</option>' +
+      "</select>";
+    var wpRefManualHtml = '<input type="text" class="review-textarea" spellcheck="false" style="min-height:auto; padding:6px 8px; margin-top:6px;' + (wpRefIsManual ? "" : " display:none;") + '" data-wpref-field placeholder="WP reference (e.g. 10.02)" value="' + escapeAttr(cov.wpReference || "") + '"' + ro + ">";
+
     var wpExtractColHtml = '<div class="compare-card compare-card--excel">' +
         '<div class="compare-card-header">Current WP Procedure <span class="compare-card-header-sub">— ' + escapeHtml(meth.name) + "</span></div>" +
-        '<input type="text" class="review-textarea" spellcheck="false" style="min-height:auto; padding:6px 8px;" data-wpref-field placeholder="WP reference (e.g. 10.02)" value="' + escapeAttr(cov.wpReference || "") + '"' + ro + ">" +
+        wpRefSelectHtml +
+        wpRefManualHtml +
         '<textarea class="review-textarea" spellcheck="false" data-wp-field placeholder="Paste or type the working paper procedure/extract that addresses this paragraph..."' + ro + ">" + escapeHtml(cov.wpExtract || "") + "</textarea>" +
         wpSaveBlockHtml +
         excelCoverageHtml +
@@ -2648,6 +2687,15 @@
       });
       var wpref = card.querySelector("[data-wpref-field]");
       if (wpref) wpref.addEventListener("blur", function () { saveCoverageField(paraId, state.activeMethodologyId, "wpReference", wpref.value, "Updated WP reference"); });
+      var wprefSelect = card.querySelector("[data-wpref-select]");
+      if (wprefSelect) wprefSelect.addEventListener("change", function () {
+        if (wprefSelect.value === "__manual__") {
+          if (wpref) { wpref.style.display = ""; wpref.focus(); }
+        } else {
+          if (wpref) wpref.style.display = "none";
+          saveCoverageField(paraId, state.activeMethodologyId, "wpReference", wprefSelect.value, "Updated WP reference");
+        }
+      });
       var notes = card.querySelector("[data-notes-field]");
       if (notes) notes.addEventListener("blur", function () { saveCoverageField(paraId, state.activeMethodologyId, "notes", notes.value, "Updated comparison notes"); });
       card.querySelectorAll("[data-tick-key]").forEach(function (cb) {
@@ -3161,21 +3209,87 @@
     var list = document.getElementById("users-list");
     var note = document.getElementById("users-list-note");
     if (note) note.textContent = "Add teammates and choose their access level below.";
-    if (data.users.length === 0) { list.innerHTML = '<div class="empty-state" style="padding:20px 0;">No team members yet. Add the first one below.</div>'; return; }
-    var countsByUser = {};
-    (data.auditLog || []).forEach(function (e) { countsByUser[e.user] = (countsByUser[e.user] || 0) + 1; });
-    list.innerHTML = data.users.map(function (u) {
-      var n = countsByUser[u.name] || 0;
-      return '<div class="methodology-row" style="padding:6px 0;">' +
-        '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(u.name) + '</span>' +
-        '<span class="count">' + accessLevelLabel(u.accessLevel) + " · " + n + " change" + (n === 1 ? "" : "s") + "</span></span>" +
-        '<span class="row-actions" style="display:flex;">' +
-          '<button class="icon-btn" data-edit-user="' + u.id + '" title="Edit">✎</button>' +
-          '<button class="icon-btn" data-del-user="' + u.id + '" title="Remove">✕</button>' +
-        "</span></div>";
+    if (data.users.length === 0) { list.innerHTML = '<div class="empty-state" style="padding:20px 0;">No team members yet. Add the first one below.</div>'; }
+    else {
+      var countsByUser = {};
+      (data.auditLog || []).forEach(function (e) { countsByUser[e.user] = (countsByUser[e.user] || 0) + 1; });
+      list.innerHTML = data.users.map(function (u) {
+        var n = countsByUser[u.name] || 0;
+        return '<div class="methodology-row" style="padding:6px 0;">' +
+          '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(u.name) + '</span>' +
+          '<span class="count">' + accessLevelLabel(u.accessLevel) + " · " + n + " change" + (n === 1 ? "" : "s") + "</span></span>" +
+          '<span class="row-actions" style="display:flex;">' +
+            '<button class="icon-btn" data-edit-user="' + u.id + '" title="Edit">✎</button>' +
+            '<button class="icon-btn" data-del-user="' + u.id + '" title="Remove">✕</button>' +
+          "</span></div>";
+      }).join("");
+      list.querySelectorAll("[data-edit-user]").forEach(function (b) { b.addEventListener("click", function () { openUserModal(b.getAttribute("data-edit-user")); }); });
+      list.querySelectorAll("[data-del-user]").forEach(function (b) { b.addEventListener("click", function () { deleteUser(b.getAttribute("data-del-user")); }); });
+    }
+    renderWorkingPapersSettings();
+  }
+  // ---------- Settings: working papers ----------
+  function renderWorkingPapersSettings() {
+    var list = document.getElementById("workingpapers-list");
+    if (!list) return;
+    if (!data.workingPapers || data.workingPapers.length === 0) {
+      list.innerHTML = '<div class="empty-state" style="padding:20px 0;">No working papers added yet.</div>';
+      return;
+    }
+    list.innerHTML = data.methodologies.map(function (meth) {
+      var wps = data.workingPapers.filter(function (wp) { return wp.methodologyId === meth.id; });
+      if (!wps.length) return "";
+      return '<div class="fp-sub" style="margin-top:10px; font-weight:600;">' + escapeHtml(meth.name) + "</div>" +
+        wps.map(function (wp) {
+          return '<div class="methodology-row" style="padding:6px 0;">' +
+            '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(wp.reference) + " — " + escapeHtml(wp.name) + '</span></span>' +
+            '<span class="row-actions" style="display:flex;">' +
+              '<button class="icon-btn" data-edit-workingpaper="' + wp.id + '" title="Edit">✎</button>' +
+              '<button class="icon-btn" data-del-workingpaper="' + wp.id + '" title="Remove">✕</button>' +
+            "</span></div>";
+        }).join("");
     }).join("");
-    list.querySelectorAll("[data-edit-user]").forEach(function (b) { b.addEventListener("click", function () { openUserModal(b.getAttribute("data-edit-user")); }); });
-    list.querySelectorAll("[data-del-user]").forEach(function (b) { b.addEventListener("click", function () { deleteUser(b.getAttribute("data-del-user")); }); });
+    list.querySelectorAll("[data-edit-workingpaper]").forEach(function (b) { b.addEventListener("click", function () { openWorkingPaperModal(b.getAttribute("data-edit-workingpaper")); }); });
+    list.querySelectorAll("[data-del-workingpaper]").forEach(function (b) { b.addEventListener("click", function () { deleteWorkingPaper(b.getAttribute("data-del-workingpaper")); }); });
+  }
+  function openWorkingPaperModal(id) {
+    state.editing.workingPaperId = id || null;
+    var dlg = document.getElementById("dlg-workingpaper");
+    var wp = id ? data.workingPapers.find(function (x) { return x.id === id; }) : null;
+    document.getElementById("dlg-workingpaper-title").textContent = wp ? "Edit working paper" : "Add working paper";
+    var methSel = document.getElementById("f-workingpaper-methodology");
+    methSel.innerHTML = data.methodologies.map(function (m) { return '<option value="' + escapeAttr(m.id) + '">' + escapeHtml(m.name) + "</option>"; }).join("");
+    methSel.value = wp ? wp.methodologyId : (state.activeMethodologyId || (data.methodologies[0] || {}).id || "");
+    document.getElementById("f-workingpaper-reference").value = wp ? wp.reference : "";
+    document.getElementById("f-workingpaper-name").value = wp ? wp.name : "";
+    dlg.showModal();
+  }
+  function saveWorkingPaper() {
+    var methodologyId = document.getElementById("f-workingpaper-methodology").value;
+    var reference = document.getElementById("f-workingpaper-reference").value.trim();
+    var name = document.getElementById("f-workingpaper-name").value.trim();
+    if (!methodologyId || !reference || !name) return;
+    var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
+    if (state.editing.workingPaperId) {
+      var wp = data.workingPapers.find(function (x) { return x.id === state.editing.workingPaperId; });
+      wp.methodologyId = methodologyId; wp.reference = reference; wp.name = name;
+      logChange("update", "workingPaper", reference + " — " + name, "Updated working paper for " + (meth ? meth.name : ""));
+    } else {
+      data.workingPapers.push({ id: uid("wp"), methodologyId: methodologyId, reference: reference, name: name });
+      logChange("create", "workingPaper", reference + " — " + name, "Added working paper for " + (meth ? meth.name : ""));
+    }
+    document.getElementById("dlg-workingpaper").close();
+    persist();
+    renderWorkingPapersSettings();
+  }
+  function deleteWorkingPaper(id) {
+    var wp = data.workingPapers.find(function (x) { return x.id === id; });
+    if (!wp) return;
+    if (!confirm('Remove working paper "' + wp.reference + " — " + wp.name + '"?')) return;
+    data.workingPapers = data.workingPapers.filter(function (x) { return x.id !== id; });
+    logChange("delete", "workingPaper", wp.reference + " — " + wp.name, 'Removed working paper "' + wp.reference + '"');
+    persist();
+    renderWorkingPapersSettings();
   }
   function hashPin(pin) {
     var hash = 0;
@@ -4507,14 +4621,17 @@
   }
 
   function applyGlobalRolePermissions() {
-    // Developer is the single top tier (there's no separate Admin) — Settings and Developer are
-    // both Developer-only; Read Only and Editor never see either tab at all.
+    // Developer is the single top tier (there's no separate Admin) — Developer tab stays
+    // Developer-only. Settings is now also reachable by Editor, since the Working Papers section
+    // there must be visible to Developer and Editor; Read Only still never sees either tab.
     var isDeveloper = can("developer");
+    var canSeeSettings = can("editor");
     var settingsTab = document.querySelector('.tab-btn[data-view="settings"]');
-    if (settingsTab) settingsTab.style.display = isDeveloper ? "" : "none";
+    if (settingsTab) settingsTab.style.display = canSeeSettings ? "" : "none";
     var developerTab = document.querySelector('.tab-btn[data-view="developer"]');
     if (developerTab) developerTab.style.display = isDeveloper ? "" : "none";
-    if (!isDeveloper && (state.view === "settings" || state.view === "developer")) switchToView("dashboard");
+    if (!isDeveloper && state.view === "developer") switchToView("dashboard");
+    if (!canSeeSettings && state.view === "settings") switchToView("dashboard");
   }
 
   var appInitialized = false;
@@ -4676,6 +4793,8 @@
 
     document.getElementById("add-user-btn").addEventListener("click", function () { openUserModal(null); });
     document.getElementById("save-user-btn").addEventListener("click", saveUser);
+    document.getElementById("add-workingpaper-btn").addEventListener("click", function () { openWorkingPaperModal(null); });
+    document.getElementById("save-workingpaper-btn").addEventListener("click", saveWorkingPaper);
     document.getElementById("send-message-btn").addEventListener("click", sendMessageFromModal);
 
     renderAll();
