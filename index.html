@@ -73,7 +73,8 @@
   #app { display: flex; flex-direction: column; height: 100vh; }
 
   .topbar { display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 56px; flex-shrink: 0; background: var(--header-bg); border-bottom: 1px solid var(--header-border); }
-  .topbar h1 { font-size: 15px; font-weight: 600; margin: 0; white-space: nowrap; color: var(--header-text); }
+  .topbar h1 { font-size: 15px; font-weight: 600; margin: 0; white-space: nowrap; color: var(--header-text); display: flex; align-items: center; }
+  .topbar h1::before { content: "DX"; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin-right: 10px; background: #5AB3E8; color: #fff; border-radius: 8px; font-size: 12px; font-weight: 700; letter-spacing: .02em; flex-shrink: 0; }
   .tabs { display: flex; gap: 4px; margin-left: 16px; flex-wrap: wrap; }
   .tab-btn { border: none; background: transparent; padding: 8px 12px; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--header-text-muted); white-space: nowrap; }
   .tab-btn:hover { background: var(--header-hover-bg); color: var(--header-text); }
@@ -131,9 +132,10 @@
 
   .notify-banner { display: none; align-items: center; gap: 12px; background: rgba(33,150,243,0.10); border: 1px solid var(--cat-1); color: var(--text-primary); padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
 
-  .dashboard-alert-panel { background: rgba(217,119,6,0.08); border: 1px solid var(--status-updatebody); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; }
-  .dashboard-alert-panel h3 { margin: 0 0 8px; font-size: 13px; }
+  .dashboard-alert-panel { background: rgba(217,119,6,0.08); border: 2px solid var(--status-updatebody); border-left-width: 5px; border-radius: var(--radius); padding: 14px 18px; margin-bottom: 16px; box-shadow: var(--shadow); }
+  .dashboard-alert-panel h3 { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: var(--status-updatebody-text); }
   .dashboard-alert-row { display: flex; align-items: center; gap: 10px; font-size: 12px; padding: 4px 0; }
+  .dashboard-alert-row strong { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; padding: 2px 7px; background: var(--status-updatebody); color: #fff; border-radius: 999px; font-size: 11px; font-weight: 700; }
   .dash-stat-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
   .dash-stat-row .status-pill, .dash-stat-row .wp-status-pill { cursor: default; }
   .activity-feed-panel .activity-row { display: flex; gap: 10px; font-size: 12px; padding: 7px 0; border-bottom: 1px solid var(--border); }
@@ -179,16 +181,16 @@
   /* Coverage Review's filter bar carries two independently-acting status filters (handbook
      comparison vs. WP coverage) — a bordered surface plus a small label over each dropdown
      makes it read as one clear filter panel instead of two anonymous selects lost in the row. */
-  .filter-bar--prominent { align-items: flex-end; background: var(--surface-1); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; }
+  .filter-bar--prominent { align-items: flex-end; background: var(--surface-1); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 14px; box-shadow: var(--shadow); gap: 20px; }
   .filter-group { display: flex; flex-direction: column; gap: 3px; }
   .filter-group label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
   .filter-bar--prominent select { min-width: 170px; }
 
-  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-  .pill-btn { border: 1px solid var(--border); background: var(--surface-1); border-radius: 999px; padding: 6px 14px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .pill-btn { border: 1px solid transparent; background: transparent; border-radius: 6px 6px 0 0; padding: 10px 18px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; border-bottom: 3px solid transparent; margin-bottom: -1px; }
   .pill-btn:hover { background: var(--surface-hover); }
-  .pill-btn.active { background: var(--cat-1); border-color: var(--cat-1); color: #fff; }
-  .pill-swatch { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; display: inline-block; }
+  .pill-btn.active { background: transparent !important; border-top-color: transparent !important; border-left-color: transparent !important; border-right-color: transparent !important; color: var(--text-primary) !important; font-weight: 600; }
+  .pill-swatch { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; display: inline-block; border: 1px solid var(--border-strong); }
 
   .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); }
   table.matrix { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 560px; }
@@ -214,7 +216,8 @@
      inside a .para-children wrapper (which also supplies the per-level indent). Each nesting
      level gets its own distinct background tint so hierarchy depth is unmistakable at a
      glance — the left border is a separate signal that always reflects the CURRENT status. */
-  .para-item { background: var(--level-0-bg) !important; border: 1px solid var(--border); border-left: 4px solid #6b7280 !important; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 8px; overflow: hidden; }
+  .para-item { background: var(--level-0-bg) !important; border: 1px solid var(--border); border-left: 3px solid #6b7280 !important; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 10px; overflow: hidden; transition: box-shadow .15s, border-color .15s; }
+  .para-item:hover { box-shadow: 0 2px 8px rgba(15,23,42,0.10); }
   .para-item.level-1 { background: var(--level-1-bg) !important; }
   .para-item.level-2 { background: var(--level-2-bg) !important; }
   .para-item.level-3 { background: var(--level-3-bg) !important; }
@@ -234,7 +237,7 @@
   .para-item.para-item--unset { border-left-color: #6b7280 !important; }
   .para-children { margin: 6px 0 0 20px; }
   .para-children > .para-item:last-child { margin-bottom: 0; }
-  .para-row-collapsed { display: flex; align-items: center; gap: 12px; padding: 10px 14px; cursor: pointer; }
+  .para-row-collapsed { display: flex; align-items: center; gap: 12px; padding: 13px 18px; cursor: pointer; }
   .para-row-collapsed:hover { background: var(--surface-hover); }
   .tree-toggle { flex-shrink: 0; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 6px; color: var(--cat-1); font-size: 18px; font-weight: 700; cursor: pointer; }
   .tree-toggle:hover { background: var(--surface-hover); filter: brightness(1.15); }
@@ -331,11 +334,11 @@
   .review-textarea { width: 100%; min-height: 84px; border: 1px solid var(--border); background: var(--surface-1); border-radius: 6px; padding: 8px; font-size: 13px; resize: vertical; }
   .status-pills { display: flex; gap: 6px; flex-wrap: wrap; }
   .status-pill { border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; font-size: 12px; cursor: pointer; background: var(--surface-1); }
-  .status-pill.active-matched { background: rgba(22,163,74,0.12); border-color: var(--status-matched); color: var(--status-matched-text); }
-  .status-pill.active-updateBody { background: rgba(217,119,6,0.12); border-color: var(--status-updatebody); color: var(--status-updatebody-text); }
+  .status-pill.active-matched { background: var(--status-matched); border-color: var(--status-matched); color: #fff; }
+  .status-pill.active-updateBody { background: var(--status-updatebody); border-color: var(--status-updatebody); color: #fff; }
   .status-pill.active-newParagraph { background: rgba(33,150,243,0.12); border-color: var(--status-newparagraph); color: var(--status-newparagraph-text); }
   .status-pill.active-renumbered { background: rgba(124,58,237,0.12); border-color: var(--status-renumbered); color: var(--status-renumbered-text); }
-  .status-pill.active-removed { background: rgba(220,38,38,0.12); border-color: var(--status-removed); color: var(--status-removed-text); }
+  .status-pill.active-removed { background: var(--status-removed); border-color: var(--status-removed); color: #fff; }
   .status-pill.active-notSure { background: var(--surface-2); border-color: var(--status-notsure); color: var(--status-notsure-text); }
   .status-pill.active-na { background: var(--surface-1); border-color: var(--border-strong); color: var(--status-na-text); }
   .status-pill.active-bookmark { background: rgba(8,145,178,0.12); border-color: var(--status-bookmark); color: var(--status-bookmark-text); }
