@@ -74,7 +74,7 @@
 
   .topbar { display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 68px; flex-shrink: 0; background: linear-gradient(135deg, #1a2744, #222222); border-bottom: 1px solid var(--header-border); }
   .topbar h1 { font-size: 15px; font-weight: 600; margin: 0; white-space: nowrap; color: var(--header-text); display: flex; align-items: center; }
-  .topbar h1::before { content: "DX"; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; margin-right: 12px; background: #5AB3E8; color: #fff; border-radius: 9px; font-size: 15px; font-weight: 700; letter-spacing: .02em; flex-shrink: 0; box-shadow: 0 0 16px rgba(90,179,232,0.65); }
+  .topbar h1::before { content: "DX"; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; margin-right: 12px; background: #5AB3E8; color: #fff; border-radius: 9px; font-size: 15px; font-weight: 700; letter-spacing: .02em; flex-shrink: 0; }
   .tabs { display: flex; gap: 4px; margin-left: 16px; flex-wrap: wrap; }
   .tab-btn { border: none; background: transparent; padding: 8px 12px; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--header-text-muted); white-space: nowrap; }
   .tab-btn:hover { background: var(--header-hover-bg); color: var(--header-text); }
@@ -138,6 +138,9 @@
   .dashboard-alert-row strong { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; padding: 2px 7px; background: var(--status-updatebody); color: #fff; border-radius: 999px; font-size: 11px; font-weight: 700; }
   .dash-stat-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
   .dash-stat-row .status-pill, .dash-stat-row .wp-status-pill { cursor: default; }
+  .dash-stat-row .status-pill.active-updateBody { background: rgba(217,119,6,0.10); border-color: transparent; color: var(--status-updatebody-text); }
+  .dash-stat-row .status-pill.active-renumbered { background: rgba(124,58,237,0.10); border-color: transparent; color: var(--status-renumbered-text); }
+  .dash-stat-row .status-pill.active-removed { background: rgba(220,38,38,0.10); border-color: transparent; color: var(--status-removed-text); }
   .activity-feed-panel .activity-row { display: flex; gap: 10px; font-size: 12px; padding: 7px 0; border-bottom: 1px solid var(--border); }
   .activity-feed-panel .activity-row:last-child { border-bottom: none; }
   .activity-feed-panel .activity-when { color: var(--text-muted); flex-shrink: 0; width: 130px; }
