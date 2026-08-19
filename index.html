@@ -334,8 +334,8 @@
   .tab-status-controls-label { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-bottom: 6px; }
   .compare-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px 16px; background: var(--surface-page); border-top: 1px solid var(--border); }
   .compare-pair .compare-card--baseline { background: #f0fff4; border: 1px solid #a8ddb5; }
-  .compare-pair .compare-card--historic { background: #fff7ed; }
-  .compare-pair .compare-card--excel { background: #fdf4ff; border: 1px solid #e9d5ff; }
+  .compare-pair .compare-card--historic { background: #fffbeb; border: 1px solid #f0c97a; }
+  .compare-pair .compare-card--excel { background: #fffbeb; border: 1px solid #f0c97a; }
   .compare-pair .compare-card--new { background: #fffbeb; border: 1px solid #f0c97a; }
   @media (max-width: 640px) {
     .compare-pair { grid-template-columns: 1fr; }
@@ -353,13 +353,13 @@
   .review-textarea { width: 100%; min-height: 84px; border: 1px solid var(--border); background: var(--surface-1); border-radius: 6px; padding: 8px; font-size: 13px; resize: vertical; }
   .status-pills { display: flex; gap: 6px; flex-wrap: wrap; }
   .status-pill { border: 1px solid var(--border); border-radius: 999px; padding: 8px 16px; font-size: 13px; cursor: pointer; background: var(--surface-1); }
-  .status-pill.active-matched { background: var(--status-matched); border-color: var(--status-matched); color: #fff; }
-  .status-pill.active-updateBody { background: var(--status-updatebody); border-color: var(--status-updatebody); color: #fff; }
-  .status-pill.active-newParagraph { background: rgba(33,150,243,0.12); border-color: var(--status-newparagraph); color: var(--status-newparagraph-text); }
-  .status-pill.active-renumbered { background: rgba(124,58,237,0.12); border-color: var(--status-renumbered); color: var(--status-renumbered-text); }
-  .status-pill.active-removed { background: var(--status-removed); border-color: var(--status-removed); color: #fff; }
-  .status-pill.active-notSure { background: var(--surface-2); border-color: var(--status-notsure); color: var(--status-notsure-text); }
-  .status-pill.active-na { background: var(--surface-1); border-color: var(--border-strong); color: var(--status-na-text); }
+  .status-pill.active-matched { background: var(--status-matched); border: none; color: #fff; }
+  .status-pill.active-updateBody { background: var(--status-updatebody); border: none; color: #fff; }
+  .status-pill.active-newParagraph { background: var(--status-newparagraph); border: none; color: #fff; }
+  .status-pill.active-renumbered { background: var(--status-renumbered); border: none; color: #fff; }
+  .status-pill.active-removed { background: var(--status-removed); border: none; color: #fff; }
+  .status-pill.active-notSure { background: var(--status-notsure); border: none; color: #fff; }
+  .status-pill.active-na { background: var(--status-na); border: none; color: #fff; }
   .status-pill.active-bookmark { background: rgba(8,145,178,0.12); border-color: var(--status-bookmark); color: var(--status-bookmark-text); }
   .save-caption { font-size: 11px; color: var(--text-muted); margin-top: auto; }
   .review-source-line { font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px; }
