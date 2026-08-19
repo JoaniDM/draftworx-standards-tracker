@@ -252,6 +252,9 @@
   .para-item.para-item--unset { border-left-color: #6b7280 !important; }
   .para-children { margin: 6px 0 0 20px; }
   .para-children > .para-item:last-child { margin-bottom: 0; }
+  .section-heading-divider { display: flex; align-items: center; gap: 10px; margin: 14px 0; }
+  .section-heading-line { flex: 1; height: 1px; background: var(--border-strong); }
+  .section-heading-text { font-size: 11px; font-weight: 600; color: var(--text-muted); font-variant: small-caps; letter-spacing: .04em; white-space: nowrap; }
   .para-row-collapsed { display: flex; align-items: center; gap: 12px; padding: 13px 18px; cursor: pointer; }
   .para-row-collapsed:hover { background: var(--surface-hover); }
   .tree-toggle { flex-shrink: 0; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 6px; color: var(--cat-1); font-size: 18px; font-weight: 700; cursor: pointer; }
@@ -2321,6 +2324,12 @@
     var children = tree.childrenOf[parentKey] || [];
     children.forEach(function (p) {
       if (!matchSet[p.id] && !forcedAncestors[p.number]) return;
+      if (p.sectionHeading) {
+        var divider = document.createElement("div");
+        divider.className = "section-heading-divider";
+        divider.innerHTML = '<span class="section-heading-line"></span><span class="section-heading-text">' + escapeHtml(p.sectionHeading) + '</span><span class="section-heading-line"></span>';
+        container.appendChild(divider);
+      }
       var hasChildren = !!(tree.childrenOf[p.number] && tree.childrenOf[p.number].length);
       var storedChildrenOpen = state.childrenExpanded.hasOwnProperty(p.id) ? state.childrenExpanded[p.id] : false;
       var childrenOpen = hasChildren && (!!forcedAncestors[p.number] || storedChildrenOpen);
@@ -3671,6 +3680,7 @@
     });
 
     var result = [];
+    var trailingHeading = null;
     for (var i = 0; i < items.length; i++) {
       var endPos = (i + 1 < items.length) ? items[i + 1].markerStart : body.length;
       var chunk = normalizeWs(body.substring(items[i].textStart, endPos));
@@ -3678,10 +3688,17 @@
       // into this text has no marker of its own to stop at, but a requirement's own last
       // "(Ref: Para. ...)" cross-reference does — cut everything after that reference's closing
       // bracket, so only whatever bled in after it (never part of the requirement itself) is
-      // removed.
+      // removed. Whatever gets cut off the very last item is the heading text carried forward to
+      // whichever paragraph comes next (see extractParagraphsFromSection).
       var refParaRe = /\(Ref:\s*Para\.[^)]*\)/gi, refMatch, lastRefEnd = -1;
       while ((refMatch = refParaRe.exec(chunk))) { lastRefEnd = refMatch.index + refMatch[0].length; }
-      if (lastRefEnd !== -1) chunk = chunk.slice(0, lastRefEnd).trim();
+      if (lastRefEnd !== -1) {
+        if (i === items.length - 1) {
+          var refRemainder = chunk.slice(lastRefEnd).trim();
+          if (refRemainder) trailingHeading = refRemainder;
+        }
+        chunk = chunk.slice(0, lastRefEnd).trim();
+      }
       // A real paragraph or sub-paragraph is always at least a short sentence. A running
       // header/footer repeated on every page (a document title, "Page 12", a standard number
       // used as a page stamp) can still be several words long, so the bar has to sit above that,
@@ -3692,6 +3709,7 @@
       var hasNestedChild = (i + 1 < items.length) && items[i + 1].ref.indexOf(items[i].ref + ".") === 0;
       if (chunk && (hasNestedChild || chunk.split(" ").filter(Boolean).length >= 8) && !looksLikeDefinitionOnly(chunk)) result.push({ number: items[i].ref, text: chunk });
     }
+    result.trailingHeading = trailingHeading;
     return result;
   }
   // A section heading (e.g. "Complying with Relevant Requirements") sitting between one
@@ -3744,6 +3762,10 @@
     }
 
     var found = [];
+    // A section heading found while trimming one paragraph's trailing text belongs to whichever
+    // paragraph comes right after it in the document, not the one it was trimmed off — carried
+    // over here and attached to the first item of the NEXT marker actually extracted.
+    var pendingHeading = null;
     for (var i = 0; i < markers.length; i++) {
       var marker = markers[i];
       if (marker.isAppMaterial) continue;
@@ -3758,9 +3780,19 @@
       var endIdx = (i + 1 < markers.length) ? markers[i + 1].headerStart : text.length;
       var body = text.substring(startIdx, endIdx);
       var headingCutoff = findHeadingCutoff(body);
-      if (headingCutoff !== -1) body = body.substring(0, headingCutoff);
+      var headingFromCutoff = null;
+      if (headingCutoff !== -1) {
+        var headingLineEnd = body.indexOf("\n", headingCutoff);
+        headingFromCutoff = body.slice(headingCutoff, headingLineEnd === -1 ? body.length : headingLineEnd).trim();
+        body = body.substring(0, headingCutoff);
+      }
 
-      extractSubParagraphs(numCore + "." + marker.num, body).forEach(function (item) { found.push(item); });
+      var subItems = extractSubParagraphs(numCore + "." + marker.num, body);
+      subItems.forEach(function (item, idx) {
+        if (idx === 0 && pendingHeading) item.sectionHeading = pendingHeading;
+        found.push(item);
+      });
+      pendingHeading = headingFromCutoff || subItems.trailingHeading || null;
     }
     return found;
   }
@@ -4170,6 +4202,7 @@
               existing.source = "pdf";
               existing.sourceDoc = handbookName;
               existing.sourceImportedAt = importedAt;
+              existing.sectionHeading = e.sectionHeading || null;
               updatedCount++; stdUpdated++;
             } else {
               ensureAncestorParagraphs(sec.std, e.number);
@@ -4182,7 +4215,7 @@
                 if (!methodologyIncludesStandard(m, sec.std)) return;
                 coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
               });
-              sec.std.paragraphs.push({ id: uid("para"), number: e.number, text: e.text, source: "pdf", sourceDoc: handbookName, sourceImportedAt: importedAt, coverage: coverage });
+              sec.std.paragraphs.push({ id: uid("para"), number: e.number, text: e.text, source: "pdf", sourceDoc: handbookName, sourceImportedAt: importedAt, sectionHeading: e.sectionHeading || null, coverage: coverage });
               createdCount++; stdCreated++;
             }
           });
