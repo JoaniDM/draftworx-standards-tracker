@@ -3674,6 +3674,14 @@
     for (var i = 0; i < items.length; i++) {
       var endPos = (i + 1 < items.length) ? items[i + 1].markerStart : body.length;
       var chunk = normalizeWs(body.substring(items[i].textStart, endPos));
+      // A trailing section heading (e.g. "Complying with Relevant Requirements") that ran on
+      // into this text has no marker of its own to stop at, but a requirement's own last
+      // "(Ref: Para. ...)" cross-reference does — cut everything after that reference's closing
+      // bracket, so only whatever bled in after it (never part of the requirement itself) is
+      // removed.
+      var refParaRe = /\(Ref:\s*Para\.[^)]*\)/gi, refMatch, lastRefEnd = -1;
+      while ((refMatch = refParaRe.exec(chunk))) { lastRefEnd = refMatch.index + refMatch[0].length; }
+      if (lastRefEnd !== -1) chunk = chunk.slice(0, lastRefEnd).trim();
       // A real paragraph or sub-paragraph is always at least a short sentence. A running
       // header/footer repeated on every page (a document title, "Page 12", a standard number
       // used as a page stamp) can still be several words long, so the bar has to sit above that,
