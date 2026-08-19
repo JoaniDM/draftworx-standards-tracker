@@ -3689,11 +3689,12 @@
   // A section heading (e.g. "Complying with Relevant Requirements") sitting between one
   // paragraph's text and the next paragraph's number has no marker of its own, so without this
   // it silently gets appended onto the preceding paragraph's body. Identified as a short line
-  // (under 8 words) that doesn't contain "shall" — returns the offset within body where such a
-  // line starts, or -1 if none is found before the next paragraph number. Only checked once the
-  // text so far already ends in sentence-ending punctuation, otherwise an ordinary short
-  // word-wrapped line in the middle of a still-open sentence (e.g. the last line of a paragraph
-  // before it hits its full stop) would be mistaken for a heading and cut the paragraph short.
+  // (under 6 words) that contains no "shall" and no digits — returns the offset within body
+  // where such a line starts, or -1 if none is found before the next paragraph number. Only
+  // checked once the text so far already ends in sentence-ending punctuation, otherwise an
+  // ordinary short word-wrapped line in the middle of a still-open sentence (e.g. the last line
+  // of a paragraph before it hits its full stop) would be mistaken for a heading and cut the
+  // paragraph short.
   function findHeadingCutoff(body) {
     var pos = 0;
     while (pos < body.length) {
@@ -3704,7 +3705,7 @@
         var precedingText = body.slice(0, pos).trim();
         var sentenceAlreadyEnded = !precedingText || /[.!?]$/.test(precedingText);
         var wordCount = trimmed.split(/\s+/).filter(Boolean).length;
-        if (sentenceAlreadyEnded && wordCount < 8 && !/\bshall\b/i.test(trimmed)) return pos;
+        if (sentenceAlreadyEnded && wordCount < 6 && !/\bshall\b/i.test(trimmed) && !/\d/.test(trimmed)) return pos;
       }
       if (nlIdx === -1) break;
       pos = nlIdx + 1;
@@ -4148,7 +4149,7 @@
         // Step 1 (baseline) only ever sets up standards that don't have one yet, and Step 2
         // (compare) only ever compares against a baseline that already exists. This keeps each
         // button's behaviour exactly what its label promises, instead of silently auto-detecting.
-        var hasBaseline = sec.std.paragraphs.some(function (p) { return !!p.sourceDoc; });
+        var hasBaseline = sec.std.paragraphs.some(function (p) { return !!p.sourceDoc && !!p.text; });
         if (mode === "baseline" && hasBaseline) { skippedStandards.push({ std: sec.std, reason: "already has a baseline — use Step 2 to compare a new version" }); return; }
         if (mode === "newVersion" && !hasBaseline) { skippedStandards.push({ std: sec.std, reason: "no baseline yet — use Step 1 first" }); return; }
         var extracted = extractParagraphsFromSection(sec);
