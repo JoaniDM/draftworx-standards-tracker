@@ -1655,6 +1655,14 @@
         if (!Array.isArray(meth.standardIds)) meth.standardIds = [];
       }
     });
+    // A standard has to already exist for a family before PDF/Excel import will scan for it (see
+    // buildExtractionSections) — so a Danger Zone clear must recreate a placeholder standard for
+    // each family the six default methodologies need, not just the methodologies themselves,
+    // otherwise import needs a manual "Add standard" step first.
+    ["ISA", "ISRE 2400", "ISAE 3000", "ISRS 4410", "ISRS 4400"].forEach(function (family) {
+      if (data.standards.some(function (s) { return s.family === family; })) return;
+      data.standards.push({ id: uid("std"), family: family, code: family, title: "Imported standard — click ✎ to edit the title", paragraphs: [] });
+    });
     data.methodologies.forEach(function (meth) {
       var resolvesToRealStandard = Array.isArray(meth.standardIds) && meth.standardIds.length
         ? data.standards.some(function (s) { return meth.standardIds.indexOf(s.id) !== -1; })
@@ -1702,6 +1710,13 @@
       data.lastImport = null;
       data.pendingFlags = (data.pendingFlags || []).filter(function (f) { return f.source !== "pdf"; });
       data.changeLog = (data.changeLog || []).filter(function (f) { return f.source !== "pdf"; });
+      data.standards.forEach(function (s) {
+        s.paragraphs.forEach(function (p) {
+          if (p.source !== "pdf") return;
+          p.text = "";
+          Object.keys(p.coverage || {}).forEach(function (mid) { p.coverage[mid].status = "notSure"; });
+        });
+      });
     });
   }
   function clearAllExcelImports() {
@@ -3671,6 +3686,31 @@
     }
     return result;
   }
+  // A section heading (e.g. "Complying with Relevant Requirements") sitting between one
+  // paragraph's text and the next paragraph's number has no marker of its own, so without this
+  // it silently gets appended onto the preceding paragraph's body. Identified as a short line
+  // (under 8 words) that doesn't contain "shall" — returns the offset within body where such a
+  // line starts, or -1 if none is found before the next paragraph number. Only checked once the
+  // text so far already ends in sentence-ending punctuation, otherwise an ordinary short
+  // word-wrapped line in the middle of a still-open sentence (e.g. the last line of a paragraph
+  // before it hits its full stop) would be mistaken for a heading and cut the paragraph short.
+  function findHeadingCutoff(body) {
+    var pos = 0;
+    while (pos < body.length) {
+      var nlIdx = body.indexOf("\n", pos);
+      var lineEnd = nlIdx === -1 ? body.length : nlIdx;
+      var trimmed = body.slice(pos, lineEnd).replace(/\r$/, "").trim();
+      if (trimmed) {
+        var precedingText = body.slice(0, pos).trim();
+        var sentenceAlreadyEnded = !precedingText || /[.!?]$/.test(precedingText);
+        var wordCount = trimmed.split(/\s+/).filter(Boolean).length;
+        if (sentenceAlreadyEnded && wordCount < 8 && !/\bshall\b/i.test(trimmed)) return pos;
+      }
+      if (nlIdx === -1) break;
+      pos = nlIdx + 1;
+    }
+    return -1;
+  }
   function extractParagraphsFromSection(sec) {
     var numCoreMatch = sec.std.code.match(/\d+/);
     var numCore = numCoreMatch ? numCoreMatch[0] : "";
@@ -3708,6 +3748,8 @@
       var startIdx = marker.start;
       var endIdx = (i + 1 < markers.length) ? markers[i + 1].headerStart : text.length;
       var body = text.substring(startIdx, endIdx);
+      var headingCutoff = findHeadingCutoff(body);
+      if (headingCutoff !== -1) body = body.substring(0, headingCutoff);
 
       extractSubParagraphs(numCore + "." + marker.num, body).forEach(function (item) { found.push(item); });
     }
@@ -3755,14 +3797,16 @@
 
     // Renumber detection: a "missing" paragraph and a "new" paragraph that share essentially
     // the same CONTENT are the same requirement moved to a different number, not one removed
-    // and an unrelated one added — pair them up by exact normalized text match.
+    // and an unrelated one added — pair them up by an 80% word-overlap similarity threshold
+    // (textOverlapPct), not just an exact match, so lightly-reworded renumbers are still caught.
     var usedNew = {};
     missingCandidates = missingCandidates.filter(function (p) {
       var normOld = normalizeWs(p.text).toLowerCase();
       if (!normOld) { statusUpdates.push({ paragraphId: p.id, autoStatus: "removed" }); return true; }
       for (var i = 0; i < newCandidates.length; i++) {
         if (usedNew[i]) continue;
-        if (normalizeWs(newCandidates[i].text).toLowerCase() === normOld) {
+        var overlapPct = textOverlapPct(p.text, newCandidates[i].text);
+        if (overlapPct !== null && overlapPct >= 80) {
           usedNew[i] = true;
           flags.push({ id: uid("flag"), type: "renumbered", standardId: sec.std.id, standardCode: sec.std.code, paragraphId: p.id, number: newCandidates[i].number, oldNumber: p.number, oldText: p.text, newText: newCandidates[i].text, status: "open", source: "pdf", handbookName: handbookName, importedAt: importedAt });
           statusUpdates.push({ paragraphId: p.id, autoStatus: "renumbered" });
