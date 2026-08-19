@@ -263,6 +263,7 @@
   .source-badge--excel { color: var(--status-matched-text); border-color: var(--status-matched); }
   .source-badge--pdf { color: var(--cat-4); border-color: var(--cat-4); }
   .source-badge--manual { color: var(--text-secondary); border-color: var(--border-strong); }
+  .source-badge--indev { color: var(--status-updatebody-text); border-color: var(--status-updatebody); }
   .para-provenance { padding: 0 14px 8px 52px; margin-top: -6px; font-size: 11px; color: var(--text-muted); }
   .bookmark-toggle-btn { flex-shrink: 0; border: none; background: none; padding: 6px 8px; font-size: 18px; line-height: 1; cursor: pointer; color: #94a3b8; opacity: 1; transition: opacity .15s, color .15s; }
   .bookmark-toggle-btn:hover { opacity: 1; }
@@ -402,6 +403,7 @@
   .field textarea { resize: vertical; min-height: 60px; }
   .readonly-note { font-size: 12px; color: var(--text-muted); background: var(--surface-2); padding: 8px 10px; border-radius: var(--radius); }
   .wp-save-block { margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+  .wp-dev-block { margin-top: 8px; }
   .wp-save-confirm { font-size: 12px; font-weight: 600; color: var(--status-matched-text, #16a34a); }
   .wp-signoff-block { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
   .wp-signoff-btn { align-self: flex-start; }
@@ -2179,7 +2181,7 @@
     var recent = (data.auditLog || []).slice(0, 5);
     activityList.innerHTML = recent.length
       ? recent.map(function (e) {
-          return '<div class="activity-row"><div class="activity-when">' + new Date(e.timestamp).toLocaleString() + "</div><div><strong>" + escapeHtml(e.user) + "</strong> — " + escapeHtml(e.summary || e.label) + "</div></div>";
+          return '<div class="activity-row"><div class="activity-when">' + new Date(e.timestamp).toLocaleString() + "</div><div><strong>" + escapeHtml(e.user) + "</strong> " + escapeHtml(e.summary || e.label) + "</div></div>";
         }).join("")
       : '<div class="fp-sub" style="margin:0;">No activity yet.</div>';
   }
@@ -2239,7 +2241,7 @@
       head.innerHTML =
         '<span class="head-toggle-area" data-toggle-std="' + std.id + '">' +
           '<span class="collapse-chevron">' + (isCollapsed ? "▸" : "▾") + "</span>" +
-          '<span class="head-toggle-text">' + escapeHtml(std.code) + " — " + escapeHtml(std.title) +
+          '<span class="head-toggle-text">' + escapeHtml(std.code) + " " + escapeHtml(std.title) +
             '<span class="fam-badge">' + escapeHtml(std.family) + "</span>" +
             '<span class="fam-badge">' + matchingParas.length + " paragraph" + (matchingParas.length === 1 ? "" : "s") + "</span>" +
           "</span>" +
@@ -2348,6 +2350,8 @@
 
     var flagBadgeInline = pendingFlag ? flagBadgeHtml(pendingFlag.type, ' data-jump-to-flag-inline="' + p.id + '"') : "";
 
+    var inDevBadgeHtml = cov.inDevelopment ? '<span class="source-badge source-badge--indev">In Development</span>' : "";
+
     var bookmarkToggleHtml = '<button type="button" class="bookmark-toggle-btn' + (cov.bookmarked ? " active" : "") + '" data-toggle-bookmark="' + p.id + '" title="' + (cov.bookmarked ? "Remove bookmark" : "Bookmark this paragraph") + '">⚑</button>';
 
     var row = document.createElement("div");
@@ -2358,6 +2362,7 @@
       '<span class="para-ref no-case">' + escapeHtml(formatParaNumber(p.number)) + "</span>" +
       '<span class="para-row-spacer"></span>' +
       sourceBadgeHtml +
+      inDevBadgeHtml +
       flagBadgeInline +
       bookmarkToggleHtml +
       '<span class="status-dot-pill" title="Handbook comparison status"><span class="status-dot status-dot--' + cov.status + '"></span>' + STATUS[cov.status].label + "</span>";
@@ -2430,7 +2435,7 @@
       ? escapeHtml(p.sourceDoc) + (p.sourceImportedAt ? " · imported " + new Date(p.sourceImportedAt).toLocaleDateString() : "")
       : (p.source === "excel" ? "Excel WP mapping import" : p.source === "pdf" ? "PDF import" : "Manual entry");
     var baselineColHtml = '<div class="compare-card compare-card--baseline">' +
-        '<div class="compare-card-header">Current Handbook Baseline <span class="compare-card-header-sub">— ' + baselineSourceSub + "</span></div>" +
+        '<div class="compare-card-header">Current Handbook Baseline <span class="compare-card-header-sub">' + baselineSourceSub + "</span></div>" +
         '<div class="review-text" spellcheck="false">' + officialTextHtml(p) + "</div>" +
         '<div class="readonly-note">Read-only — only updated by accepting a New Version difference in the Handbook Compare tab.' + (canManageStructure ? ' <button class="icon-btn" data-del-para="' + p.id + '" style="margin-left:4px;">✕ Delete paragraph</button>' : "") + "</div>" +
       "</div>";
@@ -2447,7 +2452,7 @@
         : escapeHtml(comparisonRecord.handbookName || "PDF import") + (comparisonRecord.importedAt ? " · imported " + new Date(comparisonRecord.importedAt).toLocaleDateString() : "");
       var newVersionBody = pendingFlag ? flagBodyHtml(pendingFlag) : resolvedChangeBodyHtml(resolvedChange);
       newVersionColHtml = '<div class="compare-card compare-card--new">' +
-          '<div class="compare-card-header">New Version <span class="compare-card-header-sub">— ' + newVersionSourceSub + "</span></div>" +
+          '<div class="compare-card-header">New Version <span class="compare-card-header-sub">' + newVersionSourceSub + "</span></div>" +
           newVersionBody +
         "</div>";
     } else {
@@ -2485,7 +2490,7 @@
       }
     }
     var historicColHtml = '<div class="compare-card compare-card--historic">' +
-        '<div class="compare-card-header">Official Standard Text <span class="compare-card-header-sub">— from Excel, when mapped</span></div>' +
+        '<div class="compare-card-header">Official Standard Text <span class="compare-card-header-sub">from Excel, when mapped</span></div>' +
         '<div class="review-text" spellcheck="false">' + historicBodyHtml + "</div>" +
         historicNoteHtml +
       "</div>";
@@ -2551,6 +2556,19 @@
       : "";
     var wpHistoryBlockHtml = wpHistoryLinkHtml ? '<div class="wp-history-block">' + wpHistoryLinkHtml + wpHistoryListHtml + "</div>" : "";
 
+    // ---- In-development tracking: a personal/team flag for a WP extract that's still being
+    // worked on, with an optional Jira reference and a one-click way to finish up. ----
+    var wpJiraFieldHtml = cov.inDevelopment
+      ? '<div class="field" style="margin-top:6px;"><label style="font-size:11px;">Jira reference</label><input type="text" class="review-textarea" style="min-height:auto; padding:6px 8px;" data-jira-field placeholder="e.g. DX-1234" value="' + escapeAttr(cov.jiraReference || "") + '"' + ro + "></div>"
+      : "";
+    var wpMarkDoneBtnHtml = (canEditCoverage && cov.inDevelopment)
+      ? '<button type="button" class="btn" data-mark-wp-done="' + p.id + '" style="margin-top:6px;">Mark as Done</button>'
+      : "";
+    var wpDevBlockHtml = '<div class="wp-dev-block"><label class="tick-mark-item"><input type="checkbox" data-wp-indev-checkbox' + (cov.inDevelopment ? " checked" : "") + ro + "> Currently being developed</label>" +
+      wpJiraFieldHtml +
+      wpMarkDoneBtnHtml +
+      "</div>";
+
     var wpSaveConfirmHtml = state.wpSaveConfirmShown[p.id] ? '<span class="wp-save-confirm">Saved!</span>' : "";
     var wpSaveBlockHtml = canEditCoverage ? '<div class="wp-save-block"><button type="button" class="btn" data-save-wp="' + p.id + '">Save</button>' + wpSaveConfirmHtml + "</div>" : "";
 
@@ -2562,14 +2580,14 @@
     var wpRefSelectHtml = '<select class="review-textarea" style="min-height:auto; padding:6px 8px;" data-wpref-select' + ro + '>' +
         '<option value=""' + (!cov.wpReference ? " selected" : "") + '>— No WP reference selected —</option>' +
         wpOptionsForMeth.map(function (wp) {
-          return '<option value="' + escapeAttr(wp.reference) + '"' + (matchingWp && matchingWp.id === wp.id ? " selected" : "") + '>' + escapeHtml(wp.reference) + " — " + escapeHtml(wp.name) + "</option>";
+          return '<option value="' + escapeAttr(wp.reference) + '"' + (matchingWp && matchingWp.id === wp.id ? " selected" : "") + '>' + escapeHtml(wp.reference) + ". " + escapeHtml(wp.name) + "</option>";
         }).join("") +
         '<option value="__manual__"' + (wpRefIsManual ? " selected" : "") + '>Other / manual entry…</option>' +
       "</select>";
     var wpRefManualHtml = '<input type="text" class="review-textarea" spellcheck="false" style="min-height:auto; padding:6px 8px; margin-top:6px;' + (wpRefIsManual ? "" : " display:none;") + '" data-wpref-field placeholder="WP reference (e.g. 10.02)" value="' + escapeAttr(cov.wpReference || "") + '"' + ro + ">";
 
     var wpExtractColHtml = '<div class="compare-card compare-card--excel">' +
-        '<div class="compare-card-header">Current WP Procedure <span class="compare-card-header-sub">— ' + escapeHtml(meth.name) + "</span></div>" +
+        '<div class="compare-card-header">Current WP Procedure <span class="compare-card-header-sub">' + escapeHtml(meth.name) + "</span></div>" +
         wpRefSelectHtml +
         wpRefManualHtml +
         '<textarea class="review-textarea" spellcheck="false" data-wp-field placeholder="Paste or type the working paper procedure/extract that addresses this paragraph..."' + ro + ">" + escapeHtml(cov.wpExtract || "") + "</textarea>" +
@@ -2578,6 +2596,7 @@
         wpCoveragePromptHtml +
         signOffBlockHtml +
         wpHistoryBlockHtml +
+        wpDevBlockHtml +
       "</div>";
     var wpPanelHtml = '<div class="compare-pair">' + baselineColHtml + wpExtractColHtml + "</div>";
 
@@ -2608,7 +2627,7 @@
     // genuinely apply to the paragraph as a whole, not to any one comparison.
     detail.innerHTML =
       compareTabsBarHtml + activeTabHtml +
-      '<div class="status-section"><h4>' + escapeHtml(std.code) + " · " + escapeHtml(meth.name) + " — Reviewer Notes</h4>" +
+      '<div class="status-section"><h4>' + escapeHtml(std.code) + " · " + escapeHtml(meth.name) + " Reviewer Notes</h4>" +
         tickMarksHtml +
         '<textarea class="review-textarea" data-notes-field placeholder="Comparison notes, reviewer commentary, evidence reference..."' + ro + ">" + escapeHtml(cov.notes || "") + "</textarea>" +
         '<div class="save-caption" data-caption>' + savedCaption + "</div>" +
@@ -2698,6 +2717,15 @@
       });
       var notes = card.querySelector("[data-notes-field]");
       if (notes) notes.addEventListener("blur", function () { saveCoverageField(paraId, state.activeMethodologyId, "notes", notes.value, "Updated comparison notes"); });
+      var jiraField = card.querySelector("[data-jira-field]");
+      if (jiraField) jiraField.addEventListener("blur", function () { saveCoverageField(paraId, state.activeMethodologyId, "jiraReference", jiraField.value, "Updated Jira reference"); });
+      var indevCheckbox = card.querySelector("[data-wp-indev-checkbox]");
+      if (indevCheckbox) indevCheckbox.addEventListener("change", function () {
+        saveCoverageField(paraId, state.activeMethodologyId, "inDevelopment", indevCheckbox.checked, indevCheckbox.checked ? "Marked WP extract as currently being developed" : "Unmarked WP extract as currently being developed");
+      });
+      card.querySelectorAll("[data-mark-wp-done]").forEach(function (b) {
+        b.addEventListener("click", function () { markWpDevelopmentDone(paraId, state.activeMethodologyId, wp ? wp.value : undefined); });
+      });
       card.querySelectorAll("[data-tick-key]").forEach(function (cb) {
         cb.addEventListener("change", function () { saveTickMark(paraId, state.activeMethodologyId, cb.getAttribute("data-tick-key"), cb.checked); });
       });
@@ -2785,7 +2813,7 @@
     if (cov.status === status) return;
     var prevLabel = STATUS[cov.status].label;
     cov.status = status; cov.source = "manual"; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
-    logChange("update", "coverage", found.std.code + " " + found.para.number + " — " + (meth ? meth.name : ""), "Status: " + prevLabel + " → " + STATUS[status].label);
+    logChange("update", "coverage", found.std.code + " " + found.para.number + " " + (meth ? meth.name : ""), "Status: " + prevLabel + " → " + STATUS[status].label);
     persist();
     withScrollPreserved(renderCoverageView);
   }
@@ -2805,7 +2833,7 @@
     if (cov.excelStatus === status) return;
     var prevLabel = STATUS[cov.excelStatus || "notSure"].label;
     cov.excelStatus = status; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
-    logChange("update", "coverage", found.std.code + " " + found.para.number + " — " + (meth ? meth.name : ""), "Excel comparison status: " + prevLabel + " → " + STATUS[status].label);
+    logChange("update", "coverage", found.std.code + " " + found.para.number + " " + (meth ? meth.name : ""), "Excel comparison status: " + prevLabel + " → " + STATUS[status].label);
     persist();
     withScrollPreserved(renderCoverageView);
   }
@@ -2821,7 +2849,7 @@
       cov.wpExtractHistory.push({ text: cov.wpExtract, updatedAt: cov.updatedAt, updatedBy: cov.updatedBy });
     }
     cov[field] = value; cov.source = "manual"; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
-    logChange("update", "coverage", found.std.code + " " + found.para.number + " — " + (meth ? meth.name : ""), summaryLabel);
+    logChange("update", "coverage", found.std.code + " " + found.para.number + " " + (meth ? meth.name : ""), summaryLabel);
     persist();
     withScrollPreserved(renderCoverageView);
   }
@@ -2830,6 +2858,27 @@
     if (!found) return;
     var cov = ensureCoverageEntry(found.para, methodologyId);
     cov.wpSignOff = { name: identityName(), at: new Date().toISOString(), textAtSignOff: cov.wpExtract || "" };
+    persist();
+    withScrollPreserved(renderCoverageView);
+  }
+  function markWpDevelopmentDone(paragraphId, methodologyId, latestExtractText) {
+    var found = findParagraph(paragraphId);
+    if (!found) return;
+    var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
+    var cov = ensureCoverageEntry(found.para, methodologyId);
+    var jiraRef = cov.jiraReference || "";
+    var latestExtract = typeof latestExtractText === "string" ? latestExtractText : (cov.wpExtract || "");
+    if (latestExtract !== cov.wpExtract && cov.wpExtract) {
+      if (!Array.isArray(cov.wpExtractHistory)) cov.wpExtractHistory = [];
+      cov.wpExtractHistory.push({ text: cov.wpExtract, updatedAt: cov.updatedAt, updatedBy: cov.updatedBy });
+    }
+    cov.wpExtract = latestExtract;
+    cov.inDevelopment = false;
+    cov.jiraReference = "";
+    cov.status = "matched";
+    cov.source = "manual"; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
+    logChange("update", "coverage", found.std.code + " " + found.para.number + " " + (meth ? meth.name : ""),
+      identityName() + " marked WP development done" + (jiraRef ? " (Jira " + jiraRef + ")" : "") + " — WP extract updated and status set to Matched.");
     persist();
     withScrollPreserved(renderCoverageView);
   }
@@ -2842,7 +2891,7 @@
     if (cov.tickMarks[tickKey] === value) return;
     cov.tickMarks[tickKey] = value; cov.source = "manual"; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
     var label = (TICK_MARK_DEFS.find(function (d) { return d.key === tickKey; }) || {}).label || tickKey;
-    logChange("update", "coverage", found.std.code + " " + found.para.number + " — " + (meth ? meth.name : ""), (value ? "Checked" : "Unchecked") + ' "' + label + '"');
+    logChange("update", "coverage", found.std.code + " " + found.para.number + " " + (meth ? meth.name : ""), (value ? "Checked" : "Unchecked") + ' "' + label + '"');
     persist();
     withScrollPreserved(renderCoverageView);
   }
@@ -3173,7 +3222,7 @@
     backupsList.innerHTML = backups.length
       ? backups.map(function (b) {
           return '<div class="backup-row"><span class="backup-kind">' + escapeHtml(BACKUP_KIND_LABELS[b.kind] || b.kind) + "</span>" +
-            '<span class="backup-label">' + new Date(b.createdAt).toLocaleString() + " — " + formatBytes(b.sizeBytes) + "</span>" +
+            '<span class="backup-label">' + new Date(b.createdAt).toLocaleString() + " " + formatBytes(b.sizeBytes) + "</span>" +
             '<button class="btn" data-restore-backup="' + escapeAttr(b.id) + '">Restore</button></div>';
         }).join("")
       : '<div class="fp-sub" style="margin:0;">No backups yet — one is taken automatically once a day, or before any Danger Zone action.</div>';
@@ -3242,7 +3291,7 @@
       return '<div class="fp-sub" style="margin-top:10px; font-weight:600;">' + escapeHtml(meth.name) + "</div>" +
         wps.map(function (wp) {
           return '<div class="methodology-row" style="padding:6px 0;">' +
-            '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(wp.reference) + " — " + escapeHtml(wp.name) + '</span></span>' +
+            '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(wp.reference) + " " + escapeHtml(wp.name) + '</span></span>' +
             '<span class="row-actions" style="display:flex;">' +
               '<button class="icon-btn" data-edit-workingpaper="' + wp.id + '" title="Edit">✎</button>' +
               '<button class="icon-btn" data-del-workingpaper="' + wp.id + '" title="Remove">✕</button>' +
@@ -3273,10 +3322,10 @@
     if (state.editing.workingPaperId) {
       var wp = data.workingPapers.find(function (x) { return x.id === state.editing.workingPaperId; });
       wp.methodologyId = methodologyId; wp.reference = reference; wp.name = name;
-      logChange("update", "workingPaper", reference + " — " + name, "Updated working paper for " + (meth ? meth.name : ""));
+      logChange("update", "workingPaper", reference + " " + name, "Updated working paper for " + (meth ? meth.name : ""));
     } else {
       data.workingPapers.push({ id: uid("wp"), methodologyId: methodologyId, reference: reference, name: name });
-      logChange("create", "workingPaper", reference + " — " + name, "Added working paper for " + (meth ? meth.name : ""));
+      logChange("create", "workingPaper", reference + " " + name, "Added working paper for " + (meth ? meth.name : ""));
     }
     document.getElementById("dlg-workingpaper").close();
     persist();
@@ -3285,9 +3334,9 @@
   function deleteWorkingPaper(id) {
     var wp = data.workingPapers.find(function (x) { return x.id === id; });
     if (!wp) return;
-    if (!confirm('Remove working paper "' + wp.reference + " — " + wp.name + '"?')) return;
+    if (!confirm('Remove working paper "' + wp.reference + " " + wp.name + '"?')) return;
     data.workingPapers = data.workingPapers.filter(function (x) { return x.id !== id; });
-    logChange("delete", "workingPaper", wp.reference + " — " + wp.name, 'Removed working paper "' + wp.reference + '"');
+    logChange("delete", "workingPaper", wp.reference + " " + wp.name, 'Removed working paper "' + wp.reference + '"');
     persist();
     renderWorkingPapersSettings();
   }
@@ -4571,7 +4620,7 @@
   // only which user this browser is currently attributed to.
   function showLoginScreen() {
     var sel = document.getElementById("login-user-select");
-    sel.innerHTML = data.users.map(function (u) { return '<option value="' + escapeAttr(u.id) + '">' + escapeHtml(u.name) + " — " + escapeHtml(accessLevelLabel(u.accessLevel)) + "</option>"; }).join("");
+    sel.innerHTML = data.users.map(function (u) { return '<option value="' + escapeAttr(u.id) + '">' + escapeHtml(u.name) + " " + escapeHtml(accessLevelLabel(u.accessLevel)) + "</option>"; }).join("");
     // Pre-select whoever logged in last on this browser, so returning to this screen (after a
     // fresh load or a logout) is just one click of Login rather than hunting for your name again.
     var lastUserId = localStorage.getItem(LAST_USER_KEY);
