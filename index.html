@@ -4356,6 +4356,14 @@
         }
         if (!found) console.log("[missing standard diag]", code, "— NOT FOUND anywhere in this PDF's extracted text");
       });
+      [/AGREEING THE TERMS OF AUDIT/g, /ISA\s*210\n/g, /Agreeing the Terms of Audit Engagements\n\s*\d+\./g].forEach(function (re) {
+        var m, found = false;
+        while ((m = re.exec(fullText))) {
+          found = true;
+          console.log("[isa210 section search]", re.source, "— context:", JSON.stringify(fullText.substring(Math.max(0, m.index - 300), m.index) + "[[[" + m[0] + "]]]" + fullText.substring(m.index + m[0].length, m.index + m[0].length + 300)));
+        }
+        if (!found) console.log("[isa210 section search]", re.source, "— NOT FOUND anywhere in this PDF's extracted text");
+      });
       var handbookName = normalizeWs(document.getElementById("f-pdf-handbook-name").value) || file.name;
       var importedAt = new Date().toISOString();
       // A standard has to already exist for buildExtractionSections to know to look for it — if
