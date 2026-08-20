@@ -682,6 +682,7 @@
             <button class="btn danger" id="danger-clear-standards-btn">Clear All Standards</button>
             <button class="btn danger" id="danger-clear-paragraphs-btn">Clear All Paragraphs</button>
             <button class="btn danger" id="danger-clear-pdf-imports-btn">Clear All PDF Imports</button>
+            <button class="btn danger" id="danger-clear-pdf-imports-one-meth-btn">Clear PDF Imports for one methodology</button>
             <button class="btn danger" id="danger-clear-excel-imports-btn">Clear All Excel Imports</button>
             <button class="btn danger" id="danger-clear-messages-btn">Clear All Messages</button>
             <button class="btn danger" id="danger-clear-audit-btn">Clear Audit Trail</button>
@@ -821,6 +822,22 @@
     </div>
     <div class="modal-foot">
       <button type="button" class="btn primary" data-close>Close</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-clear-pdf-imports-one-meth">
+  <form method="dialog">
+    <div class="modal-head"><h3>Clear PDF Imports for one methodology</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-body">
+      <div class="readonly-note">Choose which methodology to clear PDF imports for. Only that methodology's standards are affected.</div>
+      <div class="field"><label>Methodology</label>
+        <select id="f-clear-pdf-imports-one-meth-methodology"></select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="button" class="btn danger" id="confirm-clear-pdf-imports-one-meth-btn">Clear</button>
     </div>
   </form>
 </dialog>
@@ -1883,6 +1900,31 @@
       data.pendingFlags = (data.pendingFlags || []).filter(function (f) { return f.source !== "pdf"; });
       data.changeLog = (data.changeLog || []).filter(function (f) { return f.source !== "pdf"; });
       data.standards.forEach(function (s) {
+        s.paragraphs.forEach(function (p) {
+          if (p.source !== "pdf") return;
+          p.text = "";
+          Object.keys(p.coverage || {}).forEach(function (mid) { p.coverage[mid].status = "notSure"; });
+        });
+      });
+    });
+  }
+  function openClearPdfImportsOneMethDialog() {
+    var sel = document.getElementById("f-clear-pdf-imports-one-meth-methodology");
+    sel.innerHTML = data.methodologies.map(function (m) { return '<option value="' + escapeAttr(m.id) + '">' + escapeHtml(m.name) + "</option>"; }).join("");
+    if (state.activeMethodologyId && data.methodologies.some(function (m) { return m.id === state.activeMethodologyId; })) sel.value = state.activeMethodologyId;
+    document.getElementById("dlg-clear-pdf-imports-one-meth").showModal();
+  }
+  function clearPdfImportsForMethodology() {
+    var methodologyId = document.getElementById("f-clear-pdf-imports-one-meth-methodology").value;
+    var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
+    if (!meth) return;
+    document.getElementById("dlg-clear-pdf-imports-one-meth").close();
+    var stdIds = applicableStandardsFor(meth).map(function (s) { return s.id; });
+    runDangerAction("PDF Imports for " + meth.name, function () {
+      data.pendingFlags = (data.pendingFlags || []).filter(function (f) { return f.source !== "pdf" || stdIds.indexOf(f.standardId) === -1; });
+      data.changeLog = (data.changeLog || []).filter(function (f) { return f.source !== "pdf" || stdIds.indexOf(f.standardId) === -1; });
+      data.standards.forEach(function (s) {
+        if (stdIds.indexOf(s.id) === -1) return;
         s.paragraphs.forEach(function (p) {
           if (p.source !== "pdf") return;
           p.text = "";
@@ -3700,8 +3742,9 @@
     var sections = [];
     (standardsScope || data.standards).forEach(function (std) {
       var header = std.code.replace(/\s*\(.*?\)\s*$/, "").trim();
+      var variants = headerSpaceVariants(header);
       var bestIdx = -1, bestScore = -Infinity, bestHeader = header;
-      headerSpaceVariants(header).forEach(function (variant) {
+      variants.forEach(function (variant) {
         var variantLower = variant.toLowerCase();
         var searchFrom = 0, idx;
         while ((idx = lowerText.indexOf(variantLower, searchFrom)) !== -1) {
@@ -3711,6 +3754,7 @@
           searchFrom = idx + variantLower.length;
         }
       });
+      console.log("[PDF scanner diag]", std.code, "— searched for:", variants.join(" / "), "—", bestIdx !== -1 ? ("FOUND (matched \"" + bestHeader + "\" at index " + bestIdx + ")") : "NOT FOUND");
       if (bestIdx !== -1) sections.push({ std: std, index: bestIdx, header: bestHeader });
     });
     sections.sort(function (a, b) { return a.index - b.index; });
@@ -3733,7 +3777,7 @@
   // for standard-code-shaped strings (ISA 315, ISRE 2400, LPC Rules, ...) independently of
   // what's currently in the tracker, and create the standard when one genuinely has real
   // requirement-paragraph content following it (not just a passing cross-reference).
-  var STANDARD_CODE_SCAN_RE = /(?:ISA|ISAE|ISRS|ISRE)\s*\d{3,4}(?:\s*\([^)]{0,40}\))?|(?:LPC|PPRA)\s+Rules/gi;
+  var STANDARD_CODE_SCAN_RE = /(?:ISA|ISAE|ISRS|ISRE)\s*\d{3,4}(?:\s*\([^)]{0,40}\))?|ISQM\s*\d{1,2}(?:\s*\([^)]{0,40}\))?|(?:LPC|PPRA)\s+Rules/gi;
   function discoverNewStandardsInPdf(fullText) {
     var lowerText = fullText.toLowerCase();
     var allHeaders = data.standards.reduce(function (acc, s) {
@@ -4488,7 +4532,7 @@
   function expectedColorTier(depth) { return depth <= 1 ? "dark-green" : depth === 2 ? "light-green" : "white"; }
 
   function parseStandardReference(ref) {
-    var m = String(ref).match(/^\s*(ISA|ISAE|ISRS|ISRE|LPC|PPRA)\s*(?:RULES)?\s*([\d.]+)?/i);
+    var m = String(ref).match(/^\s*(ISA|ISAE|ISRS|ISRE|ISQM|LPC|PPRA)\s*(?:RULES)?\s*([\d.]+)?/i);
     if (!m) return null;
     var prefix = m[1].toUpperCase();
     var num = m[2] || "";
@@ -4502,6 +4546,7 @@
     // inside ISRE 2400's OWN paragraph text (extremely common in standards' prose) gets treated
     // as a real standard to create/import, and its "paragraphs" get misattributed to ISRE 2400.
     if (prefix === "ISA") family = "ISA";
+    else if (prefix === "ISQM") family = "ISQM";
     else if (prefix === "ISAE") family = "ISAE 3000";
     else if (prefix === "ISRS") family = num.indexOf("4410") === 0 ? "ISRS 4410" : (num.indexOf("4400") === 0 ? "ISRS 4400" : null);
     else if (prefix === "ISRE") family = num.indexOf("2400") === 0 ? "ISRE 2400" : null;
@@ -4981,6 +5026,8 @@
     document.getElementById("danger-clear-standards-btn").addEventListener("click", clearAllStandards);
     document.getElementById("danger-clear-paragraphs-btn").addEventListener("click", clearAllParagraphs);
     document.getElementById("danger-clear-pdf-imports-btn").addEventListener("click", clearAllPdfImports);
+    document.getElementById("danger-clear-pdf-imports-one-meth-btn").addEventListener("click", openClearPdfImportsOneMethDialog);
+    document.getElementById("confirm-clear-pdf-imports-one-meth-btn").addEventListener("click", clearPdfImportsForMethodology);
     document.getElementById("danger-clear-excel-imports-btn").addEventListener("click", clearAllExcelImports);
     document.getElementById("danger-clear-messages-btn").addEventListener("click", clearAllMessages);
     document.getElementById("danger-clear-audit-btn").addEventListener("click", clearAuditTrail);
