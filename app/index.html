@@ -448,6 +448,7 @@
       <input type="text" id="search-input" placeholder="Search paragraphs, standards...">
     </div>
     <button class="btn" id="refresh-app-btn" title="Reload data from this browser's storage — nothing is cleared. Useful after switching users elsewhere, or if the view feels stuck.">⟳ Refresh</button>
+    <span id="runtime-mode-badge" style="font-size:11px; font-weight:600;"></span>
     <span class="identity-badge" id="identity-badge"></span>
     <input type="file" id="import-file" accept="application/json" hidden>
   </header>
@@ -1498,7 +1499,8 @@
     var toSave = {};
     Object.keys(data).forEach(function (k) { if (k !== "_justMigrated") toSave[k] = data[k]; });
     var json = JSON.stringify(toSave);
-    if (chosenDataDirHandle) writeDataFileToChosenFolder(json);
+    if (isTauri) writeTauriDataFile(json);
+    else if (chosenDataDirHandle) writeDataFileToChosenFolder(json);
     else localStorage.setItem(STORAGE_KEY, json);
     var el = document.getElementById("last-saved");
     if (el) el.textContent = "Saved " + new Date().toLocaleTimeString();
@@ -1634,6 +1636,16 @@
   // available, or no folder has been chosen (or granted) yet.
   var DATA_DIR_DB = "dwx-data-dir-db", DATA_DIR_STORE = "handles";
   var DATA_FILE_NAME = "draftworx_data.json";
+  // Running inside the Tauri desktop EXE — window.__TAURI__ is injected natively there (via
+  // app.withGlobalTauri in tauri.conf.json) and never exists in a plain browser tab, so this is
+  // a reliable way to tell the two apart and route storage accordingly.
+  var isTauri = typeof window.__TAURI__ !== "undefined";
+  (function () {
+    var badge = document.getElementById("runtime-mode-badge");
+    if (!badge) return;
+    badge.textContent = isTauri ? "Tauri" : "Browser";
+    badge.style.color = isTauri ? "var(--status-matched-text, #16a34a)" : "var(--text-muted, #94a3b8)";
+  })();
   var DATA_FOLDER_DISMISSED_KEY = "dwx-standards-tracker-datafolder-dismissed";
   var chosenDataDirHandle = null;
   var dataDirNeedsReconnect = false;
@@ -1680,6 +1692,22 @@
       .then(function (w) { return w.write(jsonString).then(function () { return w.close(); }); })
       .catch(function () {});
   }
+  // Tauri's own fs API — the EXE writes/reads the exact same draftworx_data.json filename, in
+  // the folder next to the running executable ($EXE), so the EXE and the HTML always share one
+  // file rather than each keeping its own separate storage.
+  async function tauriDataFilePath() {
+    var exeDir = await window.__TAURI__.path.exeDir();
+    return await window.__TAURI__.path.join(exeDir, DATA_FILE_NAME);
+  }
+  async function readTauriDataFile() {
+    var filePath = await tauriDataFilePath();
+    return JSON.parse(await window.__TAURI__.fs.readTextFile(filePath));
+  }
+  function writeTauriDataFile(jsonString) {
+    tauriDataFilePath()
+      .then(function (filePath) { return window.__TAURI__.fs.writeTextFile(filePath, jsonString); })
+      .catch(function () {});
+  }
   function hideDataFolderBanner() {
     var el = document.getElementById("datafolder-banner");
     if (el) el.style.display = "none";
@@ -1695,6 +1723,7 @@
     el.style.display = "flex";
   }
   function maybeShowDataFolderBanner() {
+    if (isTauri) { hideDataFolderBanner(); return; }
     if (chosenDataDirHandle) { hideDataFolderBanner(); return; }
     if (dataDirNeedsReconnect) { showDataFolderBanner(true); return; }
     var dismissed = false;
@@ -1705,6 +1734,7 @@
   // granted handle (and, if so, loads draftworx_data.json from it as the authoritative data),
   // otherwise flags that a fresh Choose/Reconnect click (a real user gesture) is needed.
   async function tryRestoreDataDirHandle() {
+    if (isTauri) { renderDeveloperView(); return; }
     if (window.showDirectoryPicker) {
       try {
         var handle = await loadDataDirHandleFromDB();
@@ -1731,6 +1761,25 @@
     }
     maybeShowDataFolderBanner();
     renderDeveloperView();
+  }
+  // Tauri equivalent of tryRestoreDataDirHandle above — no picker/permission dance needed since
+  // Tauri grants file access natively via its capabilities config, so this just reads
+  // draftworx_data.json next to the EXE as the authoritative data (writing it out for the first
+  // time if it doesn't exist yet).
+  async function tryRestoreTauriData() {
+    if (!isTauri) return;
+    try {
+      var fileData = await readTauriDataFile();
+      if (fileData && Array.isArray(fileData.methodologies) && Array.isArray(fileData.standards)) {
+        data = fileData;
+        var migrated = migrateData(data);
+        if (typeof data.nextColorIndex !== "number") data.nextColorIndex = data.methodologies.length;
+        if (migrated) data._justMigrated = true;
+        if (appInitialized) renderAll();
+      } else {
+        persist();
+      }
+    } catch (e) { persist(); }
   }
   async function chooseDataFolder() {
     if (!window.showDirectoryPicker) { alert("This browser doesn't support choosing a folder — data will keep saving to this browser's local storage instead."); return; }
@@ -5161,10 +5210,12 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    console.log('[startup] isTauri:', typeof window.__TAURI__ !== 'undefined');
     data = load();
     maybeCreateDailyAutoBackup();
     tryRestoreBackupDirHandle();
     tryRestoreDataDirHandle();
+    tryRestoreTauriData();
     wireLoginScreen();
     ensureBootstrapUser();
     identity = resolveSessionIdentity();
