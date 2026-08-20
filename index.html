@@ -131,6 +131,8 @@
   .page-head p { margin: 0; font-size: 13px; color: var(--text-secondary); }
 
   .notify-banner { display: none; align-items: center; gap: 12px; background: rgba(33,150,243,0.10); border: 1px solid var(--cat-1); color: var(--text-primary); padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
+  .datafolder-banner { display: none; align-items: center; gap: 12px; background: rgba(217,119,6,0.10); border: 1px solid var(--status-updatebody); color: var(--text-primary); padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
+  .datafolder-banner span { flex: 1; }
 
   .dashboard-greeting { margin-bottom: 20px; }
   .dashboard-greeting h2 { margin: 0 0 4px; font-size: 22px; font-weight: 700; }
@@ -252,9 +254,6 @@
   .para-item.para-item--unset { border-left-color: #6b7280 !important; }
   .para-children { margin: 6px 0 0 20px; }
   .para-children > .para-item:last-child { margin-bottom: 0; }
-  .section-heading-divider { display: flex; align-items: center; gap: 10px; padding: 8px 0; margin: 0; }
-  .section-heading-line { flex: 1; height: 1px; background: #e2e8f0; }
-  .section-heading-text { font-size: 11px; font-weight: 400; color: #94a3b8; font-variant: small-caps; letter-spacing: .04em; white-space: nowrap; }
   .para-row-collapsed { display: flex; align-items: center; gap: 12px; padding: 13px 18px; cursor: pointer; }
   .para-row-collapsed:hover { background: var(--surface-hover); }
   .tree-toggle { flex-shrink: 0; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 6px; color: var(--cat-1); font-size: 18px; font-weight: 700; cursor: pointer; }
@@ -469,6 +468,11 @@
 
     <main class="content">
       <div class="notify-banner" id="notify-banner"></div>
+      <div class="datafolder-banner" id="datafolder-banner" style="display:none;">
+        <span id="datafolder-banner-text"></span>
+        <button type="button" class="btn primary" id="choose-data-folder-btn">Choose Data Folder</button>
+        <button type="button" class="btn" id="dismiss-data-folder-btn">Not now</button>
+      </div>
 
       <section class="view active" id="view-dashboard">
         <div class="dashboard-greeting">
@@ -805,6 +809,18 @@
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
       <button type="button" class="btn primary" id="continue-pdf-import-btn">Continue</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-pdf-import-summary">
+  <form method="dialog">
+    <div class="modal-head"><h3>PDF Import Summary</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-body">
+      <textarea id="pdf-import-summary-text" readonly spellcheck="false" style="width:100%; height:340px; font-family:monospace; font-size:12px;"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn primary" data-close>Close</button>
     </div>
   </form>
 </dialog>
@@ -1464,7 +1480,9 @@
   function persist() {
     var toSave = {};
     Object.keys(data).forEach(function (k) { if (k !== "_justMigrated") toSave[k] = data[k]; });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    var json = JSON.stringify(toSave);
+    if (chosenDataDirHandle) writeDataFileToChosenFolder(json);
+    else localStorage.setItem(STORAGE_KEY, json);
     var el = document.getElementById("last-saved");
     if (el) el.textContent = "Saved " + new Date().toLocaleTimeString();
   }
@@ -1588,6 +1606,157 @@
       .then(function (fh) { return fh.createWritable(); })
       .then(function (w) { return w.write(entry.snapshot).then(function () { return w.close(); }); })
       .catch(function () {});
+  }
+
+  // ---------- Primary data storage location (File System Access API) ----------
+  // localStorage has a hard size quota that a large PDF import (e.g. a full handbook volume)
+  // can exceed. When a data folder is chosen, the live data is written to draftworx_data.json
+  // in that folder instead of localStorage — same handle-persistence approach as the backup
+  // folder above, kept as a fully separate IndexedDB store/handle since it's a different folder
+  // for a different purpose. localStorage remains the fallback whenever this API isn't
+  // available, or no folder has been chosen (or granted) yet.
+  var DATA_DIR_DB = "dwx-data-dir-db", DATA_DIR_STORE = "handles";
+  var DATA_FILE_NAME = "draftworx_data.json";
+  var DATA_FOLDER_DISMISSED_KEY = "dwx-standards-tracker-datafolder-dismissed";
+  var chosenDataDirHandle = null;
+  var dataDirNeedsReconnect = false;
+  function openDataDirDB() {
+    return new Promise(function (resolve, reject) {
+      var req = indexedDB.open(DATA_DIR_DB, 1);
+      req.onupgradeneeded = function () { req.result.createObjectStore(DATA_DIR_STORE); };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+  function saveDataDirHandleToDB(handle) {
+    return openDataDirDB().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction(DATA_DIR_STORE, "readwrite");
+        tx.objectStore(DATA_DIR_STORE).put(handle, "dataDir");
+        tx.oncomplete = function () { resolve(); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    });
+  }
+  function loadDataDirHandleFromDB() {
+    return openDataDirDB().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction(DATA_DIR_STORE, "readonly");
+        var req = tx.objectStore(DATA_DIR_STORE).get("dataDir");
+        req.onsuccess = function () { resolve(req.result || null); };
+        req.onerror = function () { reject(req.error); };
+      });
+    });
+  }
+  async function readDataFileFromDir(handle) {
+    var fh = await handle.getFileHandle(DATA_FILE_NAME);
+    var file = await fh.getFile();
+    return JSON.parse(await file.text());
+  }
+  // Fire-and-forget, same as writeBackupFileToChosenFolder — persist() has always been
+  // synchronous and is called from many places without awaiting it, so this keeps that contract
+  // rather than making every caller async for this one storage path.
+  function writeDataFileToChosenFolder(jsonString) {
+    if (!chosenDataDirHandle) return;
+    chosenDataDirHandle.getFileHandle(DATA_FILE_NAME, { create: true })
+      .then(function (fh) { return fh.createWritable(); })
+      .then(function (w) { return w.write(jsonString).then(function () { return w.close(); }); })
+      .catch(function () {});
+  }
+  function hideDataFolderBanner() {
+    var el = document.getElementById("datafolder-banner");
+    if (el) el.style.display = "none";
+  }
+  function showDataFolderBanner(reconnect) {
+    var el = document.getElementById("datafolder-banner");
+    if (!el) return;
+    document.getElementById("datafolder-banner-text").textContent = reconnect
+      ? "This browser needs permission re-granted before it can keep saving to your chosen data folder."
+      : "Storing data in this browser has limited space and can fail on a large PDF import. Choose a folder to save your data as a file instead — also lets you share it via OneDrive.";
+    var btn = document.getElementById("choose-data-folder-btn");
+    btn.textContent = reconnect ? "Reconnect Data Folder" : "Choose Data Folder";
+    el.style.display = "flex";
+  }
+  function maybeShowDataFolderBanner() {
+    if (chosenDataDirHandle) { hideDataFolderBanner(); return; }
+    if (dataDirNeedsReconnect) { showDataFolderBanner(true); return; }
+    var dismissed = false;
+    try { dismissed = localStorage.getItem(DATA_FOLDER_DISMISSED_KEY) === "1"; } catch (e) {}
+    if (!dismissed && window.showDirectoryPicker) showDataFolderBanner(false);
+  }
+  // Called once at startup — silently reconnects if the browser still trusts a previously
+  // granted handle (and, if so, loads draftworx_data.json from it as the authoritative data),
+  // otherwise flags that a fresh Choose/Reconnect click (a real user gesture) is needed.
+  async function tryRestoreDataDirHandle() {
+    if (window.showDirectoryPicker) {
+      try {
+        var handle = await loadDataDirHandleFromDB();
+        if (handle) {
+          var perm = await handle.queryPermission({ mode: "readwrite" });
+          if (perm === "granted") {
+            chosenDataDirHandle = handle;
+            var fileData = null;
+            try { fileData = await readDataFileFromDir(handle); } catch (e) { /* no data file in this folder yet */ }
+            if (fileData && Array.isArray(fileData.methodologies) && Array.isArray(fileData.standards)) {
+              data = fileData;
+              var migrated = migrateData(data);
+              if (typeof data.nextColorIndex !== "number") data.nextColorIndex = data.methodologies.length;
+              if (migrated) data._justMigrated = true;
+              if (appInitialized) renderAll();
+            } else {
+              persist();
+            }
+          } else {
+            dataDirNeedsReconnect = true;
+          }
+        }
+      } catch (e) { /* IndexedDB unavailable, or a stale/invalid handle — fall back to localStorage */ }
+    }
+    maybeShowDataFolderBanner();
+    renderDeveloperView();
+  }
+  async function chooseDataFolder() {
+    if (!window.showDirectoryPicker) { alert("This browser doesn't support choosing a folder — data will keep saving to this browser's local storage instead."); return; }
+    try {
+      var handle = await window.showDirectoryPicker({ mode: "readwrite" });
+      chosenDataDirHandle = handle;
+      dataDirNeedsReconnect = false;
+      await saveDataDirHandleToDB(handle);
+      var fileData = null;
+      try { fileData = await readDataFileFromDir(handle); } catch (e) { /* no data file in this folder yet */ }
+      if (fileData && Array.isArray(fileData.methodologies) && Array.isArray(fileData.standards)) {
+        data = fileData;
+        migrateData(data);
+        if (typeof data.nextColorIndex !== "number") data.nextColorIndex = data.methodologies.length;
+        renderAll();
+      } else {
+        persist();
+      }
+      hideDataFolderBanner();
+    } catch (e) { /* user cancelled the picker — not an error */ }
+    renderDeveloperView();
+  }
+  async function reconnectDataFolder() {
+    try {
+      var handle = await loadDataDirHandleFromDB();
+      if (!handle) return;
+      var perm = await handle.requestPermission({ mode: "readwrite" });
+      if (perm === "granted") {
+        chosenDataDirHandle = handle;
+        dataDirNeedsReconnect = false;
+        hideDataFolderBanner();
+      } else {
+        alert("Permission wasn't granted — data will keep saving to this browser's local storage instead.");
+      }
+    } catch (e) { alert("Couldn't reconnect to that folder — try Choose Data Folder again."); }
+    renderDeveloperView();
+  }
+  function chooseOrReconnectDataFolder() {
+    return dataDirNeedsReconnect ? reconnectDataFolder() : chooseDataFolder();
+  }
+  function dismissDataFolderBanner() {
+    try { localStorage.setItem(DATA_FOLDER_DISMISSED_KEY, "1"); } catch (e) {}
+    hideDataFolderBanner();
   }
 
   function formatBytes(n) {
@@ -2324,12 +2493,6 @@
     var children = tree.childrenOf[parentKey] || [];
     children.forEach(function (p) {
       if (!matchSet[p.id] && !forcedAncestors[p.number]) return;
-      if (p.sectionHeading) {
-        var divider = document.createElement("div");
-        divider.className = "section-heading-divider";
-        divider.innerHTML = '<span class="section-heading-line"></span><span class="section-heading-text">' + escapeHtml(p.sectionHeading) + '</span><span class="section-heading-line"></span>';
-        container.appendChild(divider);
-      }
       var hasChildren = !!(tree.childrenOf[p.number] && tree.childrenOf[p.number].length);
       var storedChildrenOpen = state.childrenExpanded.hasOwnProperty(p.id) ? state.childrenExpanded[p.id] : false;
       var childrenOpen = hasChildren && (!!forcedAncestors[p.number] || storedChildrenOpen);
@@ -3680,7 +3843,6 @@
     });
 
     var result = [];
-    var trailingHeading = null;
     for (var i = 0; i < items.length; i++) {
       var endPos = (i + 1 < items.length) ? items[i + 1].markerStart : body.length;
       var chunk = normalizeWs(body.substring(items[i].textStart, endPos));
@@ -3688,17 +3850,10 @@
       // into this text has no marker of its own to stop at, but a requirement's own last
       // "(Ref: Para. ...)" cross-reference does — cut everything after that reference's closing
       // bracket, so only whatever bled in after it (never part of the requirement itself) is
-      // removed. Whatever gets cut off the very last item is the heading text carried forward to
-      // whichever paragraph comes next (see extractParagraphsFromSection).
+      // removed.
       var refParaRe = /\(Ref:\s*Para\.[^)]*\)/gi, refMatch, lastRefEnd = -1;
       while ((refMatch = refParaRe.exec(chunk))) { lastRefEnd = refMatch.index + refMatch[0].length; }
-      if (lastRefEnd !== -1) {
-        if (i === items.length - 1) {
-          var refRemainder = chunk.slice(lastRefEnd).trim();
-          if (refRemainder) trailingHeading = refRemainder;
-        }
-        chunk = chunk.slice(0, lastRefEnd).trim();
-      }
+      if (lastRefEnd !== -1) chunk = chunk.slice(0, lastRefEnd).trim();
       // A real paragraph or sub-paragraph is always at least a short sentence. A running
       // header/footer repeated on every page (a document title, "Page 12", a standard number
       // used as a page stamp) can still be several words long, so the bar has to sit above that,
@@ -3709,7 +3864,6 @@
       var hasNestedChild = (i + 1 < items.length) && items[i + 1].ref.indexOf(items[i].ref + ".") === 0;
       if (chunk && (hasNestedChild || chunk.split(" ").filter(Boolean).length >= 8) && !looksLikeDefinitionOnly(chunk)) result.push({ number: items[i].ref, text: chunk });
     }
-    result.trailingHeading = trailingHeading;
     return result;
   }
   // A section heading (e.g. "Complying with Relevant Requirements") sitting between one
@@ -3762,10 +3916,6 @@
     }
 
     var found = [];
-    // A section heading found while trimming one paragraph's trailing text belongs to whichever
-    // paragraph comes right after it in the document, not the one it was trimmed off — carried
-    // over here and attached to the first item of the NEXT marker actually extracted.
-    var pendingHeading = null;
     for (var i = 0; i < markers.length; i++) {
       var marker = markers[i];
       if (marker.isAppMaterial) continue;
@@ -3780,19 +3930,9 @@
       var endIdx = (i + 1 < markers.length) ? markers[i + 1].headerStart : text.length;
       var body = text.substring(startIdx, endIdx);
       var headingCutoff = findHeadingCutoff(body);
-      var headingFromCutoff = null;
-      if (headingCutoff !== -1) {
-        var headingLineEnd = body.indexOf("\n", headingCutoff);
-        headingFromCutoff = body.slice(headingCutoff, headingLineEnd === -1 ? body.length : headingLineEnd).trim();
-        body = body.substring(0, headingCutoff);
-      }
+      if (headingCutoff !== -1) body = body.substring(0, headingCutoff);
 
-      var subItems = extractSubParagraphs(numCore + "." + marker.num, body);
-      subItems.forEach(function (item, idx) {
-        if (idx === 0 && pendingHeading) item.sectionHeading = pendingHeading;
-        found.push(item);
-      });
-      pendingHeading = headingFromCutoff || subItems.trailingHeading || null;
+      extractSubParagraphs(numCore + "." + marker.num, body).forEach(function (item) { found.push(item); });
     }
     return found;
   }
@@ -4133,6 +4273,7 @@
     document.getElementById(mode === "baseline" ? "import-pdf-baseline-file" : "import-pdf-newversion-file").click();
   }
   async function importPdfFile(file, mode) {
+    console.log('[import started]');
     if (typeof pdfjsLib === "undefined") { alert("The PDF engine failed to load (this feature needs an internet connection to fetch pdf.js from its CDN). Please check your connection and try again."); return; }
     var preflightMeth = data.methodologies.find(function (m) { return m.id === state.activeMethodologyId; });
     if (!preflightMeth || !applicableStandardsFor(preflightMeth).length) {
@@ -4202,7 +4343,6 @@
               existing.source = "pdf";
               existing.sourceDoc = handbookName;
               existing.sourceImportedAt = importedAt;
-              existing.sectionHeading = e.sectionHeading || null;
               updatedCount++; stdUpdated++;
             } else {
               ensureAncestorParagraphs(sec.std, e.number);
@@ -4215,7 +4355,7 @@
                 if (!methodologyIncludesStandard(m, sec.std)) return;
                 coverage[m.id] = { status: "notSure", wpExtract: "", wpReference: "", historicStandardText: "", notes: "", source: null, tickMarks: emptyTickMarks(), updatedAt: null, updatedBy: null };
               });
-              sec.std.paragraphs.push({ id: uid("para"), number: e.number, text: e.text, source: "pdf", sourceDoc: handbookName, sourceImportedAt: importedAt, sectionHeading: e.sectionHeading || null, coverage: coverage });
+              sec.std.paragraphs.push({ id: uid("para"), number: e.number, text: e.text, source: "pdf", sourceDoc: handbookName, sourceImportedAt: importedAt, coverage: coverage });
               createdCount++; stdCreated++;
             }
           });
@@ -4271,15 +4411,33 @@
       persist();
       renderCoverageView(); renderDashboard(); renderAuditView(); renderReviewView(); renderNotifyBanner();
       if (createdCount || updatedCount || flaggedCount) switchToView("coverage");
-      alert((mode === "baseline" ? "Baseline import — " : "New version comparison — ") + handbookName + ": " + createdCount + " new paragraph(s) baselined, " + updatedCount + " existing baseline paragraph(s) updated." +
-        (flaggedCount ? " " + flaggedCount + " difference(s) flagged against the existing baseline — review and Accept/Dismiss each on Coverage Review (or Import & Compare)." : "") +
-        (newlyCreatedStandards.length ? " Added " + newlyCreatedStandards.length + " new standard(s) found in the PDF: " + newlyCreatedStandards.map(function (s) { return s.code; }).join(", ") + " — double-check the family/title on each (Coverage Review > ✎ Edit standard)." : "") +
-        (touchedStandards.length ? " Standards touched: " + touchedStandards.map(function (t) { return t.std.code; }).join(", ") + "." :
-          unchangedStandards.length ? " No changes found for: " + unchangedStandards.map(function (s) { return s.code; }).join(", ") + " — already up to date." :
-          " No matching standard headers were found in this PDF, so nothing could be written — check the standard codes in Coverage Review match the handbook's wording.") +
-        (skippedStandards.length ? " Skipped (" + (mode === "baseline" ? "already baselined" : "no baseline yet") + "): " + skippedStandards.map(function (s) { return s.std.code; }).join(", ") + "." : "") +
-        (notFoundStandards.length ? " Not found in this PDF: " + notFoundStandards.map(function (s) { return s.code; }).join(", ") + "." : "") +
-        " Full details (per-standard counts and a text sample) were printed to the browser console.");
+      var summaryLines = [];
+      summaryLines.push("PDF Import Summary");
+      summaryLines.push("File: " + file.name);
+      summaryLines.push("Handbook: " + handbookName);
+      summaryLines.push("Mode: " + (mode === "baseline" ? "Baseline import" : "New version comparison"));
+      summaryLines.push("Pages: " + pdf.numPages);
+      summaryLines.push("");
+      summaryLines.push("Total paragraphs imported: " + (createdCount + updatedCount));
+      summaryLines.push("");
+      summaryLines.push("Standards imported:");
+      if (touchedStandards.length) {
+        touchedStandards.forEach(function (t) { summaryLines.push(t.std.code + " — " + t.std.paragraphs.length + " paragraphs"); });
+      } else {
+        summaryLines.push("None");
+      }
+      if (skippedStandards.length) {
+        summaryLines.push("");
+        summaryLines.push("Skipped standards:");
+        skippedStandards.forEach(function (s) { summaryLines.push(s.std.code + " — " + s.reason); });
+      }
+      if (notFoundStandards.length) {
+        summaryLines.push("");
+        summaryLines.push("Not found in this PDF:");
+        notFoundStandards.forEach(function (s) { summaryLines.push(s.code); });
+      }
+      document.getElementById("pdf-import-summary-text").value = summaryLines.join("\n");
+      document.getElementById("dlg-pdf-import-summary").showModal();
     } catch (err) { alert("Could not process that PDF: " + err.message); }
     finally { baselineBtn.disabled = false; newVersionBtn.disabled = false; progressWrap.style.display = "none"; }
   }
@@ -4829,6 +4987,8 @@
     document.getElementById("choose-backup-folder-btn").addEventListener("click", chooseBackupFolder);
     document.getElementById("reconnect-backup-folder-btn").addEventListener("click", reconnectBackupFolder);
     document.getElementById("clear-backup-folder-btn").addEventListener("click", clearBackupFolder);
+    document.getElementById("choose-data-folder-btn").addEventListener("click", chooseOrReconnectDataFolder);
+    document.getElementById("dismiss-data-folder-btn").addEventListener("click", dismissDataFolderBanner);
     document.getElementById("developer-export-json-btn").addEventListener("click", exportData);
     document.getElementById("developer-view-json-btn").addEventListener("click", function () {
       var ta = document.getElementById("developer-json-view");
@@ -4940,6 +5100,7 @@
     data = load();
     maybeCreateDailyAutoBackup();
     tryRestoreBackupDirHandle();
+    tryRestoreDataDirHandle();
     wireLoginScreen();
     ensureBootstrapUser();
     identity = resolveSessionIdentity();
