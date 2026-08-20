@@ -1796,7 +1796,7 @@
     }
     try { saveBackupsList(list); } catch (e) { console.log("[backup] could not save to the backups list (localStorage may be full):", e); }
     data.lastBackupAt = entry.createdAt;
-    persist();
+    try { persist(); } catch (e) { console.log("[backup] could not persist after taking a backup (localStorage may be full):", e); }
     writeBackupFileToChosenFolder(entry);
     return entry;
   }
