@@ -255,7 +255,7 @@
   .para-children { margin: 6px 0 0 20px; }
   .para-children > .para-item:last-child { margin-bottom: 0; }
   .para-row-collapsed { display: flex; align-items: center; gap: 12px; padding: 13px 18px; cursor: pointer; }
-  .para-row-collapsed:hover { background: var(--surface-hover); }
+  .para-row-collapsed:hover { background: #e8f0fe; }
   .tree-toggle { flex-shrink: 0; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 6px; color: var(--cat-1); font-size: 18px; font-weight: 700; cursor: pointer; }
   .tree-toggle:hover { background: var(--surface-hover); filter: brightness(1.15); }
   .tree-toggle-spacer { flex-shrink: 0; width: 26px; }
@@ -1708,6 +1708,22 @@
       .then(function (filePath) { return window.__TAURI__.fs.writeTextFile(filePath, jsonString); })
       .catch(function () {});
   }
+<<<<<<< HEAD
+=======
+  // Automatic backups when running as the EXE — same folder as draftworx_data.json, same
+  // Draftworx-Backup-YYYY-MM-DD-HH-MM.json naming as writeBackupFileToChosenFolder uses for the
+  // browser's chosen folder (via the shared backupFilenameFor helper, defined above).
+  async function tauriBackupFilePath(createdAtIso) {
+    var exeDir = await window.__TAURI__.path.exeDir();
+    return await window.__TAURI__.path.join(exeDir, backupFilenameFor(createdAtIso));
+  }
+  function writeTauriBackupFile(entry) {
+    if (!isTauri) return;
+    tauriBackupFilePath(entry.createdAt)
+      .then(function (filePath) { return window.__TAURI__.fs.writeTextFile(filePath, entry.snapshot); })
+      .catch(function () {});
+  }
+>>>>>>> c655b66 (Tauri automatic backup files added)
   function hideDataFolderBanner() {
     var el = document.getElementById("datafolder-banner");
     if (el) el.style.display = "none";
@@ -1847,6 +1863,7 @@
     data.lastBackupAt = entry.createdAt;
     try { persist(); } catch (e) { console.log("[backup] could not persist after taking a backup (localStorage may be full):", e); }
     writeBackupFileToChosenFolder(entry);
+    writeTauriBackupFile(entry);
     return entry;
   }
   // One daily snapshot per calendar day, called once at startup — never more than one per day
@@ -3846,7 +3863,7 @@
     var createdStds = [];
     Object.keys(seen).forEach(function (key) {
       var cand = seen[key];
-      if (cand.score < 3) return; // a real chapter has many qualifying paragraphs nearby, not just one or two
+      if (cand.score < 1) return; // a real chapter has many qualifying paragraphs nearby, not just one or two
       var before = data.standards.length;
       var std = findOrCreateStandard(cand.refInfo, cand.code);
       if (data.standards.length > before) createdStds.push(std);

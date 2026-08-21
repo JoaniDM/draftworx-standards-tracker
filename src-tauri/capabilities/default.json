@@ -6,6 +6,15 @@
     "main"
   ],
   "permissions": [
-    "core:default"
+    "core:default",
+    "core:path:default",
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [{ "path": "$EXE/draftworx_data.json" }]
+    },
+    {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [{ "path": "$EXE/draftworx_data.json" }, { "path": "$EXE/Draftworx-Backup-*.json" }]
+    }
   ]
 }
