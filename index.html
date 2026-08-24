@@ -736,9 +736,9 @@
       <div class="readonly-note">Don't see your name? Ask a Developer to add you in Settings.</div>
     </div>
     <div class="field">
-      <label>PIN</label>
-      <input type="password" id="login-pin-input" maxlength="4" inputmode="numeric" pattern="\d{4}">
-      <div class="readonly-note" id="login-pin-error" style="display:none; color:#dc2626;">Incorrect PIN — please try again</div>
+      <label>Password</label>
+      <input type="password" id="login-pin-input">
+      <div class="readonly-note" id="login-pin-error" style="display:none; color:#dc2626;">Incorrect password — please try again</div>
     </div>
     <button type="button" class="btn primary" id="login-btn" style="width:100%; justify-content:center;">Login</button>
   </div>
@@ -756,11 +756,26 @@
           <option value="developer">Developer — full access, including the Developer tab, Settings and user management</option>
         </select>
       </div>
-      <div class="field"><label>PIN (4 digits)</label><input type="password" id="f-user-pin" maxlength="4" inputmode="numeric" pattern="\d{4}" placeholder="Leave blank to keep current PIN"></div>
+      <div class="field"><label>Password</label><input type="password" id="f-user-pin" placeholder="Leave blank to keep current password"></div>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
       <button type="button" class="btn primary" id="save-user-btn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-change-password">
+  <form method="dialog">
+    <div class="modal-head"><h3>Change password</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Current password</label><input type="password" id="f-change-pw-current"></div>
+      <div class="field"><label>New password</label><input type="password" id="f-change-pw-new"></div>
+      <div class="readonly-note" id="change-pw-error" style="display:none; color:#dc2626;">Current password is incorrect.</div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="button" class="btn primary" id="save-change-pw-btn">Save</button>
     </div>
   </form>
 </dialog>
@@ -2023,7 +2038,7 @@
   // Management instead of by typing a name into a login prompt.
   function ensureBootstrapUser() {
     if (data.users.length > 0) return;
-    var joani = { id: uid("user"), name: "Joani", accessLevel: "developer", pinHash: hashPin("1234") };
+    var joani = { id: uid("user"), name: "Joani", accessLevel: "developer", pinHash: hashPin("Draftworx1") };
     console.log("[PIN debug] bootstrap created Joani with pinHash:", joani.pinHash);
     data.users.push(joani);
     identity = { userId: joani.id };
@@ -2364,9 +2379,31 @@
     if (!u || !identity) { el.innerHTML = ""; return; }
     el.innerHTML = "<span>" + escapeHtml(u.name) + "</span>" +
       ' <span style="color:var(--header-text-muted);">· ' + accessLevelLabel(u.accessLevel) + "</span>" +
+      ' <button class="btn icon-only" id="change-password-btn" title="Change your password" style="padding:2px 6px; font-size:11px;">Change Password</button>' +
       ' <button class="btn icon-only" id="logout-btn" title="Log out" style="padding:2px 6px; font-size:11px;">Logout</button>';
     var logoutBtn = document.getElementById("logout-btn");
     if (logoutBtn) logoutBtn.addEventListener("click", logout);
+    var changePwBtn = document.getElementById("change-password-btn");
+    if (changePwBtn) changePwBtn.addEventListener("click", openChangePasswordModal);
+  }
+  function openChangePasswordModal() {
+    document.getElementById("f-change-pw-current").value = "";
+    document.getElementById("f-change-pw-new").value = "";
+    document.getElementById("change-pw-error").style.display = "none";
+    document.getElementById("dlg-change-password").showModal();
+  }
+  function saveChangePassword() {
+    var u = resolveIdentityUser();
+    if (!u) return;
+    var current = document.getElementById("f-change-pw-current").value.trim();
+    var next = document.getElementById("f-change-pw-new").value.trim();
+    var err = document.getElementById("change-pw-error");
+    if (hashPin(current) !== u.pinHash) { err.style.display = ""; return; }
+    if (!next) return;
+    u.pinHash = hashPin(next);
+    logChange("update", "user", u.name, "Changed own password");
+    persist();
+    document.getElementById("dlg-change-password").close();
   }
 
   function renderSidebar() {
@@ -3638,8 +3675,7 @@
     if (!name) return;
     var accessLevel = document.getElementById("f-user-accesslevel").value;
     var pin = document.getElementById("f-user-pin").value.trim();
-    if (pin && !/^\d{4}$/.test(pin)) { alert("PIN must be exactly 4 digits."); return; }
-    if (!state.editing.userId && !pin) { alert("Please set a 4-digit PIN for this user."); return; }
+    if (!state.editing.userId && !pin) { alert("Please set a password for this user."); return; }
     if (state.editing.userId) {
       var u = data.users.find(function (x) { return x.id === state.editing.userId; });
       if (u.accessLevel === "developer" && accessLevel !== "developer" && data.users.filter(function (x) { return x.accessLevel === "developer"; }).length <= 1) {
@@ -4453,6 +4489,7 @@
               existing.source = "pdf";
               existing.sourceDoc = handbookName;
               existing.sourceImportedAt = importedAt;
+              applyAutoStatus(existing.id, "matched");
               updatedCount++; stdUpdated++;
             } else {
               ensureAncestorParagraphs(sec.std, e.number);
@@ -4470,14 +4507,6 @@
             }
           });
           sortParagraphs(sec.std);
-          // A first-time baseline has nothing to be out of sync with yet — but only for the
-          // paragraphs this PDF actually contains. A paragraph this import never even found
-          // (e.g. existing manually-entered content the PDF doesn't cover) has no baseline yet
-          // either way and must be left alone, not marked Matched against a PDF it isn't in.
-          extracted.forEach(function (e) {
-            var touched = sec.std.paragraphs.find(function (p) { return p.number === e.number; });
-            if (touched) applyAutoStatus(touched.id, "matched");
-          });
         } else {
           var result = computeFlagsForSection(sec, extracted, handbookName, importedAt);
           result.flags.forEach(function (f) { newPdfFlags.push(f); });
@@ -5056,7 +5085,17 @@
     // A plain page reload is the most reliable way to "un-stick" the view — it re-reads
     // everything fresh from localStorage (picking up changes made in another tab/window, or
     // after switching identity there) without touching the stored data itself at all.
-    document.getElementById("refresh-app-btn").addEventListener("click", function () { location.reload(); });
+    document.getElementById("refresh-app-btn").addEventListener("click", async function () {
+      data = load();
+      await tryRestoreTauriData();
+      finishInit();
+      switchToView("dashboard");
+      var toast = document.createElement("div");
+      toast.textContent = "Refreshed!";
+      toast.style.cssText = "position:fixed;top:16px;right:16px;background:#16a34a;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;z-index:1000;";
+      document.body.appendChild(toast);
+      setTimeout(function () { toast.remove(); }, 1500);
+    });
     document.getElementById("expand-all-std-btn").addEventListener("click", function () {
       data.standards.forEach(function (std) {
         state.standardCollapse[std.id] = false;
@@ -5201,6 +5240,7 @@
 
     document.getElementById("add-user-btn").addEventListener("click", function () { openUserModal(null); });
     document.getElementById("save-user-btn").addEventListener("click", saveUser);
+    document.getElementById("save-change-pw-btn").addEventListener("click", saveChangePassword);
     document.getElementById("add-workingpaper-btn").addEventListener("click", function () { openWorkingPaperModal(null); });
     document.getElementById("save-workingpaper-btn").addEventListener("click", saveWorkingPaper);
     document.getElementById("send-message-btn").addEventListener("click", sendMessageFromModal);
