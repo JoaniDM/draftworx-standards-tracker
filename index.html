@@ -1696,7 +1696,7 @@
   // the folder next to the running executable ($EXE), so the EXE and the HTML always share one
   // file rather than each keeping its own separate storage.
   async function tauriDataFilePath() {
-    var exeDir = await window.__TAURI__.path.exeDir();
+    var exeDir = await window.__TAURI__.core.invoke('get_exe_dir');
     return await window.__TAURI__.path.join(exeDir, DATA_FILE_NAME);
   }
   async function readTauriDataFile() {
@@ -5209,18 +5209,18 @@
     applyGlobalRolePermissions();
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
+  document.addEventListener("DOMContentLoaded", async function () {
     console.log('[startup] isTauri:', typeof window.__TAURI__ !== 'undefined');
     data = load();
-    maybeCreateDailyAutoBackup();
     tryRestoreBackupDirHandle();
     tryRestoreDataDirHandle();
-    tryRestoreTauriData();
+    await tryRestoreTauriData();
+    ensureDefaultMethodologies();
+    maybeCreateDailyAutoBackup();
     wireLoginScreen();
     ensureBootstrapUser();
-    identity = resolveSessionIdentity();
-    if (identity) { renderIdentityBadge(); finishInit(); }
-    else { showLoginScreen(); }
+    identity = null;
+    showLoginScreen();
   });
 })();
 </script>

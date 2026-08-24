@@ -10,11 +10,11 @@
     "core:path:default",
     {
       "identifier": "fs:allow-read-text-file",
-      "allow": [{ "path": "$EXE/draftworx_data.json" }]
+      "allow": [{ "path": "**/draftworx_data.json" }]
     },
     {
       "identifier": "fs:allow-write-text-file",
-      "allow": [{ "path": "$EXE/draftworx_data.json" }, { "path": "$EXE/Draftworx-Backup-*.json" }]
+      "allow": [{ "path": "**/draftworx_data.json" }, { "path": "**/Draftworx-Backup-*.json" }]
     }
   ]
 }
