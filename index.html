@@ -3863,6 +3863,15 @@
   // what's currently in the tracker, and create the standard when one genuinely has real
   // requirement-paragraph content following it (not just a passing cross-reference).
   var STANDARD_CODE_SCAN_RE = /(?:ISA|ISAE|ISRS|ISRE)\s*\d{3,4}(?:\s*\([^)]{0,40}\))?|ISQM\s*\d{1,2}(?:\s*\([^)]{0,40}\))?|(?:LPC|PPRA)\s+Rules/gi;
+  var KNOWN_ISA_STANDARDS = [
+    "ISA 200", "ISA 210", "ISA 220", "ISA 230", "ISA 240", "ISA 250", "ISA 260", "ISA 265",
+    "ISA 300", "ISA 315", "ISA 320", "ISA 330", "ISA 402", "ISA 450",
+    "ISA 500", "ISA 501", "ISA 505", "ISA 510", "ISA 520", "ISA 530", "ISA 540", "ISA 550", "ISA 560", "ISA 570", "ISA 580",
+    "ISA 600", "ISA 610", "ISA 620",
+    "ISA 700", "ISA 701", "ISA 705", "ISA 706", "ISA 710", "ISA 720",
+    "ISA 800", "ISA 805", "ISA 810",
+    "ISQM 1", "ISQM 2"
+  ];
   function discoverNewStandardsInPdf(fullText) {
     var lowerText = fullText.toLowerCase();
     var allHeaders = data.standards.reduce(function (acc, s) {
@@ -3885,6 +3894,16 @@
       if (cand.score < 3) return; // a real chapter has many qualifying paragraphs nearby, not just one or two
       var before = data.standards.length;
       var std = findOrCreateStandard(cand.refInfo, cand.code);
+      if (data.standards.length > before) createdStds.push(std);
+    });
+    KNOWN_ISA_STANDARDS.forEach(function (code) {
+      var variants = headerSpaceVariants(code).map(function (v) { return v.toLowerCase(); });
+      var foundInPdf = variants.some(function (v) { return lowerText.indexOf(v) !== -1; });
+      if (!foundInPdf) return;
+      var refInfo = parseStandardReference(code);
+      if (!refInfo) return;
+      var before = data.standards.length;
+      var std = findOrCreateStandard(refInfo, code);
       if (data.standards.length > before) createdStds.push(std);
     });
     return createdStds;
@@ -5004,7 +5023,7 @@
   // only which user this browser is currently attributed to.
   function showLoginScreen() {
     var sel = document.getElementById("login-user-select");
-    sel.innerHTML = data.users.map(function (u) { return '<option value="' + escapeAttr(u.id) + '">' + escapeHtml(u.name) + " " + escapeHtml(accessLevelLabel(u.accessLevel)) + "</option>"; }).join("");
+    sel.innerHTML = data.users.map(function (u) { return '<option value="' + escapeAttr(u.id) + '">' + escapeHtml(u.name) + "</option>"; }).join("");
     // Pre-select whoever logged in last on this browser, so returning to this screen (after a
     // fresh load or a logout) is just one click of Login rather than hunting for your name again.
     var lastUserId = localStorage.getItem(LAST_USER_KEY);
