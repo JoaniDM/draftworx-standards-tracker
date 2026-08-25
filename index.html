@@ -1516,7 +1516,7 @@
     var json = JSON.stringify(toSave);
     if (isTauri) writeTauriDataFile(json);
     else if (chosenDataDirHandle) writeDataFileToChosenFolder(json);
-    else localStorage.setItem(STORAGE_KEY, json);
+    else { try { localStorage.setItem(STORAGE_KEY, json); } catch (e) { console.log("[persist] could not save to localStorage (it may be full):", e); } }
     var el = document.getElementById("last-saved");
     if (el) el.textContent = "Saved " + new Date().toLocaleTimeString();
   }
@@ -1985,6 +1985,14 @@
     document.getElementById("dlg-clear-pdf-imports-one-meth").close();
     var stdIds = applicableStandardsFor(meth).map(function (s) { return s.id; });
     runDangerAction("PDF Imports for " + meth.name, function () {
+      var pdfParaCount = 0;
+      data.standards.forEach(function (s) {
+        if (stdIds.indexOf(s.id) === -1) return;
+        s.paragraphs.forEach(function (p) { if (p.source === "pdf") pdfParaCount++; });
+      });
+      console.log("[Clear PDF Imports] methodology selected:", meth.name, "(" + meth.id + ")");
+      console.log("[Clear PDF Imports] paragraphs with source=pdf found for this methodology:", pdfParaCount);
+      console.log("[Clear PDF Imports] clear loop starting...");
       data.pendingFlags = (data.pendingFlags || []).filter(function (f) { return f.source !== "pdf" || stdIds.indexOf(f.standardId) === -1; });
       data.changeLog = (data.changeLog || []).filter(function (f) { return f.source !== "pdf" || stdIds.indexOf(f.standardId) === -1; });
       data.standards.forEach(function (s) {
@@ -1995,6 +2003,7 @@
           Object.keys(p.coverage || {}).forEach(function (mid) { p.coverage[mid].status = "notSure"; });
         });
       });
+      console.log("[Clear PDF Imports] clear loop finished.");
     });
   }
   function clearAllExcelImports() {
@@ -2039,7 +2048,6 @@
   function ensureBootstrapUser() {
     if (data.users.length > 0) return;
     var joani = { id: uid("user"), name: "Joani", accessLevel: "developer", pinHash: hashPin("Draftworx1") };
-    console.log("[PIN debug] bootstrap created Joani with pinHash:", joani.pinHash);
     data.users.push(joani);
     identity = { userId: joani.id };
     localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
@@ -5061,7 +5069,6 @@
       var pinInput = document.getElementById("login-pin-input");
       var pinError = document.getElementById("login-pin-error");
       var userObj = data.users.find(function (u) { return u.id === sel.value; });
-      console.log("[PIN debug] entered PIN hashes to:", hashPin(pinInput.value.trim()), "| stored pinHash for", userObj && userObj.name, "is:", userObj && userObj.pinHash);
       if (!userObj || hashPin(pinInput.value.trim()) !== userObj.pinHash) {
         pinError.style.display = "";
         pinInput.value = "";
