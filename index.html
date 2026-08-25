@@ -683,7 +683,8 @@
             <button class="btn danger" id="danger-clear-standards-btn">Clear All Standards</button>
             <button class="btn danger" id="danger-clear-paragraphs-btn">Clear All Paragraphs</button>
             <button class="btn danger" id="danger-clear-pdf-imports-btn">Clear All PDF Imports</button>
-            <button class="btn danger" id="danger-clear-pdf-imports-one-meth-btn">Clear PDF Imports for one methodology</button>
+            <button class="btn danger" id="danger-clear-pdf-baseline-one-meth-btn">Clear Baseline for one methodology</button>
+            <button class="btn danger" id="danger-clear-pdf-flags-one-meth-btn">Clear Comparison Flags for one methodology</button>
             <button class="btn danger" id="danger-clear-excel-imports-btn">Clear All Excel Imports</button>
             <button class="btn danger" id="danger-clear-messages-btn">Clear All Messages</button>
             <button class="btn danger" id="danger-clear-audit-btn">Clear Audit Trail</button>
@@ -842,18 +843,34 @@
   </form>
 </dialog>
 
-<dialog id="dlg-clear-pdf-imports-one-meth">
+<dialog id="dlg-clear-pdf-baseline-one-meth">
   <form method="dialog">
-    <div class="modal-head"><h3>Clear PDF Imports for one methodology</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-head"><h3>Clear Baseline for one methodology</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
     <div class="modal-body">
-      <div class="readonly-note">Choose which methodology to clear PDF imports for. Only that methodology's standards are affected.</div>
+      <div class="readonly-note">Choose which methodology to clear the PDF baseline for. Removes all paragraphs sourced from a PDF baseline import for that methodology's standards — Coverage Review will be empty for it.</div>
       <div class="field"><label>Methodology</label>
-        <select id="f-clear-pdf-imports-one-meth-methodology"></select>
+        <select id="f-clear-pdf-baseline-one-meth-methodology"></select>
       </div>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
-      <button type="button" class="btn danger" id="confirm-clear-pdf-imports-one-meth-btn">Clear</button>
+      <button type="button" class="btn danger" id="confirm-clear-pdf-baseline-one-meth-btn">Clear</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-clear-pdf-flags-one-meth">
+  <form method="dialog">
+    <div class="modal-head"><h3>Clear Comparison Flags for one methodology</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-body">
+      <div class="readonly-note">Choose which methodology to clear pending PDF comparison flags for. Baseline paragraphs are kept — only open comparison flags are removed.</div>
+      <div class="field"><label>Methodology</label>
+        <select id="f-clear-pdf-flags-one-meth-methodology"></select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-close>Cancel</button>
+      <button type="button" class="btn danger" id="confirm-clear-pdf-flags-one-meth-btn">Clear</button>
     </div>
   </form>
 </dialog>
@@ -1724,6 +1741,16 @@
       .then(function () { console.log('[Tauri write] SUCCESS'); })
       .catch(function (err) { console.error('[Tauri write] FAILED:', err); });
   }
+  // Same idea as writeTauriDataFile, but for backup snapshots — writes Draftworx-Backup-*.json
+  // next to draftworx_data.json in $EXE's own folder, so backups survive even when localStorage
+  // (used only for the backups LIST metadata) is full.
+  function writeTauriBackupFile(entry) {
+    var filename = backupFilenameFor(entry.createdAt);
+    window.__TAURI__.core.invoke('get_exe_dir')
+      .then(function (exeDir) { return window.__TAURI__.path.join(exeDir, filename); })
+      .then(function (filePath) { return window.__TAURI__.fs.writeTextFile(filePath, entry.snapshot); })
+      .catch(function () {});
+  }
   function hideDataFolderBanner() {
     var el = document.getElementById("datafolder-banner");
     if (el) el.style.display = "none";
@@ -1863,7 +1890,7 @@
     try { saveBackupsList(list); } catch (e) { console.log("[backup] could not save to the backups list (localStorage may be full):", e); }
     data.lastBackupAt = entry.createdAt;
     try { persist(); } catch (e) { console.log("[backup] could not persist after taking a backup (localStorage may be full):", e); }
-    writeBackupFileToChosenFolder(entry);
+    if (isTauri) writeTauriBackupFile(entry); else writeBackupFileToChosenFolder(entry);
     return entry;
   }
   // One daily snapshot per calendar day, called once at startup — never more than one per day
@@ -1974,38 +2001,39 @@
       });
     });
   }
-  function openClearPdfImportsOneMethDialog() {
-    var sel = document.getElementById("f-clear-pdf-imports-one-meth-methodology");
+  function openClearPdfBaselineOneMethDialog() {
+    var sel = document.getElementById("f-clear-pdf-baseline-one-meth-methodology");
     sel.innerHTML = data.methodologies.map(function (m) { return '<option value="' + escapeAttr(m.id) + '">' + escapeHtml(m.name) + "</option>"; }).join("");
     if (state.activeMethodologyId && data.methodologies.some(function (m) { return m.id === state.activeMethodologyId; })) sel.value = state.activeMethodologyId;
-    document.getElementById("dlg-clear-pdf-imports-one-meth").showModal();
+    document.getElementById("dlg-clear-pdf-baseline-one-meth").showModal();
   }
-  function clearPdfImportsForMethodology() {
-    var methodologyId = document.getElementById("f-clear-pdf-imports-one-meth-methodology").value;
+  function clearBaselineForMethodology() {
+    var methodologyId = document.getElementById("f-clear-pdf-baseline-one-meth-methodology").value;
     var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
     if (!meth) return;
-    document.getElementById("dlg-clear-pdf-imports-one-meth").close();
+    document.getElementById("dlg-clear-pdf-baseline-one-meth").close();
     var stdIds = applicableStandardsFor(meth).map(function (s) { return s.id; });
-    runDangerAction("PDF Imports for " + meth.name, function () {
-      var pdfParaCount = 0;
+    runDangerAction("Baseline for " + meth.name, function () {
       data.standards.forEach(function (s) {
         if (stdIds.indexOf(s.id) === -1) return;
-        s.paragraphs.forEach(function (p) { if (p.source === "pdf") pdfParaCount++; });
+        s.paragraphs = s.paragraphs.filter(function (p) { return p.source !== "pdf"; });
       });
-      console.log("[Clear PDF Imports] methodology selected:", meth.name, "(" + meth.id + ")");
-      console.log("[Clear PDF Imports] paragraphs with source=pdf found for this methodology:", pdfParaCount);
-      console.log("[Clear PDF Imports] clear loop starting...");
+    });
+  }
+  function openClearPdfFlagsOneMethDialog() {
+    var sel = document.getElementById("f-clear-pdf-flags-one-meth-methodology");
+    sel.innerHTML = data.methodologies.map(function (m) { return '<option value="' + escapeAttr(m.id) + '">' + escapeHtml(m.name) + "</option>"; }).join("");
+    if (state.activeMethodologyId && data.methodologies.some(function (m) { return m.id === state.activeMethodologyId; })) sel.value = state.activeMethodologyId;
+    document.getElementById("dlg-clear-pdf-flags-one-meth").showModal();
+  }
+  function clearComparisonFlagsForMethodology() {
+    var methodologyId = document.getElementById("f-clear-pdf-flags-one-meth-methodology").value;
+    var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
+    if (!meth) return;
+    document.getElementById("dlg-clear-pdf-flags-one-meth").close();
+    var stdIds = applicableStandardsFor(meth).map(function (s) { return s.id; });
+    runDangerAction("Comparison Flags for " + meth.name, function () {
       data.pendingFlags = (data.pendingFlags || []).filter(function (f) { return f.source !== "pdf" || stdIds.indexOf(f.standardId) === -1; });
-      data.changeLog = (data.changeLog || []).filter(function (f) { return f.source !== "pdf" || stdIds.indexOf(f.standardId) === -1; });
-      data.standards.forEach(function (s) {
-        if (stdIds.indexOf(s.id) === -1) return;
-        s.paragraphs.forEach(function (p) {
-          if (p.source !== "pdf") return;
-          p.text = "";
-          Object.keys(p.coverage || {}).forEach(function (mid) { p.coverage[mid].status = "notSure"; });
-        });
-      });
-      console.log("[Clear PDF Imports] clear loop finished.");
     });
   }
   function clearAllExcelImports() {
@@ -5160,8 +5188,10 @@
     document.getElementById("danger-clear-standards-btn").addEventListener("click", clearAllStandards);
     document.getElementById("danger-clear-paragraphs-btn").addEventListener("click", clearAllParagraphs);
     document.getElementById("danger-clear-pdf-imports-btn").addEventListener("click", clearAllPdfImports);
-    document.getElementById("danger-clear-pdf-imports-one-meth-btn").addEventListener("click", openClearPdfImportsOneMethDialog);
-    document.getElementById("confirm-clear-pdf-imports-one-meth-btn").addEventListener("click", clearPdfImportsForMethodology);
+    document.getElementById("danger-clear-pdf-baseline-one-meth-btn").addEventListener("click", openClearPdfBaselineOneMethDialog);
+    document.getElementById("confirm-clear-pdf-baseline-one-meth-btn").addEventListener("click", clearBaselineForMethodology);
+    document.getElementById("danger-clear-pdf-flags-one-meth-btn").addEventListener("click", openClearPdfFlagsOneMethDialog);
+    document.getElementById("confirm-clear-pdf-flags-one-meth-btn").addEventListener("click", clearComparisonFlagsForMethodology);
     document.getElementById("danger-clear-excel-imports-btn").addEventListener("click", clearAllExcelImports);
     document.getElementById("danger-clear-messages-btn").addEventListener("click", clearAllMessages);
     document.getElementById("danger-clear-audit-btn").addEventListener("click", clearAuditTrail);
