@@ -3891,7 +3891,7 @@
     var createdStds = [];
     Object.keys(seen).forEach(function (key) {
       var cand = seen[key];
-      if (cand.score < 3) return; // a real chapter has many qualifying paragraphs nearby, not just one or two
+      if (cand.score < 1) return; // a real chapter has many qualifying paragraphs nearby, not just one or two
       var before = data.standards.length;
       var std = findOrCreateStandard(cand.refInfo, cand.code);
       if (data.standards.length > before) createdStds.push(std);
@@ -4508,7 +4508,7 @@
               existing.source = "pdf";
               existing.sourceDoc = handbookName;
               existing.sourceImportedAt = importedAt;
-              applyAutoStatus(existing.id, "matched");
+              applyAutoStatus(existing.id, "notSure");
               updatedCount++; stdUpdated++;
             } else {
               ensureAncestorParagraphs(sec.std, e.number);
