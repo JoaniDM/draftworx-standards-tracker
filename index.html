@@ -1720,8 +1720,9 @@
   }
   function writeTauriDataFile(jsonString) {
     tauriDataFilePath()
-      .then(function (filePath) { return window.__TAURI__.fs.writeTextFile(filePath, jsonString); })
-      .catch(function () {});
+      .then(function (filePath) { console.log('[Tauri write] attempting to write to:', filePath); return window.__TAURI__.fs.writeTextFile(filePath, jsonString); })
+      .then(function () { console.log('[Tauri write] SUCCESS'); })
+      .catch(function (err) { console.error('[Tauri write] FAILED:', err); });
   }
   function hideDataFolderBanner() {
     var el = document.getElementById("datafolder-banner");
@@ -1787,6 +1788,7 @@
       var fileData = await readTauriDataFile();
       if (fileData && Array.isArray(fileData.methodologies) && Array.isArray(fileData.standards)) {
         data = fileData;
+        console.log('[Tauri restore] loaded paragraphs count:', Object.values(data.standards || {}).reduce(function(t,s){ return t + (s.paragraphs||[]).length; }, 0));
         var migrated = migrateData(data);
         if (typeof data.nextColorIndex !== "number") data.nextColorIndex = data.methodologies.length;
         if (migrated) data._justMigrated = true;
@@ -2357,6 +2359,7 @@
 
   // ---------- Rendering ----------
   function renderAll() {
+    console.log('[renderAll called]');
     renderSidebar();
     renderDashboard();
     renderCoverageView();
