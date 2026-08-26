@@ -991,11 +991,11 @@
   var IDENTITY_KEY = "dwx-standards-tracker-identity";
   var LAST_USER_KEY = "dwx-standards-tracker-last-user";
   var CATS = ["--cat-1","--cat-2","--cat-3","--cat-4","--cat-5","--cat-6","--cat-7","--cat-8"];
-  var FAMILIES = ["ISA", "ISAE 3000", "ISRS 4400", "ISRS 4410", "ISRE 2400", "LPC Rules", "PPRA Rules"];
+  var FAMILIES = ["ISA", "ISQM", "ISAE 3000", "ISRS 4400", "ISRS 4410", "ISRE 2400", "LPC Rules", "PPRA Rules"];
   // Each of the six built-in methodologies only ever works with a fixed set of standard
   // families — this is the single source of truth migrateData()/seedData() apply it from.
   var KNOWN_ALLOWED_FAMILIES = {
-    "RAC": ["ISA"],
+    "RAC": ["ISA", "ISQM"],
     "Review+": ["ISRE 2400"],
     "Legal Practitioner": ["ISAE 3000", "LPC Rules"],
     "Property Practitioner": ["ISAE 3000", "PPRA Rules"],
@@ -3869,12 +3869,7 @@
   // stray mention of some OTHER standard (in or out of scope) right next to a candidate is what
   // hasSiblingHeaderNearby uses to reject a listing/cross-reference, not a real chapter opening.
   function buildExtractionSections(fullText, standardsScope) {
-    console.log("[buildExtractionSections diag] standard codes being processed:", (standardsScope || data.standards).map(function (s) { return s.code; }));
     var lowerText = fullText.toLowerCase();
-    [[135539, "ISQM1"], [347136, "ISQM2"]].forEach(function (pair) {
-      var idx = pair[0], label = pair[1];
-      console.log("[Line-start diag]", label, "before:", JSON.stringify(fullText.substring(Math.max(0, idx - 50), idx)), "after:", JSON.stringify(fullText.substring(idx, idx + 50)), "looksLikeLineStart:", looksLikeLineStart(fullText, idx));
-    });
     var allHeaders = data.standards.reduce(function (acc, s) {
       var header = s.code.replace(/\s*\(.*?\)\s*$/, "").trim();
       return acc.concat(headerSpaceVariants(header).map(function (v) { return v.toLowerCase(); }));
@@ -3890,9 +3885,6 @@
         while ((idx = lowerText.indexOf(variantLower, searchFrom)) !== -1) {
           if (!looksLikeLineStart(fullText, idx)) { searchFrom = idx + variantLower.length; continue; }
           var score = markerQualityAt(fullText, idx) - (hasSiblingHeaderNearby(lowerText, allHeaders, idx, variantLower, variantLower.length) ? 1000 : 0);
-          if (["ISQM 1", "ISQM 2"].indexOf(std.code) !== -1) {
-            console.log("[ISQM occurrence diag]", std.code, "variant:", variant, "index:", idx, "score:", score);
-          }
           if (score >= bestScore) { bestScore = score; bestIdx = idx; bestHeader = variant; }
           searchFrom = idx + variantLower.length;
         }
@@ -3904,9 +3896,6 @@
     sections.forEach(function (sec, i) {
       var end = (i + 1 < sections.length) ? sections[i + 1].index : fullText.length;
       var sectionText = fullText.substring(sec.index, end);
-      if (["ISA 501", "ISA 620", "ISA 706"].indexOf(sec.std.code) !== -1) {
-        console.log("[Section boundary diag]", sec.std.code, "start:", sec.index, "end:", end, "length:", sectionText.length);
-      }
       // Two standards are often bundled back-to-back in the same handbook PDF (e.g. ISRE 2400
       // immediately followed by ISRE 2410's own real chapter) — if that SECOND one isn't itself
       // a standard this tracker follows, nothing above stops the FIRST one's section from
@@ -3967,7 +3956,6 @@
       var std = findOrCreateStandard(refInfo, code);
       if (data.standards.length > before) createdStds.push(std);
     });
-    console.log("[discoverNewStandardsInPdf diag] ISQM 1 created:", data.standards.some(function (s) { return s.code === "ISQM 1"; }), "| ISQM 2 created:", data.standards.some(function (s) { return s.code === "ISQM 2"; }));
     return createdStds;
   }
   // Some IAASB standards' numbered paragraphs don't start as "requirements" from 1 — earlier
