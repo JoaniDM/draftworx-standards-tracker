@@ -3946,6 +3946,19 @@
       var std = findOrCreateStandard(cand.refInfo, cand.code);
       if (data.standards.length > before) createdStds.push(std);
     });
+    ["ISA 501", "ISA 620", "ISA 706", "ISQM 1", "ISQM 2"].forEach(function (code) {
+      var diagVariants = headerSpaceVariants(code).map(function (v) { return v.toLowerCase(); });
+      var diagFound = false;
+      diagVariants.forEach(function (variantLower) {
+        var searchFrom = 0, idx;
+        while ((idx = lowerText.indexOf(variantLower, searchFrom)) !== -1) {
+          diagFound = true;
+          console.log("[PDF scan diagnostic]", code, "found at index", idx, "context:", fullText.substring(Math.max(0, idx - 100), idx + 100));
+          searchFrom = idx + variantLower.length;
+        }
+      });
+      if (!diagFound) console.log("[PDF scan diagnostic]", code, "— NOT FOUND anywhere in this PDF's text");
+    });
     KNOWN_ISA_STANDARDS.forEach(function (code) {
       var variants = headerSpaceVariants(code).map(function (v) { return v.toLowerCase(); });
       var foundInPdf = variants.some(function (v) { return lowerText.indexOf(v) !== -1; });
