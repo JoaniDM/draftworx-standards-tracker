@@ -3889,6 +3889,9 @@
         while ((idx = lowerText.indexOf(variantLower, searchFrom)) !== -1) {
           if (!looksLikeLineStart(fullText, idx)) { searchFrom = idx + variantLower.length; continue; }
           var score = markerQualityAt(fullText, idx) - (hasSiblingHeaderNearby(lowerText, allHeaders, idx, variantLower, variantLower.length) ? 1000 : 0);
+          if (["ISQM 1", "ISQM 2"].indexOf(std.code) !== -1) {
+            console.log("[ISQM occurrence diag]", std.code, "variant:", variant, "index:", idx, "score:", score);
+          }
           if (score >= bestScore) { bestScore = score; bestIdx = idx; bestHeader = variant; }
           searchFrom = idx + variantLower.length;
         }
