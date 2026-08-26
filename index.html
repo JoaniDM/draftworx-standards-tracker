@@ -2016,7 +2016,7 @@
     runDangerAction("Baseline for " + meth.name, function () {
       data.standards.forEach(function (s) {
         if (stdIds.indexOf(s.id) === -1) return;
-        s.paragraphs = s.paragraphs.filter(function (p) { return p.source !== "pdf"; });
+        s.paragraphs = [];
       });
     });
   }
