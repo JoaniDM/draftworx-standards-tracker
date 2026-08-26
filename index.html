@@ -3869,6 +3869,7 @@
   // stray mention of some OTHER standard (in or out of scope) right next to a candidate is what
   // hasSiblingHeaderNearby uses to reject a listing/cross-reference, not a real chapter opening.
   function buildExtractionSections(fullText, standardsScope) {
+    console.log("[buildExtractionSections diag] standard codes being processed:", (standardsScope || data.standards).map(function (s) { return s.code; }));
     var lowerText = fullText.toLowerCase();
     [[135539, "ISQM1"], [347136, "ISQM2"]].forEach(function (pair) {
       var idx = pair[0], label = pair[1];
@@ -3966,6 +3967,7 @@
       var std = findOrCreateStandard(refInfo, code);
       if (data.standards.length > before) createdStds.push(std);
     });
+    console.log("[discoverNewStandardsInPdf diag] ISQM 1 created:", data.standards.some(function (s) { return s.code === "ISQM 1"; }), "| ISQM 2 created:", data.standards.some(function (s) { return s.code === "ISQM 2"; }));
     return createdStds;
   }
   // Some IAASB standards' numbered paragraphs don't start as "requirements" from 1 — earlier
