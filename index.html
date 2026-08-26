@@ -1531,11 +1531,16 @@
     var toSave = {};
     Object.keys(data).forEach(function (k) { if (k !== "_justMigrated") toSave[k] = data[k]; });
     var json = JSON.stringify(toSave);
-    if (isTauri) writeTauriDataFile(json);
-    else if (chosenDataDirHandle) writeDataFileToChosenFolder(json);
-    else { try { localStorage.setItem(STORAGE_KEY, json); } catch (e) { console.log("[persist] could not save to localStorage (it may be full):", e); } }
+    var writePromise;
+    if (isTauri) writePromise = writeTauriDataFile(json);
+    else {
+      if (chosenDataDirHandle) writeDataFileToChosenFolder(json);
+      else { try { localStorage.setItem(STORAGE_KEY, json); } catch (e) { console.log("[persist] could not save to localStorage (it may be full):", e); } }
+      writePromise = Promise.resolve();
+    }
     var el = document.getElementById("last-saved");
     if (el) el.textContent = "Saved " + new Date().toLocaleTimeString();
+    return writePromise;
   }
 
   // ---------- Backups ----------
@@ -1736,7 +1741,7 @@
     return JSON.parse(await window.__TAURI__.fs.readTextFile(filePath));
   }
   function writeTauriDataFile(jsonString) {
-    tauriDataFilePath()
+    return tauriDataFilePath()
       .then(function (filePath) { console.log('[Tauri write] attempting to write to:', filePath); return window.__TAURI__.fs.writeTextFile(filePath, jsonString); })
       .then(function () { console.log('[Tauri write] SUCCESS'); })
       .catch(function (err) { console.error('[Tauri write] FAILED:', err); });
@@ -1960,12 +1965,13 @@
   // Every Danger Zone action goes through this: confirm, take a safety backup FIRST (so it's
   // always undoable via the backup list even though the action itself has no direct "undo"),
   // then run the actual clear.
-  function runDangerAction(label, clearFn) {
+  async function runDangerAction(label, clearFn) {
     if (!confirm("This will permanently clear " + label + ". A safety backup will be taken first so this can be undone by restoring it from the Backups list below. Continue?")) return;
     createBackup("pre-delete", "Before: Clear " + label);
     clearFn();
     logChange("delete", "data", label, "Cleared " + label + " (Developer tab Danger Zone).");
-    persist();
+    await persist();
+    console.log("[runDangerAction] persist completed (Tauri write finished if applicable) for:", label);
     renderAll();
     applyGlobalRolePermissions();
     renderDeveloperView();
