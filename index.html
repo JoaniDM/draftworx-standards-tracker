@@ -3870,6 +3870,10 @@
   // hasSiblingHeaderNearby uses to reject a listing/cross-reference, not a real chapter opening.
   function buildExtractionSections(fullText, standardsScope) {
     var lowerText = fullText.toLowerCase();
+    [[135539, "ISQM1"], [347136, "ISQM2"]].forEach(function (pair) {
+      var idx = pair[0], label = pair[1];
+      console.log("[Line-start diag]", label, "before:", JSON.stringify(fullText.substring(Math.max(0, idx - 50), idx)), "after:", JSON.stringify(fullText.substring(idx, idx + 50)), "looksLikeLineStart:", looksLikeLineStart(fullText, idx));
+    });
     var allHeaders = data.standards.reduce(function (acc, s) {
       var header = s.code.replace(/\s*\(.*?\)\s*$/, "").trim();
       return acc.concat(headerSpaceVariants(header).map(function (v) { return v.toLowerCase(); }));
