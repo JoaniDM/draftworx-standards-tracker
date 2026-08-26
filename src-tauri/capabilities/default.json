@@ -14,7 +14,11 @@
     },
     {
       "identifier": "fs:allow-write-text-file",
-      "allow": [{ "path": "**/draftworx_data.json" }, { "path": "**/Draftworx-Backup-*.json" }]
+      "allow": [{ "path": "**/draftworx_data.json" }, { "path": "**/Draftworx-Backup-*.json" }, { "path": "**/Backups/Draftworx-Backup-*.json" }]
+    },
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [{ "path": "**/Backups" }]
     }
   ]
 }

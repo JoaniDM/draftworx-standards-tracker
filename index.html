@@ -1742,12 +1742,17 @@
       .catch(function (err) { console.error('[Tauri write] FAILED:', err); });
   }
   // Same idea as writeTauriDataFile, but for backup snapshots — writes Draftworx-Backup-*.json
-  // next to draftworx_data.json in $EXE's own folder, so backups survive even when localStorage
-  // (used only for the backups LIST metadata) is full.
+  // into a Backups subfolder next to draftworx_data.json in $EXE's own folder, so backups
+  // survive even when localStorage (used only for the backups LIST metadata) is full.
+  async function tauriBackupFilePath(filename) {
+    var exeDir = await window.__TAURI__.core.invoke('get_exe_dir');
+    var backupsDir = await window.__TAURI__.path.join(exeDir, 'Backups');
+    await window.__TAURI__.fs.mkdir(backupsDir, { recursive: true });
+    return await window.__TAURI__.path.join(backupsDir, filename);
+  }
   function writeTauriBackupFile(entry) {
     var filename = backupFilenameFor(entry.createdAt);
-    window.__TAURI__.core.invoke('get_exe_dir')
-      .then(function (exeDir) { return window.__TAURI__.path.join(exeDir, filename); })
+    tauriBackupFilePath(filename)
       .then(function (filePath) { return window.__TAURI__.fs.writeTextFile(filePath, entry.snapshot); })
       .catch(function () {});
   }
