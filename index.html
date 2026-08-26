@@ -3885,7 +3885,7 @@
         while ((idx = lowerText.indexOf(variantLower, searchFrom)) !== -1) {
           if (!looksLikeLineStart(fullText, idx)) { searchFrom = idx + variantLower.length; continue; }
           var score = markerQualityAt(fullText, idx) - (hasSiblingHeaderNearby(lowerText, allHeaders, idx, variantLower, variantLower.length) ? 1000 : 0);
-          if (score > bestScore) { bestScore = score; bestIdx = idx; bestHeader = variant; }
+          if (score >= bestScore) { bestScore = score; bestIdx = idx; bestHeader = variant; }
           searchFrom = idx + variantLower.length;
         }
       });
