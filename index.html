@@ -3953,7 +3953,7 @@
         var searchFrom = 0, idx;
         while ((idx = lowerText.indexOf(variantLower, searchFrom)) !== -1) {
           diagFound = true;
-          console.log("[PDF scan diagnostic]", code, "found at index", idx, "context:", fullText.substring(Math.max(0, idx - 100), idx + 100));
+          console.log("[PDF scan diagnostic]", code, "[" + idx + "]", "context:", fullText.substring(Math.max(0, idx - 250), idx + 250));
           searchFrom = idx + variantLower.length;
         }
       });
