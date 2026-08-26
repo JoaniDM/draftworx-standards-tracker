@@ -3896,6 +3896,9 @@
     sections.forEach(function (sec, i) {
       var end = (i + 1 < sections.length) ? sections[i + 1].index : fullText.length;
       var sectionText = fullText.substring(sec.index, end);
+      if (["ISA 501", "ISA 620", "ISA 706"].indexOf(sec.std.code) !== -1) {
+        console.log("[Section boundary diag]", sec.std.code, "start:", sec.index, "end:", end, "length:", sectionText.length);
+      }
       // Two standards are often bundled back-to-back in the same handbook PDF (e.g. ISRE 2400
       // immediately followed by ISRE 2410's own real chapter) — if that SECOND one isn't itself
       // a standard this tracker follows, nothing above stops the FIRST one's section from
@@ -3945,19 +3948,6 @@
       var before = data.standards.length;
       var std = findOrCreateStandard(cand.refInfo, cand.code);
       if (data.standards.length > before) createdStds.push(std);
-    });
-    ["ISA 501", "ISA 620", "ISA 706", "ISQM 1", "ISQM 2"].forEach(function (code) {
-      var diagVariants = headerSpaceVariants(code).map(function (v) { return v.toLowerCase(); });
-      var diagFound = false;
-      diagVariants.forEach(function (variantLower) {
-        var searchFrom = 0, idx;
-        while ((idx = lowerText.indexOf(variantLower, searchFrom)) !== -1) {
-          diagFound = true;
-          console.log("[PDF scan diagnostic]", code, "[" + idx + "]", "context:", fullText.substring(Math.max(0, idx - 250), idx + 250));
-          searchFrom = idx + variantLower.length;
-        }
-      });
-      if (!diagFound) console.log("[PDF scan diagnostic]", code, "— NOT FOUND anywhere in this PDF's text");
     });
     KNOWN_ISA_STANDARDS.forEach(function (code) {
       var variants = headerSpaceVariants(code).map(function (v) { return v.toLowerCase(); });
