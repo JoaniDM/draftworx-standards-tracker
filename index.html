@@ -3896,6 +3896,9 @@
     sections.forEach(function (sec, i) {
       var end = (i + 1 < sections.length) ? sections[i + 1].index : fullText.length;
       var sectionText = fullText.substring(sec.index, end);
+      if (["ISA 315", "ISA 300", "ISA 230"].indexOf(sec.std.code) !== -1) {
+        console.log("[Section boundary diag]", sec.std.code, "start:", sec.index, "end:", end, "length:", sectionText.length);
+      }
       // Two standards are often bundled back-to-back in the same handbook PDF (e.g. ISRE 2400
       // immediately followed by ISRE 2410's own real chapter) — if that SECOND one isn't itself
       // a standard this tracker follows, nothing above stops the FIRST one's section from
@@ -5092,17 +5095,51 @@
     hideLoginScreen();
     renderIdentityBadge();
     applyGlobalRolePermissions();
+    resetSessionTimer();
     if (!appInitialized) { finishInit(); return; }
     // Coming back from a logout rather than a fresh load — refresh everything that's
     // per-viewer (unread badges, whichever card/tab is showing) as if the page had reloaded.
     renderAuditView(); renderSettingsView(); renderCoverageView(); updateMessagesTabBadge();
     if (state.view === "messages") renderMessagesView();
   }
-  function logout() {
+  function logout(message) {
+    stopSessionTimer();
     localStorage.removeItem(IDENTITY_KEY);
     identity = null;
     renderIdentityBadge();
+    if (message) alert(message);
     showLoginScreen();
+  }
+
+  // ---------- Session timeout ----------
+  // Auto-logout after 15 minutes with no mouse click or keypress, so an unattended, logged-in
+  // browser doesn't stay open indefinitely.
+  var SESSION_TIMEOUT_MS = 15 * 60 * 1000;
+  var sessionTimeoutTimer = null;
+  function resetSessionTimer() {
+    if (!identity) return;
+    clearTimeout(sessionTimeoutTimer);
+    sessionTimeoutTimer = setTimeout(function () { logout("Session expired — please log in again"); }, SESSION_TIMEOUT_MS);
+  }
+  function stopSessionTimer() { clearTimeout(sessionTimeoutTimer); sessionTimeoutTimer = null; }
+  document.addEventListener("click", resetSessionTimer);
+  document.addEventListener("keydown", resetSessionTimer);
+
+  // ---------- Login lockout & audit ----------
+  // After MAX_LOGIN_ATTEMPTS failed passwords for the same user, that user's login is locked for
+  // LOGIN_LOCKOUT_MS. Kept in localStorage (not just memory) so the lockout survives a page reload.
+  var LOGIN_SECURITY_KEY = "dwx-standards-tracker-login-security";
+  var MAX_LOGIN_ATTEMPTS = 3;
+  var LOGIN_LOCKOUT_MS = 5 * 60 * 1000;
+  function loadLoginSecurity() {
+    try { return JSON.parse(localStorage.getItem(LOGIN_SECURITY_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function saveLoginSecurity(sec) { localStorage.setItem(LOGIN_SECURITY_KEY, JSON.stringify(sec)); }
+  function logLoginAttempt(username, summary) {
+    if (!data) return;
+    if (!Array.isArray(data.auditLog)) data.auditLog = [];
+    data.auditLog.unshift({ id: uid("log"), timestamp: new Date().toISOString(), user: username, action: "login", entityType: "user", label: username, summary: summary });
+    persist();
   }
   function wireLoginScreen() {
     document.getElementById("login-btn").addEventListener("click", function () {
@@ -5111,12 +5148,45 @@
       var pinInput = document.getElementById("login-pin-input");
       var pinError = document.getElementById("login-pin-error");
       var userObj = data.users.find(function (u) { return u.id === sel.value; });
-      if (!userObj || hashPin(pinInput.value.trim()) !== userObj.pinHash) {
+      if (!userObj) return;
+
+      var sec = loadLoginSecurity();
+      var rec = sec[userObj.id];
+      var now = Date.now();
+      if (rec && rec.lockedUntil && rec.lockedUntil > now) {
+        logLoginAttempt(userObj.name, "Login attempt blocked — account locked (0 attempts remaining)");
+        pinError.textContent = "Account locked — try again in 5 minutes";
         pinError.style.display = "";
         pinInput.value = "";
         return;
       }
+
+      if (hashPin(pinInput.value.trim()) !== userObj.pinHash) {
+        if (!rec || (rec.lockedUntil && rec.lockedUntil <= now)) rec = { failCount: 0 };
+        rec.failCount = (rec.failCount || 0) + 1;
+        var attemptsRemaining = MAX_LOGIN_ATTEMPTS - rec.failCount;
+        if (attemptsRemaining <= 0) {
+          rec.lockedUntil = now + LOGIN_LOCKOUT_MS;
+          rec.failCount = 0;
+          sec[userObj.id] = rec;
+          saveLoginSecurity(sec);
+          logLoginAttempt(userObj.name, "Failed login attempt — account locked (0 attempts remaining)");
+          pinError.textContent = "Account locked — try again in 5 minutes";
+        } else {
+          sec[userObj.id] = rec;
+          saveLoginSecurity(sec);
+          logLoginAttempt(userObj.name, "Failed login attempt (" + attemptsRemaining + " attempt(s) remaining)");
+          pinError.textContent = "Incorrect password — please try again";
+        }
+        pinError.style.display = "";
+        pinInput.value = "";
+        return;
+      }
+
+      delete sec[userObj.id];
+      saveLoginSecurity(sec);
       pinError.style.display = "none";
+      logLoginAttempt(userObj.name, "Successful login");
       loginAsUser(sel.value);
     });
   }
