@@ -3133,24 +3133,24 @@
     var wpSaveConfirmHtml = state.wpSaveConfirmShown[p.id] ? '<span class="wp-save-confirm">Saved!</span>' : "";
     var wpSaveBlockHtml = canEditCoverage ? '<div class="wp-save-block"><button type="button" class="btn" data-save-wp="' + p.id + '">Save</button>' + wpSaveConfirmHtml + "</div>" : "";
 
-    // ---- WP reference: a dropdown of working papers set up for this methodology in Settings,
-    // with a manual text fallback for references that aren't (yet) in that list. ----
+    // ---- WP reference: up to 5 dropdowns of working papers set up for this methodology in
+    // Settings — no manual entry, only what's in that list. ----
     var wpOptionsForMeth = (data.workingPapers || []).filter(function (wp) { return wp.methodologyId === meth.id; });
-    var matchingWp = wpOptionsForMeth.find(function (wp) { return wp.reference === (cov.wpReference || ""); });
-    var wpRefIsManual = !!(cov.wpReference && !matchingWp);
-    var wpRefSelectHtml = '<select class="review-textarea" style="min-height:auto; padding:6px 8px;" data-wpref-select' + ro + '>' +
-        '<option value=""' + (!cov.wpReference ? " selected" : "") + '>— No WP reference selected —</option>' +
-        wpOptionsForMeth.map(function (wp) {
-          return '<option value="' + escapeAttr(wp.reference) + '"' + (matchingWp && matchingWp.id === wp.id ? " selected" : "") + '>' + escapeHtml(wp.reference) + "</option>";
-        }).join("") +
-        '<option value="__manual__"' + (wpRefIsManual ? " selected" : "") + '>Other / manual entry…</option>' +
-      "</select>";
-    var wpRefManualHtml = '<input type="text" class="review-textarea" spellcheck="false" style="min-height:auto; padding:6px 8px; margin-top:6px;' + (wpRefIsManual ? "" : " display:none;") + '" data-wpref-field placeholder="WP reference (e.g. 10.02)" value="' + escapeAttr(cov.wpReference || "") + '"' + ro + ">";
+    var wpRefHtml = "";
+    for (var wpSlot = 0; wpSlot < 5; wpSlot++) {
+      var wpSlotVal = (cov.wpReferences && cov.wpReferences[wpSlot]) || "";
+      wpRefHtml += '<label style="font-size:11px; color:var(--text-muted); display:block; margin-top:' + (wpSlot === 0 ? "0" : "6px") + ';">WP ' + (wpSlot + 1) + '</label>' +
+        '<select class="review-textarea" style="min-height:auto; padding:6px 8px;" data-wpref-slot="' + wpSlot + '"' + ro + '>' +
+          '<option value=""' + (!wpSlotVal ? " selected" : "") + '>— No WP reference selected —</option>' +
+          wpOptionsForMeth.map(function (wp) {
+            return '<option value="' + escapeAttr(wp.reference) + '"' + (wp.reference === wpSlotVal ? " selected" : "") + '>' + escapeHtml(wp.reference) + "</option>";
+          }).join("") +
+        "</select>";
+    }
 
     var wpExtractColHtml = '<div class="compare-card compare-card--excel">' +
         '<div class="compare-card-header">Current WP Procedure <span class="compare-card-header-sub">' + escapeHtml(meth.name) + "</span></div>" +
-        wpRefSelectHtml +
-        wpRefManualHtml +
+        wpRefHtml +
         '<textarea class="review-textarea" spellcheck="false" data-wp-field placeholder="Paste or type the working paper procedure/extract that addresses this paragraph..."' + ro + ">" + escapeHtml(cov.wpExtract || "") + "</textarea>" +
         wpSaveBlockHtml +
         excelCoverageHtml +
@@ -3265,16 +3265,10 @@
           }, 1500);
         });
       });
-      var wpref = card.querySelector("[data-wpref-field]");
-      if (wpref) wpref.addEventListener("blur", function () { saveCoverageField(paraId, state.activeMethodologyId, "wpReference", wpref.value, "Updated WP reference"); });
-      var wprefSelect = card.querySelector("[data-wpref-select]");
-      if (wprefSelect) wprefSelect.addEventListener("change", function () {
-        if (wprefSelect.value === "__manual__") {
-          if (wpref) { wpref.style.display = ""; wpref.focus(); }
-        } else {
-          if (wpref) wpref.style.display = "none";
-          saveCoverageField(paraId, state.activeMethodologyId, "wpReference", wprefSelect.value, "Updated WP reference");
-        }
+      card.querySelectorAll("[data-wpref-slot]").forEach(function (sel) {
+        sel.addEventListener("change", function () {
+          saveWpReferenceSlot(paraId, state.activeMethodologyId, parseInt(sel.getAttribute("data-wpref-slot"), 10), sel.value);
+        });
       });
       var notes = card.querySelector("[data-notes-field]");
       if (notes) notes.addEventListener("blur", function () { saveCoverageField(paraId, state.activeMethodologyId, "notes", notes.value, "Updated comparison notes"); });
@@ -3411,6 +3405,22 @@
     }
     cov[field] = value; cov.source = "manual"; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
     logChange("update", "coverage", found.std.code + " " + found.para.number + " " + (meth ? meth.name : ""), summaryLabel);
+    persist();
+    withScrollPreserved(renderCoverageView);
+  }
+  // One of the 5 WP reference dropdowns on a paragraph card — kept as its own array (not
+  // separate fields) so any number up to 5 can be set independently.
+  function saveWpReferenceSlot(paragraphId, methodologyId, index, value) {
+    var found = findParagraph(paragraphId);
+    if (!found) return;
+    var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
+    var cov = ensureCoverageEntry(found.para, methodologyId);
+    if (!Array.isArray(cov.wpReferences)) cov.wpReferences = ["", "", "", "", ""];
+    while (cov.wpReferences.length < 5) cov.wpReferences.push("");
+    if (cov.wpReferences[index] === value) return;
+    cov.wpReferences[index] = value;
+    cov.source = "manual"; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
+    logChange("update", "coverage", found.std.code + " " + found.para.number + " " + (meth ? meth.name : ""), "Updated WP " + (index + 1) + " reference");
     persist();
     withScrollPreserved(renderCoverageView);
   }
