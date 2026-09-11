@@ -4094,6 +4094,9 @@
     return -1;
   }
   function extractParagraphsFromSection(sec) {
+    if (sec.std.code === "ISA 230") {
+      console.log("[ISA 230 extraction]", "called with section length:", sec.text.length);
+    }
     var numCoreMatch = sec.std.code.match(/\d+/);
     var numCore = numCoreMatch ? numCoreMatch[0] : "";
     var text = sec.text;
@@ -4114,6 +4117,9 @@
         start: m.index + m[0].length,
         headerStart: m.index
       });
+    }
+    if (sec.std.code === "ISA 230") {
+      console.log("[Paragraph extraction diag]", sec.std.code, "markers found:", markers.length, "first 5 numbers:", markers.slice(0, 5).map(function (mk) { return (mk.isAppMaterial ? "A" : "") + mk.num; }));
     }
 
     var found = [];
