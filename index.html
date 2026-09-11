@@ -693,6 +693,10 @@
           <h3>Backups</h3>
           <div class="fp-sub">One saved automatically per day, plus a safety snapshot before every Danger Zone action and before every restore — the last 10 backups overall are kept. Stored in this browser only — use Download Backup above to keep a copy elsewhere too.</div>
           <div id="developer-backups-list"></div>
+          <div style="margin-top:10px;">
+            <button class="btn" id="restore-from-file-btn">Restore from file...</button>
+            <input type="file" id="restore-from-file-input" accept="application/json" hidden>
+          </div>
         </div>
 
         <div class="family-panel">
@@ -1399,7 +1403,8 @@
     wpSaveConfirmShown: {},
     editing: { methodologyId: null, standardId: null, messageParagraphId: null, messageReplyToId: null, pdfImportMode: null, workingPaperId: null },
     messagesJumpTo: null,
-    selectiveRestoreBackupId: null
+    selectiveRestoreBackupId: null,
+    selectiveRestoreFileEntry: null
   };
   var STANDARD_COLLAPSE_THRESHOLD = 5;
 
@@ -1956,9 +1961,27 @@
     var entry = loadBackups().find(function (b) { return b.id === id; });
     if (!entry) return;
     state.selectiveRestoreBackupId = id;
+    state.selectiveRestoreFileEntry = null;
     document.getElementById("selective-restore-label").textContent = entry.label + " (" + new Date(entry.createdAt).toLocaleString() + ")";
     document.querySelectorAll("#dlg-selective-restore input[type=checkbox]").forEach(function (cb) { cb.checked = false; });
     document.getElementById("dlg-selective-restore").showModal();
+  }
+  // Same selective-restore dialog, but for a JSON backup file browsed to from disk instead of
+  // one in the in-browser Backups list — e.g. a Download Backup export, or a copy pulled from
+  // the Backups folder on another machine.
+  function openSelectiveRestoreFromFile(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var parsed;
+      try { parsed = JSON.parse(reader.result); } catch (e) { alert("Could not read that file as JSON."); return; }
+      if (!parsed || !Array.isArray(parsed.methodologies) || !Array.isArray(parsed.standards)) { alert("This file doesn't look like a valid backup from this tool."); return; }
+      state.selectiveRestoreBackupId = null;
+      state.selectiveRestoreFileEntry = { label: file.name, createdAt: new Date(file.lastModified).toISOString(), snapshot: reader.result };
+      document.getElementById("selective-restore-label").textContent = state.selectiveRestoreFileEntry.label + " (" + new Date(state.selectiveRestoreFileEntry.createdAt).toLocaleString() + ")";
+      document.querySelectorAll("#dlg-selective-restore input[type=checkbox]").forEach(function (cb) { cb.checked = false; });
+      document.getElementById("dlg-selective-restore").showModal();
+    };
+    reader.readAsText(file);
   }
   // Restores one methodology's own paragraph coverage (status, notes, tick marks, WP fields)
   // from the backup — never the underlying standard/paragraph text or number, which is shared,
@@ -2046,8 +2069,7 @@
     });
   }
   function confirmSelectiveRestore() {
-    var id = state.selectiveRestoreBackupId;
-    var entry = loadBackups().find(function (b) { return b.id === id; });
+    var entry = state.selectiveRestoreFileEntry || loadBackups().find(function (b) { return b.id === state.selectiveRestoreBackupId; });
     if (!entry) return;
     var checks = {
       rac: document.getElementById("restore-check-rac").checked,
@@ -5576,6 +5598,8 @@
     document.getElementById("save-user-btn").addEventListener("click", saveUser);
     document.getElementById("save-change-pw-btn").addEventListener("click", saveChangePassword);
     document.getElementById("confirm-selective-restore-btn").addEventListener("click", confirmSelectiveRestore);
+    document.getElementById("restore-from-file-btn").addEventListener("click", function () { document.getElementById("restore-from-file-input").click(); });
+    document.getElementById("restore-from-file-input").addEventListener("change", function (e) { if (e.target.files[0]) openSelectiveRestoreFromFile(e.target.files[0]); e.target.value = ""; });
     document.getElementById("add-workingpaper-btn").addEventListener("click", function () { openWorkingPaperModal(null); });
     document.getElementById("save-workingpaper-btn").addEventListener("click", saveWorkingPaper);
     document.getElementById("send-message-btn").addEventListener("click", sendMessageFromModal);
