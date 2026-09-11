@@ -722,7 +722,12 @@
           <h3>Working Papers</h3>
           <div class="fp-sub">Working papers available per methodology — shown as a dropdown on the WP Compliance tab.</div>
           <div id="workingpapers-list"></div>
-          <button class="btn primary" id="add-workingpaper-btn" style="margin-top:12px;">+ Add working paper</button>
+          <div style="margin-top:12px; display:flex; gap:8px;">
+            <button class="btn primary" id="add-workingpaper-btn">+ Add working paper</button>
+            <button class="btn" id="export-workingpapers-btn">Export Working Papers</button>
+            <button class="btn" id="import-workingpapers-btn">Import Working Papers</button>
+            <input type="file" id="import-workingpapers-input" accept=".csv" hidden>
+          </div>
         </div>
       </section>
     </main>
@@ -815,6 +820,7 @@
       <div class="field"><label>Methodology</label>
         <select id="f-workingpaper-methodology"></select>
       </div>
+      <div class="field"><label>Section</label><input type="text" id="f-workingpaper-section" placeholder="e.g. Planning" required></div>
       <div class="field"><label>WP Reference</label><input type="text" id="f-workingpaper-reference" placeholder="e.g. 10.05 Planning Checklist" required></div>
     </div>
     <div class="modal-foot">
@@ -3133,20 +3139,32 @@
     var wpSaveConfirmHtml = state.wpSaveConfirmShown[p.id] ? '<span class="wp-save-confirm">Saved!</span>' : "";
     var wpSaveBlockHtml = canEditCoverage ? '<div class="wp-save-block"><button type="button" class="btn" data-save-wp="' + p.id + '">Save</button>' + wpSaveConfirmHtml + "</div>" : "";
 
-    // ---- WP reference: up to 5 dropdowns of working papers set up for this methodology in
-    // Settings — no manual entry, only what's in that list. ----
+    // ---- WP reference: up to 6 dropdowns (2-column grid) of working papers set up for this
+    // methodology in Settings — no manual entry, only what's in that list. ----
     var wpOptionsForMeth = (data.workingPapers || []).filter(function (wp) { return wp.methodologyId === meth.id; });
-    var wpRefHtml = "";
-    for (var wpSlot = 0; wpSlot < 5; wpSlot++) {
+    var wpSectionsForMeth = [];
+    wpOptionsForMeth.forEach(function (wp) { if (wpSectionsForMeth.indexOf(wp.section) === -1) wpSectionsForMeth.push(wp.section); });
+    function wpOptgroupsHtmlFor(selectedVal) {
+      return wpSectionsForMeth.map(function (section) {
+        return '<optgroup label="' + escapeAttr(section) + '">' +
+          wpOptionsForMeth.filter(function (wp) { return wp.section === section; }).map(function (wp) {
+            return '<option value="' + escapeAttr(wp.reference) + '"' + (wp.reference === selectedVal ? " selected" : "") + '>' + escapeHtml(wp.reference) + "</option>";
+          }).join("") +
+        "</optgroup>";
+      }).join("");
+    }
+    var wpRefHtml = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:0 10px;">';
+    for (var wpSlot = 0; wpSlot < 6; wpSlot++) {
       var wpSlotVal = (cov.wpReferences && cov.wpReferences[wpSlot]) || "";
-      wpRefHtml += '<label style="font-size:11px; color:var(--text-muted); display:block; margin-top:' + (wpSlot === 0 ? "0" : "6px") + ';">WP ' + (wpSlot + 1) + '</label>' +
+      wpRefHtml += "<div>" +
+        '<label style="font-size:11px; color:var(--text-muted); display:block; margin-top:' + (wpSlot < 2 ? "0" : "6px") + ';">WP ' + (wpSlot + 1) + '</label>' +
         '<select class="review-textarea" style="min-height:auto; padding:6px 8px;" data-wpref-slot="' + wpSlot + '"' + ro + '>' +
           '<option value=""' + (!wpSlotVal ? " selected" : "") + '>— No WP reference selected —</option>' +
-          wpOptionsForMeth.map(function (wp) {
-            return '<option value="' + escapeAttr(wp.reference) + '"' + (wp.reference === wpSlotVal ? " selected" : "") + '>' + escapeHtml(wp.reference) + "</option>";
-          }).join("") +
-        "</select>";
+          wpOptgroupsHtmlFor(wpSlotVal) +
+        "</select>" +
+      "</div>";
     }
+    wpRefHtml += "</div>";
 
     var wpExtractColHtml = '<div class="compare-card compare-card--excel">' +
         '<div class="compare-card-header">Current WP Procedure <span class="compare-card-header-sub">' + escapeHtml(meth.name) + "</span></div>" +
@@ -3408,15 +3426,15 @@
     persist();
     withScrollPreserved(renderCoverageView);
   }
-  // One of the 5 WP reference dropdowns on a paragraph card — kept as its own array (not
-  // separate fields) so any number up to 5 can be set independently.
+  // One of the 6 WP reference dropdowns on a paragraph card — kept as its own array (not
+  // separate fields) so any number up to 6 can be set independently.
   function saveWpReferenceSlot(paragraphId, methodologyId, index, value) {
     var found = findParagraph(paragraphId);
     if (!found) return;
     var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
     var cov = ensureCoverageEntry(found.para, methodologyId);
-    if (!Array.isArray(cov.wpReferences)) cov.wpReferences = ["", "", "", "", ""];
-    while (cov.wpReferences.length < 5) cov.wpReferences.push("");
+    if (!Array.isArray(cov.wpReferences)) cov.wpReferences = ["", "", "", "", "", ""];
+    while (cov.wpReferences.length < 6) cov.wpReferences.push("");
     if (cov.wpReferences[index] === value) return;
     cov.wpReferences[index] = value;
     cov.source = "manual"; cov.updatedAt = new Date().toISOString(); cov.updatedBy = identityName();
@@ -3859,14 +3877,19 @@
     list.innerHTML = data.methodologies.map(function (meth) {
       var wps = data.workingPapers.filter(function (wp) { return wp.methodologyId === meth.id; });
       if (!wps.length) return "";
+      var sections = [];
+      wps.forEach(function (wp) { if (sections.indexOf(wp.section) === -1) sections.push(wp.section); });
       return '<div class="fp-sub" style="margin-top:10px; font-weight:600;">' + escapeHtml(meth.name) + "</div>" +
-        wps.map(function (wp) {
-          return '<div class="methodology-row" style="padding:6px 0;">' +
-            '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(wp.reference) + '</span></span>' +
-            '<span class="row-actions" style="display:flex;">' +
-              '<button class="icon-btn" data-edit-workingpaper="' + wp.id + '" title="Edit">✎</button>' +
-              '<button class="icon-btn" data-del-workingpaper="' + wp.id + '" title="Remove">✕</button>' +
-            "</span></div>";
+        sections.map(function (section) {
+          return '<div class="fp-sub" style="margin-top:6px; margin-left:10px; font-style:italic;">' + escapeHtml(section) + "</div>" +
+            wps.filter(function (wp) { return wp.section === section; }).map(function (wp) {
+              return '<div class="methodology-row" style="padding:6px 0;">' +
+                '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(wp.reference) + '</span></span>' +
+                '<span class="row-actions" style="display:flex;">' +
+                  '<button class="icon-btn" data-edit-workingpaper="' + wp.id + '" title="Edit">✎</button>' +
+                  '<button class="icon-btn" data-del-workingpaper="' + wp.id + '" title="Remove">✕</button>' +
+                "</span></div>";
+            }).join("");
         }).join("");
     }).join("");
     list.querySelectorAll("[data-edit-workingpaper]").forEach(function (b) { b.addEventListener("click", function () { openWorkingPaperModal(b.getAttribute("data-edit-workingpaper")); }); });
@@ -3880,20 +3903,22 @@
     var methSel = document.getElementById("f-workingpaper-methodology");
     methSel.innerHTML = data.methodologies.map(function (m) { return '<option value="' + escapeAttr(m.id) + '">' + escapeHtml(m.name) + "</option>"; }).join("");
     methSel.value = wp ? wp.methodologyId : (state.activeMethodologyId || (data.methodologies[0] || {}).id || "");
+    document.getElementById("f-workingpaper-section").value = wp ? wp.section : "";
     document.getElementById("f-workingpaper-reference").value = wp ? wp.reference : "";
     dlg.showModal();
   }
   function saveWorkingPaper() {
     var methodologyId = document.getElementById("f-workingpaper-methodology").value;
+    var section = document.getElementById("f-workingpaper-section").value.trim();
     var reference = document.getElementById("f-workingpaper-reference").value.trim();
-    if (!methodologyId || !reference) return;
+    if (!methodologyId || !section || !reference) return;
     var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
     if (state.editing.workingPaperId) {
       var wp = data.workingPapers.find(function (x) { return x.id === state.editing.workingPaperId; });
-      wp.methodologyId = methodologyId; wp.reference = reference;
+      wp.methodologyId = methodologyId; wp.section = section; wp.reference = reference;
       logChange("update", "workingPaper", reference, "Updated working paper for " + (meth ? meth.name : ""));
     } else {
-      data.workingPapers.push({ id: uid("wp"), methodologyId: methodologyId, reference: reference });
+      data.workingPapers.push({ id: uid("wp"), methodologyId: methodologyId, section: section, reference: reference });
       logChange("create", "workingPaper", reference, "Added working paper for " + (meth ? meth.name : ""));
     }
     document.getElementById("dlg-workingpaper").close();
@@ -3908,6 +3933,68 @@
     logChange("delete", "workingPaper", wp.reference, 'Removed working paper "' + wp.reference + '"');
     persist();
     renderWorkingPapersSettings();
+  }
+  function exportWorkingPapersCsv() {
+    var headers = ["Section", "Reference", "Methodology"];
+    function csvCell(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
+    var rows = [headers.map(csvCell).join(",")];
+    (data.workingPapers || []).forEach(function (wp) {
+      var meth = data.methodologies.find(function (m) { return m.id === wp.methodologyId; });
+      rows.push([wp.section, wp.reference, meth ? meth.name : ""].map(csvCell).join(","));
+    });
+    var blob = new Blob([rows.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = "working-papers-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  function parseWorkingPapersCsvLine(line) {
+    var cells = [], cur = "", inQuotes = false;
+    for (var i = 0; i < line.length; i++) {
+      var c = line[i];
+      if (inQuotes) {
+        if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else inQuotes = false; }
+        else cur += c;
+      } else {
+        if (c === '"') inQuotes = true;
+        else if (c === ",") { cells.push(cur); cur = ""; }
+        else cur += c;
+      }
+    }
+    cells.push(cur);
+    return cells;
+  }
+  function importWorkingPapersFromFile(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var lines = String(reader.result).split(/\r?\n/).filter(function (l) { return l.trim() !== ""; });
+      if (!lines.length) { alert("That file is empty."); return; }
+      var headerCells = parseWorkingPapersCsvLine(lines[0]).map(function (h) { return h.trim().toLowerCase(); });
+      var sectionIdx = headerCells.indexOf("section");
+      var referenceIdx = headerCells.indexOf("reference");
+      var methodologyIdx = headerCells.indexOf("methodology");
+      if (sectionIdx === -1 || referenceIdx === -1 || methodologyIdx === -1) { alert("This file doesn't look like a valid Working Papers export (expected Section, Reference, Methodology columns)."); return; }
+      var added = 0, skipped = 0;
+      for (var i = 1; i < lines.length; i++) {
+        var cells = parseWorkingPapersCsvLine(lines[i]);
+        var section = (cells[sectionIdx] || "").trim();
+        var reference = (cells[referenceIdx] || "").trim();
+        var methodologyName = (cells[methodologyIdx] || "").trim();
+        if (!section || !reference || !methodologyName) { skipped++; continue; }
+        var meth = data.methodologies.find(function (m) { return m.name === methodologyName; });
+        if (!meth) { skipped++; continue; }
+        var exists = data.workingPapers.some(function (wp) { return wp.methodologyId === meth.id && wp.section === section && wp.reference === reference; });
+        if (exists) { skipped++; continue; }
+        data.workingPapers.push({ id: uid("wp"), methodologyId: meth.id, section: section, reference: reference });
+        added++;
+      }
+      logChange("create", "workingPaper", "Import", "Imported " + added + " working paper(s) from CSV, skipped " + skipped + ".");
+      persist();
+      renderWorkingPapersSettings();
+      alert("Imported " + added + " working paper(s). Skipped " + skipped + " duplicate or invalid row(s).");
+    };
+    reader.readAsText(file);
   }
   function hashPin(pin) {
     var hash = 0;
@@ -5624,6 +5711,9 @@
     document.getElementById("restore-from-file-btn").addEventListener("click", function () { document.getElementById("restore-from-file-input").click(); });
     document.getElementById("restore-from-file-input").addEventListener("change", function (e) { if (e.target.files[0]) openSelectiveRestoreFromFile(e.target.files[0]); e.target.value = ""; });
     document.getElementById("add-workingpaper-btn").addEventListener("click", function () { openWorkingPaperModal(null); });
+    document.getElementById("export-workingpapers-btn").addEventListener("click", exportWorkingPapersCsv);
+    document.getElementById("import-workingpapers-btn").addEventListener("click", function () { document.getElementById("import-workingpapers-input").click(); });
+    document.getElementById("import-workingpapers-input").addEventListener("change", function (e) { if (e.target.files[0]) importWorkingPapersFromFile(e.target.files[0]); e.target.value = ""; });
     document.getElementById("save-workingpaper-btn").addEventListener("click", saveWorkingPaper);
     document.getElementById("send-message-btn").addEventListener("click", sendMessageFromModal);
 
