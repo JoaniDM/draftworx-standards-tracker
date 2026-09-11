@@ -557,6 +557,10 @@
           <button class="btn" id="add-paragraph-btn">+ Add paragraph</button>
         </div>
         <div class="pill-row" id="coverage-methodology-pills"></div>
+        <div class="search-box" style="max-width:320px; margin-bottom:10px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" id="coverage-search-input" placeholder="Search paragraph number or text...">
+        </div>
         <div class="empty-state" id="coverage-empty-no-meth" style="display:none;">No methodologies yet. Add one from the sidebar to begin reviewing coverage.</div>
         <div id="coverage-body">
           <div id="coverage-collapse-controls" style="display:none; margin-bottom:8px; font-size:12px;">
@@ -2404,7 +2408,7 @@
     }
     if (state.search) {
       var q = state.search.toLowerCase();
-      var hay = (std.code + " " + std.title + " " + para.number + " " + para.text).toLowerCase();
+      var hay = (para.number + " " + para.text).toLowerCase();
       if (hay.indexOf(q) === -1) return false;
     }
     return true;
@@ -2881,7 +2885,13 @@
       pill.className = "pill-btn" + (isActive ? " active" : "");
       if (isActive) { pill.style.background = catColor(m.colorIndex); pill.style.borderColor = catColor(m.colorIndex); }
       pill.innerHTML = '<span class="pill-swatch" style="background:' + (isActive ? "#fff" : catColor(m.colorIndex)) + '"></span>' + escapeHtml(m.name);
-      pill.addEventListener("click", function () { state.activeMethodologyId = m.id; renderCoverageView(); });
+      pill.addEventListener("click", function () {
+        state.activeMethodologyId = m.id;
+        state.search = "";
+        var searchInput = document.getElementById("coverage-search-input");
+        if (searchInput) searchInput.value = "";
+        renderCoverageView();
+      });
       toolbar.appendChild(pill);
     });
 
@@ -5831,6 +5841,7 @@
     document.getElementById("filter-family").addEventListener("change", function (e) { state.familyFilter = e.target.value; renderSidebar(); renderCoverageView(); });
     document.getElementById("filter-status").addEventListener("change", function (e) { state.statusFilter = e.target.value; renderCoverageView(); });
     document.getElementById("filter-wp-status").addEventListener("change", function (e) { state.wpStatusFilter = e.target.value; renderCoverageView(); });
+    document.getElementById("coverage-search-input").addEventListener("input", function (e) { state.search = e.target.value.trim(); renderCoverageView(); });
     document.getElementById("open-suggestions-btn").addEventListener("click", openSuggestionsModal);
     document.getElementById("open-change-password-btn").addEventListener("click", openChangePasswordModal);
     // A plain page reload is the most reliable way to "un-stick" the view — it re-reads
