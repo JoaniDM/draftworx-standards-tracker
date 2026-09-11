@@ -3840,14 +3840,20 @@
   // STANDARD_CODE_SCAN_RE below for the shape it looks for. Only a genuine line-start heading
   // with real numbered content following it counts (same bar discoverNewStandardsInPdf uses for
   // deciding a candidate is a real chapter and not just a passing mention).
-  function nextForeignHeadingWithin(text, ownHeaderLower) {
+  function nextForeignHeadingWithin(text, ownHeaderLower, allHeaders) {
     var re = new RegExp(STANDARD_CODE_SCAN_RE.source, "gi");
+    var lowerText = text.toLowerCase();
     var m;
     while ((m = re.exec(text))) {
       var candLower = m[0].replace(/\s*\(.*?\)\s*$/, "").trim().toLowerCase();
       if (candLower === ownHeaderLower) continue;
       if (!looksLikeLineStart(text, m.index)) continue;
       if (markerQualityAt(text, m.index) < 3) continue;
+      // A "Related standards" / cross-reference listing inside the standard's own text (several
+      // other standard codes named in quick succession) can otherwise look exactly like a real
+      // foreign chapter opening to the checks above — same listing case hasSiblingHeaderNearby
+      // already exists to reject when picking a standard's OWN header.
+      if (allHeaders && hasSiblingHeaderNearby(lowerText, allHeaders, m.index, candLower, m[0].length)) continue;
       return m.index;
     }
     return null;
@@ -3896,16 +3902,13 @@
     sections.forEach(function (sec, i) {
       var end = (i + 1 < sections.length) ? sections[i + 1].index : fullText.length;
       var sectionText = fullText.substring(sec.index, end);
-      if (["ISA 315", "ISA 300", "ISA 230"].indexOf(sec.std.code) !== -1) {
-        console.log("[Section boundary diag]", sec.std.code, "start:", sec.index, "end:", end, "length:", sectionText.length);
-      }
       // Two standards are often bundled back-to-back in the same handbook PDF (e.g. ISRE 2400
       // immediately followed by ISRE 2410's own real chapter) — if that SECOND one isn't itself
       // a standard this tracker follows, nothing above stops the FIRST one's section from
       // running straight into it. Look for any OTHER standard-code-shaped heading genuinely at
       // the start of a line within this section's own text and stop there, regardless of
       // whether that code belongs to a standard the tracker currently knows about.
-      var foreignAt = nextForeignHeadingWithin(sectionText, sec.header.toLowerCase());
+      var foreignAt = nextForeignHeadingWithin(sectionText, sec.header.toLowerCase(), allHeaders);
       sec.text = foreignAt === null ? sectionText : sectionText.substring(0, foreignAt);
     });
     return sections;
@@ -4094,9 +4097,6 @@
     return -1;
   }
   function extractParagraphsFromSection(sec) {
-    if (sec.std.code === "ISA 230") {
-      console.log("[ISA 230 extraction]", "called with section length:", sec.text.length);
-    }
     var numCoreMatch = sec.std.code.match(/\d+/);
     var numCore = numCoreMatch ? numCoreMatch[0] : "";
     var text = sec.text;
@@ -4117,9 +4117,6 @@
         start: m.index + m[0].length,
         headerStart: m.index
       });
-    }
-    if (sec.std.code === "ISA 230") {
-      console.log("[Paragraph extraction diag]", sec.std.code, "markers found:", markers.length, "first 5 numbers:", markers.slice(0, 5).map(function (mk) { return (mk.isAppMaterial ? "A" : "") + mk.num; }));
     }
 
     var found = [];
