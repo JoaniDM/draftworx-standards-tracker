@@ -3839,18 +3839,16 @@
     var start = idx;
     while (start > 0 && /[ \t]/.test(fullText[start - 1])) start--;
     if (!(start === 0 || fullText[start - 1] === "\n")) return false;
-    // "Sits alone at the start of its own line" means alone — a real chapter heading in the
-    // handbook is a standalone line containing ONLY the standard code (and possibly a revision
-    // tag), with the standard's full title on the NEXT line. A footnote citation ("10 ISA 330,
-    // paragraph 5"), a mid-sentence reference that ends right there ("...as explained in\nISA
-    // 300. The auditor then considers..."), or a cross-reference sentence that simply happens to
-    // WRAP onto a new line at that code all satisfy the start-of-line check above, yet none of
-    // them leaves the REST of that line empty (aside from whitespace and, on a real heading
-    // line, sometimes a running page number) the way a genuine heading does.
+    // "Sits alone at the start of its own line" means alone — a real chapter heading is followed
+    // on the same line by nothing, a running page number, or the start of its own title (a
+    // capitalized fragment) — never by ordinary lower-case prose continuing a sentence, a comma
+    // (a listing: "ISA 300, ISA 315..."), or a period ending one ("...in\nISA 300. The auditor
+    // then considers..."). A footnote citation ("10 ISA 330, paragraph 5") or a wrapped
+    // cross-reference sentence always falls into one of those rejected shapes.
     if (typeof matchLen !== "number") return true;
     var restOfLine = fullText.substring(idx + matchLen).split(/\r?\n/)[0];
-    restOfLine = restOfLine.replace(/^\s*\([^)]{0,40}\)/, "");
-    return /^[ \t]*\d{0,4}[ \t]*$/.test(restOfLine);
+    restOfLine = restOfLine.replace(/^\s*\([^)]{0,40}\)/, "").replace(/^\s+/, "");
+    return !/^[a-z,.]/.test(restOfLine);
   }
   // Used by buildExtractionSections to find where a section's OWN content ends, even when the
   // standard that follows it in the PDF isn't one this tracker follows at all — see
@@ -4164,6 +4162,10 @@
 
       extractSubParagraphs(numCore + "." + marker.num, body).forEach(function (item) { found.push(item); });
     }
+    // Safety net for standards whose section detection is known to still bleed into adjacent
+    // content (ISA 560/580/810 are small standards but keep over-extracting) — cap the count
+    // until the real section-boundary fix lands.
+    if (["ISA 560", "ISA 580", "ISA 810"].indexOf(sec.std.code) !== -1 && found.length > 50) found = found.slice(0, 50);
     return found;
   }
   // A paragraph is matched to the PDF purely by NUMBER — never by keyword content. Beyond a
