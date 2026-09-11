@@ -3839,18 +3839,18 @@
     var start = idx;
     while (start > 0 && /[ \t]/.test(fullText[start - 1])) start--;
     if (!(start === 0 || fullText[start - 1] === "\n")) return false;
-    // "Sits alone at the start of its own line" means alone — a footnote citation like "10 ISA
-    // 330, paragraph 5" (split onto its own line because the superscript footnote marker sits at
-    // a different Y-position from the body text), a mid-sentence reference that ends right there
-    // ("...as explained in\nISA 300. The auditor then considers..."), or a cross-reference
-    // sentence that simply happens to WRAP onto a new line at that code ("...in conjunction
-    // with\nISA 315 (Revised 2019) and ISA 330.") all satisfy the start-of-line check above, yet
-    // none is a real chapter opening — a genuine heading is never immediately followed by a
-    // period ending a sentence, a comma, or ordinary lower-case prose continuing one.
+    // "Sits alone at the start of its own line" means alone — a real chapter heading in the
+    // handbook is a standalone line containing ONLY the standard code (and possibly a revision
+    // tag), with the standard's full title on the NEXT line. A footnote citation ("10 ISA 330,
+    // paragraph 5"), a mid-sentence reference that ends right there ("...as explained in\nISA
+    // 300. The auditor then considers..."), or a cross-reference sentence that simply happens to
+    // WRAP onto a new line at that code all satisfy the start-of-line check above, yet none of
+    // them leaves the REST of that line empty (aside from whitespace and, on a real heading
+    // line, sometimes a running page number) the way a genuine heading does.
     if (typeof matchLen !== "number") return true;
     var restOfLine = fullText.substring(idx + matchLen).split(/\r?\n/)[0];
-    restOfLine = restOfLine.replace(/^\s*\([^)]{0,40}\)/, "").replace(/^\s+/, "");
-    return !/^[a-z,.]/.test(restOfLine);
+    restOfLine = restOfLine.replace(/^\s*\([^)]{0,40}\)/, "");
+    return /^[ \t]*\d{0,4}[ \t]*$/.test(restOfLine);
   }
   // Used by buildExtractionSections to find where a section's OWN content ends, even when the
   // standard that follows it in the PDF isn't one this tracker follows at all — see
@@ -3919,6 +3919,10 @@
         }
       });
       if (bestIdx !== -1) sections.push({ std: std, index: bestIdx, header: bestHeader });
+      if (["ISA 300", "ISA 315", "ISA 560", "ISA 580", "ISA 810"].indexOf(std.code) !== -1) {
+        console.log("[anchor diag]", std.code, "— index:", bestIdx, "score:", bestScore,
+          bestIdx === -1 ? "NOT FOUND" : ("context: " + JSON.stringify(fullText.substring(Math.max(0, bestIdx - 200), bestIdx) + "[[[" + fullText.substring(bestIdx, bestIdx + bestHeader.length) + "]]]" + fullText.substring(bestIdx + bestHeader.length, bestIdx + bestHeader.length + 200))));
+      }
     });
     sections.sort(function (a, b) { return a.index - b.index; });
     sections.forEach(function (sec, i) {
@@ -4751,7 +4755,10 @@
       var codeLower = s.code.toLowerCase();
       return codeLower.indexOf(withSpace) === 0 || codeLower.indexOf(noSpace) === 0;
     });
-    if (existing) return existing;
+    if (existing) {
+      if (existing.title && existing.title.indexOf("Imported standard") === 0) existing.title = existing.code;
+      return existing;
+    }
     var code = normalizeWs(rawCode);
     var std = { id: uid("std"), family: refInfo.family, code: code, title: code, paragraphs: [] };
     data.standards.push(std);
