@@ -4163,9 +4163,10 @@
       extractSubParagraphs(numCore + "." + marker.num, body).forEach(function (item) { found.push(item); });
     }
     // Safety net for standards whose section detection is known to still bleed into adjacent
-    // content (ISA 560/580/810 are small standards but keep over-extracting) — cap the count
-    // until the real section-boundary fix lands.
-    if (["ISA 560", "ISA 580", "ISA 810"].indexOf(sec.std.code) !== -1 && found.length > 50) found = found.slice(0, 50);
+    // content — cap the count until the real section-boundary fix lands.
+    var PARAGRAPH_CAP = { "ISA 560": 50, "ISA 580": 50, "ISA 810": 50, "ISA 300": 35, "ISA 315": 120 };
+    var cap = PARAGRAPH_CAP[sec.std.code];
+    if (cap && found.length > cap) found = found.slice(0, cap);
     return found;
   }
   // A paragraph is matched to the PDF purely by NUMBER — never by keyword content. Beyond a
