@@ -3925,6 +3925,12 @@
     sections.sort(function (a, b) { return a.index - b.index; });
     sections.forEach(function (sec, i) {
       var end = (i + 1 < sections.length) ? sections[i + 1].index : fullText.length;
+      // ISA 315 (Revised 2019) spans pages 242-320 of the handbook (~234,000 characters) — if
+      // the next tracked standard's anchor (itself possibly a false positive inside ISA 315's
+      // own text) cuts this off far short of that, extend the window (with margin past the
+      // estimate, since it's approximate) so nextForeignHeadingWithin below gets a real chance
+      // to find ISA 315's OWN true end instead of stopping wherever that other anchor landed.
+      if (sec.std.code.indexOf("ISA 315") === 0 && (end - sec.index) < 200000) end = Math.min(sec.index + 260000, fullText.length);
       var sectionText = fullText.substring(sec.index, end);
       // Two standards are often bundled back-to-back in the same handbook PDF (e.g. ISRE 2400
       // immediately followed by ISRE 2410's own real chapter) — if that SECOND one isn't itself
