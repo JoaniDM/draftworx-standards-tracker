@@ -1995,6 +1995,12 @@
     var bakMeth = (backupData.methodologies || []).find(function (m) { return m.name === methName; });
     if (!curMeth || !bakMeth) return;
     var families = KNOWN_ALLOWED_FAMILIES[methName] || curMeth.allowedFamilies || [];
+    if (methName === "RAC") {
+      var bakParaCount = (backupData.standards || []).filter(function (s) { return families.indexOf(s.family) !== -1; }).reduce(function (sum, s) { return sum + s.paragraphs.length; }, 0);
+      var curParaCount = data.standards.filter(function (s) { return families.indexOf(s.family) !== -1; }).reduce(function (sum, s) { return sum + s.paragraphs.length; }, 0);
+      console.log("[RAC restore diag]", "backup paragraphs in RAC standards:", bakParaCount, "current paragraphs in RAC standards:", curParaCount);
+    }
+    var mergeCount = 0;
     data.standards.forEach(function (std) {
       if (families.indexOf(std.family) === -1) return;
       var bakStd = (backupData.standards || []).find(function (s) { return s.code === std.code; });
@@ -2005,8 +2011,10 @@
         if (!bakPara || !bakPara.coverage || !bakPara.coverage[bakMeth.id]) return;
         if (!p.coverage) p.coverage = {};
         p.coverage[curMeth.id] = JSON.parse(JSON.stringify(bakPara.coverage[bakMeth.id]));
+        mergeCount++;
       });
     });
+    if (methName === "RAC") console.log("[RAC restore diag]", "merge loop ran, paragraphs updated:", mergeCount);
   }
   // Restores just the Excel-mapping fields (wpExtract/wpReference) of EVERY methodology's
   // coverage on every existing paragraph, independent of which of the six methodology checkboxes
