@@ -97,6 +97,11 @@
   .btn.danger:hover { background: rgba(239,68,68,0.10); }
   .btn.icon-only { padding: 6px 10px; }
   #open-suggestions-btn, #refresh-app-btn { padding: 2px 6px; font-size: 11px; }
+  .profile-card { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); margin-bottom: 16px; }
+  .profile-avatar { width: 56px; height: 56px; border-radius: 50%; background: #5AB3E8; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; flex-shrink: 0; }
+  .profile-card-name { font-size: 18px; font-weight: 700; }
+  .profile-card-role { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .profile-card-lastlogin { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
   .btn:disabled { opacity: .5; cursor: not-allowed; }
   .linklike { border: none; background: none; color: var(--cat-1); cursor: pointer; padding: 0; font-size: 12px; text-decoration: underline; }
 
@@ -445,11 +450,6 @@
       <button class="tab-btn" data-view="settings">Settings</button>
     </div>
     <div class="spacer"></div>
-    <div class="search-box">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-      <input type="text" id="search-input" placeholder="Search paragraphs, standards...">
-    </div>
-    <button class="btn" id="open-suggestions-btn" title="Send a suggestion or feedback">💡 Suggestions</button>
     <button class="btn" id="refresh-app-btn" title="Reload data from this browser's storage — nothing is cleared. Useful after switching users elsewhere, or if the view feels stuck.">⟳ Refresh</button>
     <span id="runtime-mode-badge" style="font-size:11px; font-weight:600;"></span>
     <span class="identity-badge" id="identity-badge"></span>
@@ -722,6 +722,11 @@
       <section class="view" id="view-settings">
         <div class="page-head"><h2>Settings</h2><p>Manage the list of team members who can be selected at login, and their access level.</p></div>
         <div class="family-panel">
+          <h3>Suggestions</h3>
+          <div class="fp-sub">Send a suggestion or feedback.</div>
+          <button class="btn primary" id="open-suggestions-btn" title="Send a suggestion or feedback">💡 Suggestions</button>
+        </div>
+        <div class="family-panel">
           <h3>Team members</h3>
           <div class="fp-sub" id="users-list-note">The first user added is automatically a Developer.</div>
           <div id="users-list"></div>
@@ -807,9 +812,15 @@
   <form method="dialog">
     <div class="modal-head"><h3>User Profile</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
     <div class="modal-body">
-      <div class="field"><label>Name</label><div class="readonly-note" id="profile-name"></div></div>
-      <div class="field"><label>Role</label><div class="readonly-note" id="profile-role"></div></div>
-      <div class="field"><label>Last login</label><div class="readonly-note" id="profile-last-login"></div></div>
+      <div class="profile-card">
+        <div class="profile-avatar" id="profile-avatar"></div>
+        <div>
+          <div class="profile-card-name" id="profile-name"></div>
+          <div class="profile-card-role" id="profile-role"></div>
+          <div class="profile-card-lastlogin" id="profile-last-login"></div>
+        </div>
+      </div>
+      <div class="field"><label>Recently active</label><div id="profile-recently-active"></div></div>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Close</button>
@@ -2676,12 +2687,44 @@
     var profileBtn = document.getElementById("open-profile-btn");
     if (profileBtn) profileBtn.addEventListener("click", openUserProfileModal);
   }
+  function initialsFor(name) {
+    var parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return "?";
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  function formatRelativeTime(iso) {
+    var diffMs = Date.now() - new Date(iso).getTime();
+    var mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return mins + " minute" + (mins === 1 ? "" : "s") + " ago";
+    var hours = Math.floor(mins / 60);
+    if (hours < 24) return hours + " hour" + (hours === 1 ? "" : "s") + " ago";
+    var days = Math.floor(hours / 24);
+    return days + " day" + (days === 1 ? "" : "s") + " ago";
+  }
+  // "Recently active" is the best a single-file, no-server app can honestly show — the last 3
+  // DISTINCT users to appear in the audit trail, not a real presence/"online" signal.
+  function getRecentlyActiveUsers() {
+    var seen = {}, result = [];
+    (data.auditLog || []).forEach(function (e) {
+      if (result.length >= 3 || seen[e.user]) return;
+      seen[e.user] = true;
+      result.push({ user: e.user, timestamp: e.timestamp });
+    });
+    return result;
+  }
   function openUserProfileModal() {
     var u = resolveIdentityUser();
     if (!u) return;
+    document.getElementById("profile-avatar").textContent = initialsFor(u.name);
     document.getElementById("profile-name").textContent = u.name;
     document.getElementById("profile-role").textContent = accessLevelLabel(u.accessLevel);
-    document.getElementById("profile-last-login").textContent = u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : "—";
+    document.getElementById("profile-last-login").textContent = "Last login: " + (u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : "—");
+    var recent = getRecentlyActiveUsers();
+    document.getElementById("profile-recently-active").innerHTML = recent.length
+      ? recent.map(function (r) { return '<div class="fp-sub" style="margin:2px 0;">' + escapeHtml(r.user) + " — " + formatRelativeTime(r.timestamp) + "</div>"; }).join("")
+      : '<div class="fp-sub" style="margin:2px 0;">No activity yet.</div>';
     document.getElementById("dlg-user-profile").showModal();
   }
   function openSuggestionsModal() {
@@ -3948,6 +3991,9 @@
   // who can see this page has full Add/Edit/Remove access; there's no further read-only mode
   // within it now that Developer is the single top tier.
   function renderSettingsView() {
+    var canManage = can("developer");
+    var addUserBtn = document.getElementById("add-user-btn");
+    if (addUserBtn) addUserBtn.style.display = canManage ? "" : "none";
     var list = document.getElementById("users-list");
     var note = document.getElementById("users-list-note");
     if (note) note.textContent = "Add teammates and choose their access level below.";
@@ -3960,10 +4006,10 @@
         return '<div class="methodology-row" style="padding:6px 0;">' +
           '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(u.name) + '</span>' +
           '<span class="count">' + accessLevelLabel(u.accessLevel) + " · " + n + " change" + (n === 1 ? "" : "s") + "</span></span>" +
-          '<span class="row-actions" style="display:flex;">' +
+          (canManage ? '<span class="row-actions" style="display:flex;">' +
             '<button class="icon-btn" data-edit-user="' + u.id + '" title="Edit">✎</button>' +
             '<button class="icon-btn" data-del-user="' + u.id + '" title="Remove">✕</button>' +
-          "</span></div>";
+          "</span>" : "") + "</div>";
       }).join("");
       list.querySelectorAll("[data-edit-user]").forEach(function (b) { b.addEventListener("click", function () { openUserModal(b.getAttribute("data-edit-user")); }); });
       list.querySelectorAll("[data-del-user]").forEach(function (b) { b.addEventListener("click", function () { deleteUser(b.getAttribute("data-del-user")); }); });
@@ -3975,6 +4021,11 @@
   function renderWorkingPapersSettings() {
     var list = document.getElementById("workingpapers-list");
     if (!list) return;
+    var canManage = can("developer");
+    var addBtn = document.getElementById("add-workingpaper-btn");
+    if (addBtn) addBtn.style.display = canManage ? "" : "none";
+    var importBtn = document.getElementById("import-workingpapers-btn");
+    if (importBtn) importBtn.style.display = canManage ? "" : "none";
     if (!data.workingPapers || data.workingPapers.length === 0) {
       list.innerHTML = '<div class="empty-state" style="padding:20px 0;">No working papers added yet.</div>';
       return;
@@ -3997,10 +4048,10 @@
             (sectionCollapsed ? "" : wps.filter(function (wp) { return wp.section === section; }).map(function (wp) {
               return '<div class="methodology-row" style="padding:6px 0;">' +
                 '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(wp.reference) + '</span></span>' +
-                '<span class="row-actions" style="display:flex;">' +
+                (canManage ? '<span class="row-actions" style="display:flex;">' +
                   '<button class="icon-btn" data-edit-workingpaper="' + wp.id + '" title="Edit">✎</button>' +
                   '<button class="icon-btn" data-del-workingpaper="' + wp.id + '" title="Remove">✕</button>' +
-                "</span></div>";
+                "</span>" : "") + "</div>";
             }).join(""));
         }).join(""));
     }).join("");
@@ -4127,12 +4178,13 @@
   function renderMethodologyDataExportImport() {
     var list = document.getElementById("methodology-data-list");
     if (!list) return;
+    var canManage = can("developer");
     list.innerHTML = data.methodologies.map(function (meth) {
       return '<div class="methodology-row" style="padding:6px 0;">' +
         '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(meth.name) + '</span></span>' +
         '<span class="row-actions" style="display:flex; gap:6px;">' +
           '<button class="btn" data-export-meth-data="' + meth.id + '">Export</button>' +
-          '<button class="btn" data-import-meth-data="' + meth.id + '">Import</button>' +
+          (canManage ? '<button class="btn" data-import-meth-data="' + meth.id + '">Import</button>' : "") +
         "</span></div>";
     }).join("");
     list.querySelectorAll("[data-export-meth-data]").forEach(function (b) { b.addEventListener("click", function () { exportMethodologyDataCsv(b.getAttribute("data-export-meth-data")); }); });
@@ -5163,7 +5215,6 @@
       document.getElementById("filter-family").value = "all";
       document.getElementById("filter-status").value = "all";
       document.getElementById("filter-wp-status").value = "all";
-      document.getElementById("search-input").value = "";
       persist();
       renderCoverageView(); renderDashboard(); renderAuditView(); renderReviewView(); renderNotifyBanner();
       if (createdCount || updatedCount || flaggedCount) switchToView("coverage");
@@ -5748,18 +5799,18 @@
   }
 
   function applyGlobalRolePermissions() {
-    // Developer is the single top tier (there's no separate Admin) — Import & Compare, Developer
-    // and Settings are all Developer-only; Editor and Read Only never see any of these tabs.
+    // Developer is the single top tier (there's no separate Admin) — Import & Compare and
+    // Developer stay Developer-only. Settings is now visible to everyone (its Team
+    // Members/Working Papers/Methodology Data sections are read-only for non-Developers, and
+    // Suggestions there needs to be reachable by all).
     var isDeveloper = can("developer");
-    var settingsTab = document.querySelector('.tab-btn[data-view="settings"]');
-    if (settingsTab) settingsTab.style.display = isDeveloper ? "" : "none";
     var developerTab = document.querySelector('.tab-btn[data-view="developer"]');
     if (developerTab) developerTab.style.display = isDeveloper ? "" : "none";
     var reviewTab = document.querySelector('.tab-btn[data-view="review"]');
     if (reviewTab) reviewTab.style.display = isDeveloper ? "" : "none";
     if (!isDeveloper && state.view === "developer") switchToView("dashboard");
-    if (!isDeveloper && state.view === "settings") switchToView("dashboard");
     if (!isDeveloper && state.view === "review") switchToView("dashboard");
+    renderSettingsView();
   }
 
   var appInitialized = false;
@@ -5776,7 +5827,6 @@
     document.getElementById("filter-family").addEventListener("change", function (e) { state.familyFilter = e.target.value; renderSidebar(); renderCoverageView(); });
     document.getElementById("filter-status").addEventListener("change", function (e) { state.statusFilter = e.target.value; renderCoverageView(); });
     document.getElementById("filter-wp-status").addEventListener("change", function (e) { state.wpStatusFilter = e.target.value; renderCoverageView(); });
-    document.getElementById("search-input").addEventListener("input", function (e) { state.search = e.target.value.trim(); renderCoverageView(); });
     document.getElementById("open-suggestions-btn").addEventListener("click", openSuggestionsModal);
     // A plain page reload is the most reliable way to "un-stick" the view — it re-reads
     // everything fresh from localStorage (picking up changes made in another tab/window, or
@@ -5896,7 +5946,6 @@
       document.getElementById("filter-family").value = "all";
       document.getElementById("filter-status").value = "all";
       document.getElementById("filter-wp-status").value = "all";
-      document.getElementById("search-input").value = "";
       renderAll();
       switchToView("coverage");
       alert("Import complete: " + result.updated + " row(s) applied.\n" +
