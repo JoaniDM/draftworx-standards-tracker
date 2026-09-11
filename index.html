@@ -226,6 +226,7 @@
   .head-toggle-area { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; cursor: pointer; }
   .head-toggle-area:hover .head-toggle-text { text-decoration: underline; }
   .collapse-chevron { color: var(--text-muted); flex-shrink: 0; width: 12px; }
+  #workingpapers-list .collapse-chevron { font-size: 16px; padding: 6px; width: auto; }
   .head-toggle-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* Paragraph rows: a true collapsible tree. A parent paragraph shows one row; its
@@ -447,6 +448,7 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       <input type="text" id="search-input" placeholder="Search paragraphs, standards...">
     </div>
+    <button class="btn" id="open-suggestions-btn" title="Send a suggestion or feedback">💡 Suggestions</button>
     <button class="btn" id="refresh-app-btn" title="Reload data from this browser's storage — nothing is cleared. Useful after switching users elsewhere, or if the view feels stuck.">⟳ Refresh</button>
     <span id="runtime-mode-badge" style="font-size:11px; font-weight:600;"></span>
     <span class="identity-badge" id="identity-badge"></span>
@@ -807,10 +809,21 @@
       <div class="field"><label>Name</label><div class="readonly-note" id="profile-name"></div></div>
       <div class="field"><label>Role</label><div class="readonly-note" id="profile-role"></div></div>
       <div class="field"><label>Last login</label><div class="readonly-note" id="profile-last-login"></div></div>
-      <div class="field"><label>Suggestion or feedback</label><textarea id="f-profile-suggestion" rows="4" placeholder="Type a suggestion or feedback..." style="width:100%;"></textarea></div>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Close</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-suggestions">
+  <form method="dialog">
+    <div class="modal-head"><h3>Suggestions</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Suggestion or feedback</label><textarea id="f-suggestion" rows="4" placeholder="Type a suggestion or feedback..." style="width:100%;"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-close>Cancel</button>
       <button type="button" class="btn primary" id="submit-suggestion-btn">Submit</button>
     </div>
   </form>
@@ -2656,7 +2669,7 @@
       ' <button class="btn icon-only" id="change-password-btn" title="Change your password" style="padding:2px 6px; font-size:11px;">Change Password</button>' +
       ' <button class="btn icon-only" id="logout-btn" title="Log out" style="padding:2px 6px; font-size:11px;">Logout</button>';
     var logoutBtn = document.getElementById("logout-btn");
-    if (logoutBtn) logoutBtn.addEventListener("click", logout);
+    if (logoutBtn) logoutBtn.addEventListener("click", function () { logout(); });
     var changePwBtn = document.getElementById("change-password-btn");
     if (changePwBtn) changePwBtn.addEventListener("click", openChangePasswordModal);
     var profileBtn = document.getElementById("open-profile-btn");
@@ -2668,18 +2681,21 @@
     document.getElementById("profile-name").textContent = u.name;
     document.getElementById("profile-role").textContent = accessLevelLabel(u.accessLevel);
     document.getElementById("profile-last-login").textContent = u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : "—";
-    document.getElementById("f-profile-suggestion").value = "";
     document.getElementById("dlg-user-profile").showModal();
   }
+  function openSuggestionsModal() {
+    document.getElementById("f-suggestion").value = "";
+    document.getElementById("dlg-suggestions").showModal();
+  }
   function submitUserSuggestion() {
-    var text = document.getElementById("f-profile-suggestion").value.trim();
+    var text = document.getElementById("f-suggestion").value.trim();
     if (!text) return;
     var u = resolveIdentityUser();
     if (!u) return;
     if (!Array.isArray(data.userSuggestions)) data.userSuggestions = [];
     data.userSuggestions.unshift({ id: uid("sugg"), userId: u.id, userName: u.name, text: text, createdAt: new Date().toISOString(), read: false });
     persist();
-    document.getElementById("dlg-user-profile").close();
+    document.getElementById("dlg-suggestions").close();
     alert("Thanks — your suggestion has been submitted.");
   }
   function openChangePasswordModal() {
@@ -5760,6 +5776,7 @@
     document.getElementById("filter-status").addEventListener("change", function (e) { state.statusFilter = e.target.value; renderCoverageView(); });
     document.getElementById("filter-wp-status").addEventListener("change", function (e) { state.wpStatusFilter = e.target.value; renderCoverageView(); });
     document.getElementById("search-input").addEventListener("input", function (e) { state.search = e.target.value.trim(); renderCoverageView(); });
+    document.getElementById("open-suggestions-btn").addEventListener("click", openSuggestionsModal);
     // A plain page reload is the most reliable way to "un-stick" the view — it re-reads
     // everything fresh from localStorage (picking up changes made in another tab/window, or
     // after switching identity there) without touching the stored data itself at all.
