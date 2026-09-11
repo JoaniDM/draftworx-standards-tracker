@@ -2776,6 +2776,16 @@
       var matchingParas = std.paragraphs.filter(function (p) { return matchesFilters(std, p); });
       if (matchingParas.length > 0) matchingStandards.push({ std: std, matchingParas: matchingParas });
     });
+    // ISQM first, then ISA, both in numerical order — everything else keeps whatever order it
+    // was already in (import order), rather than "any other families" being sorted too.
+    function standardSortRank(std) { return std.family === "ISQM" ? 0 : (std.family === "ISA" ? 1 : 2); }
+    function standardSortNumber(std) { var m = std.code.match(/\d+/); return m ? parseInt(m[0], 10) : 0; }
+    matchingStandards.sort(function (a, b) {
+      var ra = standardSortRank(a.std), rb = standardSortRank(b.std);
+      if (ra !== rb) return ra - rb;
+      if (ra === 2) return 0;
+      return standardSortNumber(a.std) - standardSortNumber(b.std);
+    });
 
     var defaultCollapsed = matchingStandards.length > STANDARD_COLLAPSE_THRESHOLD;
     var collapseControls = document.getElementById("coverage-collapse-controls");
@@ -2793,7 +2803,7 @@
       head.innerHTML =
         '<span class="head-toggle-area" data-toggle-std="' + std.id + '">' +
           '<span class="collapse-chevron">' + (isCollapsed ? "▸" : "▾") + "</span>" +
-          '<span class="head-toggle-text">' + escapeHtml(std.code) + " " + escapeHtml(std.title) +
+          '<span class="head-toggle-text">' + escapeHtml(std.code) + (std.title && std.title !== std.code ? " " + escapeHtml(std.title) : "") +
             '<span class="fam-badge">' + escapeHtml(std.family) + "</span>" +
             '<span class="fam-badge">' + matchingParas.length + " paragraph" + (matchingParas.length === 1 ? "" : "s") + "</span>" +
           "</span>" +
