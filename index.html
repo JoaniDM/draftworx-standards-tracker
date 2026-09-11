@@ -815,8 +815,7 @@
       <div class="field"><label>Methodology</label>
         <select id="f-workingpaper-methodology"></select>
       </div>
-      <div class="field"><label>WP Reference</label><input type="text" id="f-workingpaper-reference" placeholder="e.g. 10.05" required></div>
-      <div class="field"><label>WP Name</label><input type="text" id="f-workingpaper-name" placeholder="e.g. Planning Checklist" required></div>
+      <div class="field"><label>WP Reference</label><input type="text" id="f-workingpaper-reference" placeholder="e.g. 10.05 Planning Checklist" required></div>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
@@ -2071,8 +2070,8 @@
       var curMeth = bakMeth ? data.methodologies.find(function (m) { return m.name === bakMeth.name; }) : null;
       var methodologyId = curMeth ? curMeth.id : bw.methodologyId;
       var existing = data.workingPapers.find(function (w) { return w.id === bw.id; });
-      if (existing) { existing.reference = bw.reference; existing.name = bw.name; existing.methodologyId = methodologyId; }
-      else data.workingPapers.push({ id: bw.id, methodologyId: methodologyId, reference: bw.reference, name: bw.name });
+      if (existing) { existing.reference = bw.reference; existing.methodologyId = methodologyId; }
+      else data.workingPapers.push({ id: bw.id, methodologyId: methodologyId, reference: bw.reference });
     });
   }
   function confirmSelectiveRestore() {
@@ -3142,7 +3141,7 @@
     var wpRefSelectHtml = '<select class="review-textarea" style="min-height:auto; padding:6px 8px;" data-wpref-select' + ro + '>' +
         '<option value=""' + (!cov.wpReference ? " selected" : "") + '>— No WP reference selected —</option>' +
         wpOptionsForMeth.map(function (wp) {
-          return '<option value="' + escapeAttr(wp.reference) + '"' + (matchingWp && matchingWp.id === wp.id ? " selected" : "") + '>' + escapeHtml(wp.reference) + ". " + escapeHtml(wp.name) + "</option>";
+          return '<option value="' + escapeAttr(wp.reference) + '"' + (matchingWp && matchingWp.id === wp.id ? " selected" : "") + '>' + escapeHtml(wp.reference) + "</option>";
         }).join("") +
         '<option value="__manual__"' + (wpRefIsManual ? " selected" : "") + '>Other / manual entry…</option>' +
       "</select>";
@@ -3853,7 +3852,7 @@
       return '<div class="fp-sub" style="margin-top:10px; font-weight:600;">' + escapeHtml(meth.name) + "</div>" +
         wps.map(function (wp) {
           return '<div class="methodology-row" style="padding:6px 0;">' +
-            '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(wp.reference) + " " + escapeHtml(wp.name) + '</span></span>' +
+            '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(wp.reference) + '</span></span>' +
             '<span class="row-actions" style="display:flex;">' +
               '<button class="icon-btn" data-edit-workingpaper="' + wp.id + '" title="Edit">✎</button>' +
               '<button class="icon-btn" data-del-workingpaper="' + wp.id + '" title="Remove">✕</button>' +
@@ -3872,22 +3871,20 @@
     methSel.innerHTML = data.methodologies.map(function (m) { return '<option value="' + escapeAttr(m.id) + '">' + escapeHtml(m.name) + "</option>"; }).join("");
     methSel.value = wp ? wp.methodologyId : (state.activeMethodologyId || (data.methodologies[0] || {}).id || "");
     document.getElementById("f-workingpaper-reference").value = wp ? wp.reference : "";
-    document.getElementById("f-workingpaper-name").value = wp ? wp.name : "";
     dlg.showModal();
   }
   function saveWorkingPaper() {
     var methodologyId = document.getElementById("f-workingpaper-methodology").value;
     var reference = document.getElementById("f-workingpaper-reference").value.trim();
-    var name = document.getElementById("f-workingpaper-name").value.trim();
-    if (!methodologyId || !reference || !name) return;
+    if (!methodologyId || !reference) return;
     var meth = data.methodologies.find(function (m) { return m.id === methodologyId; });
     if (state.editing.workingPaperId) {
       var wp = data.workingPapers.find(function (x) { return x.id === state.editing.workingPaperId; });
-      wp.methodologyId = methodologyId; wp.reference = reference; wp.name = name;
-      logChange("update", "workingPaper", reference + " " + name, "Updated working paper for " + (meth ? meth.name : ""));
+      wp.methodologyId = methodologyId; wp.reference = reference;
+      logChange("update", "workingPaper", reference, "Updated working paper for " + (meth ? meth.name : ""));
     } else {
-      data.workingPapers.push({ id: uid("wp"), methodologyId: methodologyId, reference: reference, name: name });
-      logChange("create", "workingPaper", reference + " " + name, "Added working paper for " + (meth ? meth.name : ""));
+      data.workingPapers.push({ id: uid("wp"), methodologyId: methodologyId, reference: reference });
+      logChange("create", "workingPaper", reference, "Added working paper for " + (meth ? meth.name : ""));
     }
     document.getElementById("dlg-workingpaper").close();
     persist();
@@ -3896,9 +3893,9 @@
   function deleteWorkingPaper(id) {
     var wp = data.workingPapers.find(function (x) { return x.id === id; });
     if (!wp) return;
-    if (!confirm('Remove working paper "' + wp.reference + " " + wp.name + '"?')) return;
+    if (!confirm('Remove working paper "' + wp.reference + '"?')) return;
     data.workingPapers = data.workingPapers.filter(function (x) { return x.id !== id; });
-    logChange("delete", "workingPaper", wp.reference + " " + wp.name, 'Removed working paper "' + wp.reference + '"');
+    logChange("delete", "workingPaper", wp.reference, 'Removed working paper "' + wp.reference + '"');
     persist();
     renderWorkingPapersSettings();
   }
@@ -5493,7 +5490,6 @@
     document.getElementById("save-paragraph-btn").addEventListener("click", saveParagraph);
 
     document.querySelectorAll("[data-close]").forEach(function (b) { b.addEventListener("click", closeDialog); });
-    document.querySelectorAll("dialog").forEach(function (dlg) { dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); }); });
 
     document.getElementById("settings-download-backup-btn").addEventListener("click", downloadBackup);
 
