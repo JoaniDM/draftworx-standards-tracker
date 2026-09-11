@@ -4014,25 +4014,29 @@
   // stream carries no other structural cue, like indentation, to go on). Letters and romans
   // that are lexically identical (d/i/v/x/l/c/m are valid as both) are disambiguated entirely
   // by context: what's already open, and what would continue it.
+  function nextOf(kind, value) {
+    if (kind === "roman") return intToRoman(romanToInt(value) + 1);
+    if (kind === "digit") return String(parseInt(value, 10) + 1);
+    return nextLetter(value);
+  }
   function resolveSubMarker(token, stack) {
     if (stack.length) {
       var top = stack[stack.length - 1];
-      var nextInTop = top.kind === "roman" ? intToRoman(romanToInt(top.value) + 1) : nextLetter(top.value);
-      if (token === nextInTop) return { depth: stack.length, kind: top.kind };
+      if (token === nextOf(top.kind, top.value)) return { depth: stack.length, kind: top.kind };
     }
     // Continuing an OUTER list after finishing a nested one, e.g. ...(iii)(a)(b) then (iv):
     // (iv) isn't next-after-(b), but it IS next-after-(iii) one level up — pop back to there.
     for (var d = stack.length - 1; d >= 1; d--) {
       var lvl = stack[d - 1];
-      var nextInLvl = lvl.kind === "roman" ? intToRoman(romanToInt(lvl.value) + 1) : nextLetter(lvl.value);
-      if (token === nextInLvl) return { depth: d, kind: lvl.kind };
+      if (token === nextOf(lvl.kind, lvl.value)) return { depth: d, kind: lvl.kind };
     }
     // Otherwise this can only be the START of a brand-new nested level, one deeper than
-    // whatever's currently open (or depth 1 if nothing's open) — and only "a"/"i" can start
+    // whatever's currently open (or depth 1 if nothing's open) — and only "a"/"i"/"1" can start
     // one. Anything else doesn't fit any known context, so it's not really a sub-paragraph
     // marker (e.g. a stray "(x)" inside ordinary prose) — ignore it.
     if (token === "a") return { depth: stack.length + 1, kind: "letter" };
     if (token === "i") return { depth: stack.length + 1, kind: "roman" };
+    if (token === "1") return { depth: stack.length + 1, kind: "digit" };
     return null;
   }
   // A different marker style used at one specific nesting point in the real handbook: a bare
@@ -4049,11 +4053,12 @@
     }
     return null;
   }
-  // Splits one main paragraph's own body text into itself plus every (a)/(b)/(i)/(ii)/etc.
+  // Splits one main paragraph's own body text into itself plus every (a)/(b)/(i)/(ii)/(1)/(2)/etc.
   // sub-paragraph nested inside it, producing the same dot-notation hierarchy the Excel WP
-  // mapping already uses: 25 -> 25.a -> 25.d -> 25.d.i -> 25.d.iii.a.
+  // mapping already uses: 25 -> 25.a -> 25.d -> 25.d.i -> 25.d.iii.a; a fourth nesting level like
+  // ISA 315's 12(a)(i)(1) uses plain numbers instead of starting the lettering over.
   function extractSubParagraphs(mainNumber, body) {
-    var subMarkerRe = /\(([a-z]{1,3}|[ivxlcdm]{1,4})\)|\b([a-z])\.(?=\s)/gi;
+    var subMarkerRe = /\(([a-z]{1,3}|[ivxlcdm]{1,4}|\d{1,2})\)|\b([a-z])\.(?=\s)/gi;
     var raw = [], m;
     while ((m = subMarkerRe.exec(body))) {
       if (m[1] !== undefined) raw.push({ token: m[1].toLowerCase(), bare: false, markerStart: m.index, textStart: m.index + m[0].length });
