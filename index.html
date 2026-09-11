@@ -3934,6 +3934,9 @@
       // whether that code belongs to a standard the tracker currently knows about.
       var foreignAt = nextForeignHeadingWithin(sectionText, sec.header.toLowerCase(), allHeaders);
       sec.text = foreignAt === null ? sectionText : sectionText.substring(0, foreignAt);
+      if (sec.std.code === "ISA 315") {
+        console.log("[ISA 315 section diag]", "start:", sec.index, "end:", end, "finalLength:", sec.text.length);
+      }
     });
     return sections;
   }
@@ -4169,7 +4172,7 @@
     }
     // Safety net for standards whose section detection is known to still bleed into adjacent
     // content — cap the count until the real section-boundary fix lands.
-    var PARAGRAPH_CAP = { "ISA 560": 50, "ISA 580": 50, "ISA 810": 50, "ISA 300": 35, "ISA 315": 120 };
+    var PARAGRAPH_CAP = { "ISA 560": 50, "ISA 580": 50, "ISA 810": 50, "ISA 300": 35 };
     var cap = PARAGRAPH_CAP[sec.std.code];
     if (cap && found.length > cap) found = found.slice(0, cap);
     return found;
