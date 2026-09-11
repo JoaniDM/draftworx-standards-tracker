@@ -3895,7 +3895,6 @@
           searchFrom = idx + variantLower.length;
         }
       });
-      console.log("[PDF scanner diag]", std.code, "— searched for:", variants.join(" / "), "—", bestIdx !== -1 ? ("FOUND (matched \"" + bestHeader + "\" at index " + bestIdx + ")") : "NOT FOUND");
       if (bestIdx !== -1) sections.push({ std: std, index: bestIdx, header: bestHeader });
     });
     sections.sort(function (a, b) { return a.index - b.index; });
@@ -4511,23 +4510,6 @@
         fullText += pageItemsToText(content.items) + "\n";
       }
       progressText.textContent = "Comparing against the tracker...";
-      ["ISA 210", "ISA 230", "ISA 265", "ISA 300", "ISA 320", "ISA 505", "ISA 520", "ISA 530", "ISA 550", "ISA 580", "ISA 620", "ISA 706", "ISA 710", "ISA 720", "ISA 800", "ISA 805", "ISA 810", "ISQM 1", "ISQM 2", "INTERNATIONAL STANDARD ON AUDITING 210", "Agreeing the Terms"].forEach(function (code) {
-        var re = new RegExp(code.replace(/ /g, "\\s*"), "gi");
-        var m, found = false;
-        while ((m = re.exec(fullText))) {
-          found = true;
-          console.log("[missing standard diag]", code, "— context:", JSON.stringify(fullText.substring(Math.max(0, m.index - 200), m.index) + "[[[" + m[0] + "]]]" + fullText.substring(m.index + m[0].length, m.index + m[0].length + 200)));
-        }
-        if (!found) console.log("[missing standard diag]", code, "— NOT FOUND anywhere in this PDF's extracted text");
-      });
-      [/AGREEING THE TERMS OF AUDIT/g, /ISA\s*210\n/g, /Agreeing the Terms of Audit Engagements\n\s*\d+\./g].forEach(function (re) {
-        var m, found = false;
-        while ((m = re.exec(fullText))) {
-          found = true;
-          console.log("[isa210 section search]", re.source, "— context:", JSON.stringify(fullText.substring(Math.max(0, m.index - 300), m.index) + "[[[" + m[0] + "]]]" + fullText.substring(m.index + m[0].length, m.index + m[0].length + 300)));
-        }
-        if (!found) console.log("[isa210 section search]", re.source, "— NOT FOUND anywhere in this PDF's extracted text");
-      });
       var handbookName = normalizeWs(document.getElementById("f-pdf-handbook-name").value) || file.name;
       var importedAt = new Date().toISOString();
       // A standard has to already exist for buildExtractionSections to know to look for it — if
