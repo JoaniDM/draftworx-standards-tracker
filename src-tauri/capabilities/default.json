@@ -19,6 +19,14 @@
     {
       "identifier": "fs:allow-mkdir",
       "allow": [{ "path": "**/Backups" }]
+    },
+    {
+      "identifier": "fs:allow-read-dir",
+      "allow": [{ "path": "**/Backups" }]
+    },
+    {
+      "identifier": "fs:allow-remove",
+      "allow": [{ "path": "**/Draftworx-Backup-*.json" }, { "path": "**/Backups/Draftworx-Backup-*.json" }]
     }
   ]
 }
