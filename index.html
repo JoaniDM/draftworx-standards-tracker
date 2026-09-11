@@ -3910,6 +3910,10 @@
       // whether that code belongs to a standard the tracker currently knows about.
       var foreignAt = nextForeignHeadingWithin(sectionText, sec.header.toLowerCase(), allHeaders);
       sec.text = foreignAt === null ? sectionText : sectionText.substring(0, foreignAt);
+      if (sec.std.code === "ISA 315") {
+        console.log("[ISA 315 boundary diag]", "start:", sec.index, "end:", end, "rawLength:", sectionText.length, "finalLength:", sec.text.length,
+          foreignAt === null ? "not truncated by nextForeignHeadingWithin" : ("truncated at offset " + foreignAt + " — context: " + JSON.stringify(sectionText.substring(Math.max(0, foreignAt - 100), foreignAt + 100))));
+      }
     });
     return sections;
   }
@@ -4706,6 +4710,11 @@
     if (!m) return null;
     var prefix = m[1].toUpperCase();
     var num = m[2] || "";
+    // LPC/PPRA are number-less bodies ("LPC Rules" is a complete reference on its own) — every
+    // other prefix needs an actual number, otherwise a bare "ISA" cell (e.g. a section-grouping
+    // label in an Excel sheet, not a real standard reference) would be treated as a valid
+    // standard and every row under it misattributed to it.
+    if (!num && prefix !== "LPC" && prefix !== "PPRA") return null;
     var family;
     // "ISA" and the two Rules bodies are deliberately modelled as ONE umbrella family covering
     // every standard/rule number under that body — any ISA number belongs there. ISRE and ISRS
