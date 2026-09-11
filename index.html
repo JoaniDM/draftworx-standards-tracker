@@ -3820,8 +3820,13 @@
   // real ISRE 2400 prose must never be scored as if it were ISRE 2410's own chapter opening.
   var SIBLING_HEADER_WINDOW = 200;
   function hasSiblingHeaderNearby(lowerText, allHeaders, idx, ownHeaderLower, ownHeaderLen) {
-    var probe = lowerText.substring(idx + ownHeaderLen, idx + ownHeaderLen + SIBLING_HEADER_WINDOW);
-    return allHeaders.some(function (h) { return h !== ownHeaderLower && probe.indexOf(h) !== -1; });
+    // A listing/cross-reference sentence ("...to be read in conjunction with ISA 200 and ISA
+    // 315 (Revised 2019).") has its siblings BEFORE the LAST code named, not after — checking
+    // only forward misses exactly that last-item case, letting it slip through as if it were a
+    // real chapter opening.
+    var after = lowerText.substring(idx + ownHeaderLen, idx + ownHeaderLen + SIBLING_HEADER_WINDOW);
+    var before = lowerText.substring(Math.max(0, idx - SIBLING_HEADER_WINDOW), idx);
+    return allHeaders.some(function (h) { return h !== ownHeaderLower && (after.indexOf(h) !== -1 || before.indexOf(h) !== -1); });
   }
   // A real chapter heading sits alone at the start of its own line — a cross-reference to the
   // same standard code from INSIDE another standard's own paragraph ("...as described in ISRE
@@ -3893,6 +3898,12 @@
     }, []);
     var sections = [];
     (standardsScope || data.standards).forEach(function (std) {
+      // ensureDefaultMethodologies seeds a bare placeholder standard (code === family, e.g.
+      // "ISA" with no number) so a methodology has something to point at before any real,
+      // specific standard has been added — it isn't a real standard reference yet, and searching
+      // for literally "ISA" as a header matches the start of every genuine ISA number in the
+      // PDF, extracting whichever one wins as if it were this placeholder's own chapter.
+      if (!/\d/.test(std.code) && !/\brules\b/i.test(std.code)) return;
       var header = std.code.replace(/\s*\(.*?\)\s*$/, "").trim();
       var variants = headerSpaceVariants(header);
       var bestIdx = -1, bestScore = -Infinity, bestHeader = header;
@@ -4740,7 +4751,8 @@
       return codeLower.indexOf(withSpace) === 0 || codeLower.indexOf(noSpace) === 0;
     });
     if (existing) return existing;
-    var std = { id: uid("std"), family: refInfo.family, code: normalizeWs(rawCode), title: "Imported standard — click ✎ to edit the title", paragraphs: [] };
+    var code = normalizeWs(rawCode);
+    var std = { id: uid("std"), family: refInfo.family, code: code, title: code, paragraphs: [] };
     data.standards.push(std);
     return std;
   }
