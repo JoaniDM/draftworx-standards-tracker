@@ -3841,15 +3841,16 @@
     if (!(start === 0 || fullText[start - 1] === "\n")) return false;
     // "Sits alone at the start of its own line" means alone — a footnote citation like "10 ISA
     // 330, paragraph 5" (split onto its own line because the superscript footnote marker sits at
-    // a different Y-position from the body text) or an ordinary cross-reference sentence that
-    // simply happens to WRAP onto a new line at that code ("...in conjunction with\nISA 315
-    // (Revised 2019) and ISA 330.") both satisfy the start-of-line check above, yet neither is a
-    // real chapter opening — both carry on with ordinary lower-case prose (or a comma) right
-    // after the code, on the same line, instead of a title or nothing at all.
+    // a different Y-position from the body text), a mid-sentence reference that ends right there
+    // ("...as explained in\nISA 300. The auditor then considers..."), or a cross-reference
+    // sentence that simply happens to WRAP onto a new line at that code ("...in conjunction
+    // with\nISA 315 (Revised 2019) and ISA 330.") all satisfy the start-of-line check above, yet
+    // none is a real chapter opening — a genuine heading is never immediately followed by a
+    // period ending a sentence, a comma, or ordinary lower-case prose continuing one.
     if (typeof matchLen !== "number") return true;
     var restOfLine = fullText.substring(idx + matchLen).split(/\r?\n/)[0];
     restOfLine = restOfLine.replace(/^\s*\([^)]{0,40}\)/, "").replace(/^\s+/, "");
-    return !/^[a-z,]/.test(restOfLine);
+    return !/^[a-z,.]/.test(restOfLine);
   }
   // Used by buildExtractionSections to find where a section's OWN content ends, even when the
   // standard that follows it in the PDF isn't one this tracker follows at all — see
