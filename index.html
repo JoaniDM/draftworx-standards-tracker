@@ -450,7 +450,6 @@
     <button class="btn" id="refresh-app-btn" title="Reload data from this browser's storage — nothing is cleared. Useful after switching users elsewhere, or if the view feels stuck.">⟳ Refresh</button>
     <span id="runtime-mode-badge" style="font-size:11px; font-weight:600;"></span>
     <span class="identity-badge" id="identity-badge"></span>
-    <input type="file" id="import-file" accept="application/json" hidden>
   </header>
 
   <div class="layout">
@@ -667,10 +666,9 @@
 
         <div class="family-panel">
           <h3>Data management</h3>
-          <div class="fp-sub">Download a full backup of everything in this browser as a JSON file, or restore one you downloaded earlier — restoring replaces ALL current data.</div>
+          <div class="fp-sub">Download a full backup of everything in this browser as a JSON file.</div>
           <div style="display:flex; gap:8px; margin-top:8px;">
             <button class="btn primary" id="settings-download-backup-btn">Download Backup</button>
-            <button class="btn" id="settings-restore-backup-btn">Restore from Backup</button>
           </div>
         </div>
 
@@ -788,12 +786,13 @@
       <p class="fp-sub" style="margin:0 0 12px;">Restoring backup: <strong id="selective-restore-label"></strong></p>
       <p class="fp-sub" style="margin:0 0 8px;">Choose what to restore. Only the checked items are merged in from the backup — everything else stays as it is now.</p>
       <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-rac"> RAC data (paragraphs and statuses)</label>
-      <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-reviewplus"> Review+ data</label>
-      <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-compilation"> Compilation data</label>
-      <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-aup"> AUP data</label>
-      <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-legal"> Legal Practitioner data</label>
-      <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-property"> Property Practitioner data</label>
+      <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-reviewplus"> Review+ data (paragraphs and statuses)</label>
+      <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-compilation"> Compilation data (paragraphs and statuses)</label>
+      <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-aup"> AUP data (paragraphs and statuses)</label>
+      <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-legal"> Legal Practitioner data (paragraphs and statuses)</label>
+      <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-property"> Property Practitioner data (paragraphs and statuses)</label>
       <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-wpextracts"> WP extracts only (Excel mapping data)</label>
+      <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-workingpapers"> Working Papers list</label>
       <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-users"> User accounts</label>
       <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-messages"> Messages</label>
       <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:6px;"><input type="checkbox" id="restore-check-audit"> Audit trail</label>
@@ -2034,6 +2033,18 @@
     });
     data.auditLog.sort(function (a, b) { return new Date(b.timestamp) - new Date(a.timestamp); });
   }
+  // Working papers belong to a specific methodology — matched across backup/current by NAME
+  // (like the coverage restores above), since methodology ids can differ.
+  function restoreWorkingPapers(backupData) {
+    (backupData.workingPapers || []).forEach(function (bw) {
+      var bakMeth = (backupData.methodologies || []).find(function (m) { return m.id === bw.methodologyId; });
+      var curMeth = bakMeth ? data.methodologies.find(function (m) { return m.name === bakMeth.name; }) : null;
+      var methodologyId = curMeth ? curMeth.id : bw.methodologyId;
+      var existing = data.workingPapers.find(function (w) { return w.id === bw.id; });
+      if (existing) { existing.reference = bw.reference; existing.name = bw.name; existing.methodologyId = methodologyId; }
+      else data.workingPapers.push({ id: bw.id, methodologyId: methodologyId, reference: bw.reference, name: bw.name });
+    });
+  }
   function confirmSelectiveRestore() {
     var id = state.selectiveRestoreBackupId;
     var entry = loadBackups().find(function (b) { return b.id === id; });
@@ -2046,6 +2057,7 @@
       "Legal Practitioner": document.getElementById("restore-check-legal").checked,
       "Property Practitioner": document.getElementById("restore-check-property").checked,
       wpExtracts: document.getElementById("restore-check-wpextracts").checked,
+      workingPapers: document.getElementById("restore-check-workingpapers").checked,
       users: document.getElementById("restore-check-users").checked,
       messages: document.getElementById("restore-check-messages").checked,
       audit: document.getElementById("restore-check-audit").checked
@@ -2060,6 +2072,7 @@
       if (checks[key]) restoreMethodologyCoverage(name, backupData);
     });
     if (checks.wpExtracts) restoreWpExtractsOnly(backupData);
+    if (checks.workingPapers) restoreWorkingPapers(backupData);
     if (checks.users) restoreUsers(backupData);
     if (checks.messages) restoreMessages(backupData);
     if (checks.audit) restoreAuditTrail(backupData);
@@ -5444,8 +5457,6 @@
     document.querySelectorAll("dialog").forEach(function (dlg) { dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); }); });
 
     document.getElementById("settings-download-backup-btn").addEventListener("click", downloadBackup);
-    document.getElementById("settings-restore-backup-btn").addEventListener("click", function () { document.getElementById("import-file").click(); });
-    document.getElementById("import-file").addEventListener("change", function (e) { if (e.target.files[0]) handleImportFile(e.target.files[0]); e.target.value = ""; });
 
     document.getElementById("danger-clear-all-data-btn").addEventListener("click", clearAllData);
     document.getElementById("danger-clear-methodologies-btn").addEventListener("click", clearAllMethodologies);
