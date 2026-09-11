@@ -3830,10 +3830,21 @@
   // own real chapter heading) has no other occurrence to compare it against, so that stray
   // mid-sentence mention would win by default and anchor the whole section in the wrong place —
   // the exact cross-standard bleed this app has repeatedly been reported to have.
-  function looksLikeLineStart(fullText, idx) {
+  function looksLikeLineStart(fullText, idx, matchLen) {
     var start = idx;
     while (start > 0 && /[ \t]/.test(fullText[start - 1])) start--;
-    return start === 0 || fullText[start - 1] === "\n";
+    if (!(start === 0 || fullText[start - 1] === "\n")) return false;
+    // "Sits alone at the start of its own line" means alone — a footnote citation like "10 ISA
+    // 330, paragraph 5" (split onto its own line because the superscript footnote marker sits at
+    // a different Y-position from the body text) or an ordinary cross-reference sentence that
+    // simply happens to WRAP onto a new line at that code ("...in conjunction with\nISA 315
+    // (Revised 2019) and ISA 330.") both satisfy the start-of-line check above, yet neither is a
+    // real chapter opening — both carry on with ordinary lower-case prose (or a comma) right
+    // after the code, on the same line, instead of a title or nothing at all.
+    if (typeof matchLen !== "number") return true;
+    var restOfLine = fullText.substring(idx + matchLen).split(/\r?\n/)[0];
+    restOfLine = restOfLine.replace(/^\s*\([^)]{0,40}\)/, "").replace(/^\s+/, "");
+    return !/^[a-z,]/.test(restOfLine);
   }
   // Used by buildExtractionSections to find where a section's OWN content ends, even when the
   // standard that follows it in the PDF isn't one this tracker follows at all — see
@@ -3847,7 +3858,7 @@
     while ((m = re.exec(text))) {
       var candLower = m[0].replace(/\s*\(.*?\)\s*$/, "").trim().toLowerCase();
       if (candLower === ownHeaderLower) continue;
-      if (!looksLikeLineStart(text, m.index)) continue;
+      if (!looksLikeLineStart(text, m.index, m[0].length)) continue;
       if (markerQualityAt(text, m.index) < 3) continue;
       // A "Related standards" / cross-reference listing inside the standard's own text (several
       // other standard codes named in quick succession) can otherwise look exactly like a real
@@ -3889,7 +3900,7 @@
         var variantLower = variant.toLowerCase();
         var searchFrom = 0, idx;
         while ((idx = lowerText.indexOf(variantLower, searchFrom)) !== -1) {
-          if (!looksLikeLineStart(fullText, idx)) { searchFrom = idx + variantLower.length; continue; }
+          if (!looksLikeLineStart(fullText, idx, variantLower.length)) { searchFrom = idx + variantLower.length; continue; }
           var score = markerQualityAt(fullText, idx) - (hasSiblingHeaderNearby(lowerText, allHeaders, idx, variantLower, variantLower.length) ? 1000 : 0);
           if (score >= bestScore) { bestScore = score; bestIdx = idx; bestHeader = variant; }
           searchFrom = idx + variantLower.length;
@@ -3909,10 +3920,6 @@
       // whether that code belongs to a standard the tracker currently knows about.
       var foreignAt = nextForeignHeadingWithin(sectionText, sec.header.toLowerCase(), allHeaders);
       sec.text = foreignAt === null ? sectionText : sectionText.substring(0, foreignAt);
-      if (sec.std.code === "ISA 315") {
-        console.log("[ISA 315 boundary diag]", "start:", sec.index, "end:", end, "rawLength:", sectionText.length, "finalLength:", sec.text.length,
-          foreignAt === null ? "not truncated by nextForeignHeadingWithin" : ("truncated at offset " + foreignAt + " — context: " + JSON.stringify(sectionText.substring(Math.max(0, foreignAt - 100), foreignAt + 100))));
-      }
     });
     return sections;
   }
