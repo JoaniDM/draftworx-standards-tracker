@@ -5711,8 +5711,8 @@
     document.getElementById("restore-from-file-btn").addEventListener("click", function () { document.getElementById("restore-from-file-input").click(); });
     document.getElementById("restore-from-file-input").addEventListener("change", function (e) { if (e.target.files[0]) openSelectiveRestoreFromFile(e.target.files[0]); e.target.value = ""; });
     document.getElementById("add-workingpaper-btn").addEventListener("click", function () { openWorkingPaperModal(null); });
-    document.getElementById("export-workingpapers-btn").addEventListener("click", exportWorkingPapersCsv);
-    document.getElementById("import-workingpapers-btn").addEventListener("click", function () { document.getElementById("import-workingpapers-input").click(); });
+    document.getElementById("export-workingpapers-btn").addEventListener("click", function () { console.log("[export-workingpapers-btn] click handler firing"); exportWorkingPapersCsv(); });
+    document.getElementById("import-workingpapers-btn").addEventListener("click", function () { console.log("[import-workingpapers-btn] click handler firing"); document.getElementById("import-workingpapers-input").click(); });
     document.getElementById("import-workingpapers-input").addEventListener("change", function (e) { if (e.target.files[0]) importWorkingPapersFromFile(e.target.files[0]); e.target.value = ""; });
     document.getElementById("save-workingpaper-btn").addEventListener("click", saveWorkingPaper);
     document.getElementById("send-message-btn").addEventListener("click", sendMessageFromModal);
