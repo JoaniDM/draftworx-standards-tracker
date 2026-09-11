@@ -727,6 +727,11 @@
           <button class="btn primary" id="open-suggestions-btn" title="Send a suggestion or feedback">💡 Suggestions</button>
         </div>
         <div class="family-panel">
+          <h3>Change Password</h3>
+          <div class="fp-sub">Change your own login password.</div>
+          <button class="btn primary" id="open-change-password-btn">Change Password</button>
+        </div>
+        <div class="family-panel">
           <h3>Team members</h3>
           <div class="fp-sub" id="users-list-note">The first user added is automatically a Developer.</div>
           <div id="users-list"></div>
@@ -2678,12 +2683,9 @@
     if (!u || !identity) { el.innerHTML = ""; return; }
     el.innerHTML = '<span id="open-profile-btn" style="cursor:pointer; text-decoration:underline;" title="View profile">' + escapeHtml(u.name) + "</span>" +
       ' <span style="color:var(--header-text-muted);">· ' + accessLevelLabel(u.accessLevel) + "</span>" +
-      ' <button class="btn icon-only" id="change-password-btn" title="Change your password" style="padding:2px 6px; font-size:11px;">Change Password</button>' +
       ' <button class="btn icon-only" id="logout-btn" title="Log out" style="padding:2px 6px; font-size:11px;">Logout</button>';
     var logoutBtn = document.getElementById("logout-btn");
     if (logoutBtn) logoutBtn.addEventListener("click", function () { logout(); });
-    var changePwBtn = document.getElementById("change-password-btn");
-    if (changePwBtn) changePwBtn.addEventListener("click", openChangePasswordModal);
     var profileBtn = document.getElementById("open-profile-btn");
     if (profileBtn) profileBtn.addEventListener("click", openUserProfileModal);
   }
@@ -4026,6 +4028,8 @@
     if (addBtn) addBtn.style.display = canManage ? "" : "none";
     var importBtn = document.getElementById("import-workingpapers-btn");
     if (importBtn) importBtn.style.display = canManage ? "" : "none";
+    var exportBtn = document.getElementById("export-workingpapers-btn");
+    if (exportBtn) exportBtn.style.display = canManage ? "" : "none";
     if (!data.workingPapers || data.workingPapers.length === 0) {
       list.innerHTML = '<div class="empty-state" style="padding:20px 0;">No working papers added yet.</div>';
       return;
@@ -4183,7 +4187,7 @@
       return '<div class="methodology-row" style="padding:6px 0;">' +
         '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(meth.name) + '</span></span>' +
         '<span class="row-actions" style="display:flex; gap:6px;">' +
-          '<button class="btn" data-export-meth-data="' + meth.id + '">Export</button>' +
+          (canManage ? '<button class="btn" data-export-meth-data="' + meth.id + '">Export</button>' : "") +
           (canManage ? '<button class="btn" data-import-meth-data="' + meth.id + '">Import</button>' : "") +
         "</span></div>";
     }).join("");
@@ -5828,6 +5832,7 @@
     document.getElementById("filter-status").addEventListener("change", function (e) { state.statusFilter = e.target.value; renderCoverageView(); });
     document.getElementById("filter-wp-status").addEventListener("change", function (e) { state.wpStatusFilter = e.target.value; renderCoverageView(); });
     document.getElementById("open-suggestions-btn").addEventListener("click", openSuggestionsModal);
+    document.getElementById("open-change-password-btn").addEventListener("click", openChangePasswordModal);
     // A plain page reload is the most reliable way to "un-stick" the view — it re-reads
     // everything fresh from localStorage (picking up changes made in another tab/window, or
     // after switching identity there) without touching the stored data itself at all.
