@@ -708,6 +708,12 @@
           </div>
           <textarea id="developer-json-view" readonly spellcheck="false" style="display:none; width:100%; height:300px; font-family:monospace; font-size:11px;"></textarea>
         </div>
+
+        <div class="family-panel">
+          <h3>User Suggestions</h3>
+          <div class="fp-sub">Feedback and suggestions submitted by users via their profile panel.</div>
+          <div id="user-suggestions-list"></div>
+        </div>
       </section>
 
       <section class="view" id="view-settings">
@@ -790,6 +796,22 @@
     <div class="modal-foot">
       <button type="button" class="btn" data-close>Cancel</button>
       <button type="button" class="btn primary" id="save-change-pw-btn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-user-profile">
+  <form method="dialog">
+    <div class="modal-head"><h3>User Profile</h3><button type="button" class="icon-btn" data-close>&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Name</label><div class="readonly-note" id="profile-name"></div></div>
+      <div class="field"><label>Role</label><div class="readonly-note" id="profile-role"></div></div>
+      <div class="field"><label>Last login</label><div class="readonly-note" id="profile-last-login"></div></div>
+      <div class="field"><label>Suggestion or feedback</label><textarea id="f-profile-suggestion" rows="4" placeholder="Type a suggestion or feedback..." style="width:100%;"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-close>Close</button>
+      <button type="button" class="btn primary" id="submit-suggestion-btn">Submit</button>
     </div>
   </form>
 </dialog>
@@ -1416,7 +1438,9 @@
     messagesJumpTo: null,
     selectiveRestoreBackupId: null,
     selectiveRestoreFileEntry: null,
-    importMethodologyDataId: null
+    importMethodologyDataId: null,
+    wpMethCollapse: {},
+    wpSectionCollapse: {}
   };
   var STANDARD_COLLAPSE_THRESHOLD = 5;
 
@@ -1442,6 +1466,7 @@
     if (!Array.isArray(d.pendingFlags)) d.pendingFlags = [];
     if (!Array.isArray(d.changeLog)) d.changeLog = [];
     if (!Array.isArray(d.workingPapers)) d.workingPapers = [];
+    if (!Array.isArray(d.userSuggestions)) d.userSuggestions = [];
     if (typeof d.lastImport === "undefined") d.lastImport = null;
     if (typeof d.lastBackupAt === "undefined") d.lastBackupAt = null;
     if (!Array.isArray(d.messages)) d.messages = [];
@@ -2626,7 +2651,7 @@
     var el = document.getElementById("identity-badge");
     var u = resolveIdentityUser();
     if (!u || !identity) { el.innerHTML = ""; return; }
-    el.innerHTML = "<span>" + escapeHtml(u.name) + "</span>" +
+    el.innerHTML = '<span id="open-profile-btn" style="cursor:pointer; text-decoration:underline;" title="View profile">' + escapeHtml(u.name) + "</span>" +
       ' <span style="color:var(--header-text-muted);">· ' + accessLevelLabel(u.accessLevel) + "</span>" +
       ' <button class="btn icon-only" id="change-password-btn" title="Change your password" style="padding:2px 6px; font-size:11px;">Change Password</button>' +
       ' <button class="btn icon-only" id="logout-btn" title="Log out" style="padding:2px 6px; font-size:11px;">Logout</button>';
@@ -2634,6 +2659,28 @@
     if (logoutBtn) logoutBtn.addEventListener("click", logout);
     var changePwBtn = document.getElementById("change-password-btn");
     if (changePwBtn) changePwBtn.addEventListener("click", openChangePasswordModal);
+    var profileBtn = document.getElementById("open-profile-btn");
+    if (profileBtn) profileBtn.addEventListener("click", openUserProfileModal);
+  }
+  function openUserProfileModal() {
+    var u = resolveIdentityUser();
+    if (!u) return;
+    document.getElementById("profile-name").textContent = u.name;
+    document.getElementById("profile-role").textContent = accessLevelLabel(u.accessLevel);
+    document.getElementById("profile-last-login").textContent = u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : "—";
+    document.getElementById("f-profile-suggestion").value = "";
+    document.getElementById("dlg-user-profile").showModal();
+  }
+  function submitUserSuggestion() {
+    var text = document.getElementById("f-profile-suggestion").value.trim();
+    if (!text) return;
+    var u = resolveIdentityUser();
+    if (!u) return;
+    if (!Array.isArray(data.userSuggestions)) data.userSuggestions = [];
+    data.userSuggestions.unshift({ id: uid("sugg"), userId: u.id, userName: u.name, text: text, createdAt: new Date().toISOString(), read: false });
+    persist();
+    document.getElementById("dlg-user-profile").close();
+    alert("Thanks — your suggestion has been submitted.");
   }
   function openChangePasswordModal() {
     document.getElementById("f-change-pw-current").value = "";
@@ -3844,6 +3891,39 @@
     }
 
     document.getElementById("developer-json-view").style.display = "none";
+    renderUserSuggestions();
+  }
+  function renderUserSuggestions() {
+    var list = document.getElementById("user-suggestions-list");
+    if (!list) return;
+    var suggestions = data.userSuggestions || [];
+    if (!suggestions.length) { list.innerHTML = '<div class="empty-state" style="padding:20px 0;">No suggestions submitted yet.</div>'; return; }
+    list.innerHTML = suggestions.map(function (s) {
+      return '<div class="methodology-row" style="padding:8px 0; align-items:flex-start;' + (s.read ? " opacity:0.6;" : "") + '">' +
+        '<span class="side-item" style="cursor:default; flex-direction:column; align-items:flex-start;">' +
+          '<span class="label">' + escapeHtml(s.userName) + " — " + new Date(s.createdAt).toLocaleString() + (s.read ? " (read)" : "") + "</span>" +
+          '<span style="font-size:12px; color:var(--text-secondary); white-space:pre-wrap;">' + escapeHtml(s.text) + "</span>" +
+        "</span>" +
+        '<span class="row-actions" style="display:flex; gap:6px;">' +
+          (s.read ? "" : '<button class="icon-btn" data-mark-read-suggestion="' + s.id + '" title="Mark as read">✓</button>') +
+          '<button class="icon-btn" data-del-suggestion="' + s.id + '" title="Delete">✕</button>' +
+        "</span></div>";
+    }).join("");
+    list.querySelectorAll("[data-mark-read-suggestion]").forEach(function (b) { b.addEventListener("click", function () { markSuggestionRead(b.getAttribute("data-mark-read-suggestion")); }); });
+    list.querySelectorAll("[data-del-suggestion]").forEach(function (b) { b.addEventListener("click", function () { deleteSuggestion(b.getAttribute("data-del-suggestion")); }); });
+  }
+  function markSuggestionRead(id) {
+    var s = (data.userSuggestions || []).find(function (x) { return x.id === id; });
+    if (!s) return;
+    s.read = true;
+    persist();
+    renderUserSuggestions();
+  }
+  function deleteSuggestion(id) {
+    if (!confirm("Delete this suggestion?")) return;
+    data.userSuggestions = (data.userSuggestions || []).filter(function (x) { return x.id !== id; });
+    persist();
+    renderUserSuggestions();
   }
 
   // ---------- Settings: users ----------
@@ -3887,19 +3967,36 @@
       if (!wps.length) return "";
       var sections = [];
       wps.forEach(function (wp) { if (sections.indexOf(wp.section) === -1) sections.push(wp.section); });
-      return '<div class="fp-sub" style="margin-top:10px; font-weight:600;">' + escapeHtml(meth.name) + "</div>" +
-        sections.map(function (section) {
-          return '<div class="fp-sub" style="margin-top:6px; margin-left:10px; font-style:italic;">' + escapeHtml(section) + "</div>" +
-            wps.filter(function (wp) { return wp.section === section; }).map(function (wp) {
+      var methCollapsed = !!state.wpMethCollapse[meth.id];
+      return '<div class="fp-sub head-toggle-area" data-toggle-wpmeth="' + meth.id + '" style="margin-top:10px; font-weight:600; cursor:pointer;">' +
+          '<span class="collapse-chevron">' + (methCollapsed ? "▸" : "▾") + "</span> " + escapeHtml(meth.name) +
+        "</div>" +
+        (methCollapsed ? "" : sections.map(function (section) {
+          var sectionKey = meth.id + "::" + section;
+          var sectionCollapsed = !!state.wpSectionCollapse[sectionKey];
+          return '<div class="fp-sub head-toggle-area" data-toggle-wpsection="' + escapeAttr(sectionKey) + '" style="margin-top:6px; margin-left:10px; font-style:italic; cursor:pointer;">' +
+              '<span class="collapse-chevron">' + (sectionCollapsed ? "▸" : "▾") + "</span> " + escapeHtml(section) +
+            "</div>" +
+            (sectionCollapsed ? "" : wps.filter(function (wp) { return wp.section === section; }).map(function (wp) {
               return '<div class="methodology-row" style="padding:6px 0;">' +
                 '<span class="side-item" style="cursor:default;"><span class="label">' + escapeHtml(wp.reference) + '</span></span>' +
                 '<span class="row-actions" style="display:flex;">' +
                   '<button class="icon-btn" data-edit-workingpaper="' + wp.id + '" title="Edit">✎</button>' +
                   '<button class="icon-btn" data-del-workingpaper="' + wp.id + '" title="Remove">✕</button>' +
                 "</span></div>";
-            }).join("");
-        }).join("");
+            }).join(""));
+        }).join(""));
     }).join("");
+    list.querySelectorAll("[data-toggle-wpmeth]").forEach(function (el) { el.addEventListener("click", function () {
+      var id = el.getAttribute("data-toggle-wpmeth");
+      state.wpMethCollapse[id] = !state.wpMethCollapse[id];
+      renderWorkingPapersSettings();
+    }); });
+    list.querySelectorAll("[data-toggle-wpsection]").forEach(function (el) { el.addEventListener("click", function () {
+      var key = el.getAttribute("data-toggle-wpsection");
+      state.wpSectionCollapse[key] = !state.wpSectionCollapse[key];
+      renderWorkingPapersSettings();
+    }); });
     list.querySelectorAll("[data-edit-workingpaper]").forEach(function (b) { b.addEventListener("click", function () { openWorkingPaperModal(b.getAttribute("data-edit-workingpaper")); }); });
     list.querySelectorAll("[data-del-workingpaper]").forEach(function (b) { b.addEventListener("click", function () { deleteWorkingPaper(b.getAttribute("data-del-workingpaper")); }); });
   }
@@ -5532,6 +5629,8 @@
     identity = { userId: userObj.id };
     localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
     localStorage.setItem(LAST_USER_KEY, userObj.id);
+    userObj.lastLoginAt = new Date().toISOString();
+    persist();
     hideLoginScreen();
     renderIdentityBadge();
     applyGlobalRolePermissions();
@@ -5632,17 +5731,18 @@
   }
 
   function applyGlobalRolePermissions() {
-    // Developer is the single top tier (there's no separate Admin) — Developer tab stays
-    // Developer-only. Settings is now also reachable by Editor, since the Working Papers section
-    // there must be visible to Developer and Editor; Read Only still never sees either tab.
+    // Developer is the single top tier (there's no separate Admin) — Import & Compare, Developer
+    // and Settings are all Developer-only; Editor and Read Only never see any of these tabs.
     var isDeveloper = can("developer");
-    var canSeeSettings = can("editor");
     var settingsTab = document.querySelector('.tab-btn[data-view="settings"]');
-    if (settingsTab) settingsTab.style.display = canSeeSettings ? "" : "none";
+    if (settingsTab) settingsTab.style.display = isDeveloper ? "" : "none";
     var developerTab = document.querySelector('.tab-btn[data-view="developer"]');
     if (developerTab) developerTab.style.display = isDeveloper ? "" : "none";
+    var reviewTab = document.querySelector('.tab-btn[data-view="review"]');
+    if (reviewTab) reviewTab.style.display = isDeveloper ? "" : "none";
     if (!isDeveloper && state.view === "developer") switchToView("dashboard");
-    if (!canSeeSettings && state.view === "settings") switchToView("dashboard");
+    if (!isDeveloper && state.view === "settings") switchToView("dashboard");
+    if (!isDeveloper && state.view === "review") switchToView("dashboard");
   }
 
   var appInitialized = false;
@@ -5818,6 +5918,7 @@
     document.getElementById("add-user-btn").addEventListener("click", function () { openUserModal(null); });
     document.getElementById("save-user-btn").addEventListener("click", saveUser);
     document.getElementById("save-change-pw-btn").addEventListener("click", saveChangePassword);
+    document.getElementById("submit-suggestion-btn").addEventListener("click", submitUserSuggestion);
     document.getElementById("confirm-selective-restore-btn").addEventListener("click", confirmSelectiveRestore);
     document.getElementById("restore-from-file-btn").addEventListener("click", function () { document.getElementById("restore-from-file-input").click(); });
     document.getElementById("restore-from-file-input").addEventListener("change", function (e) { if (e.target.files[0]) openSelectiveRestoreFromFile(e.target.files[0]); e.target.value = ""; });
