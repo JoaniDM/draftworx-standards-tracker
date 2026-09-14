@@ -1290,6 +1290,13 @@
     if (parts.length <= 2) return parts.join(".");
     return parts.slice(0, 2).join(".") + parts.slice(2).map(function (p) { return "(" + p + ")"; }).join("");
   }
+  // Coverage Review's paragraph reference shows a stored number like "3000.14" alone (the family
+  // prefix isn't part of the stored number) — display-only, so it reads unambiguously as e.g.
+  // "ISAE 3000.14" instead of just "3000.14".
+  function paraRefFamilyPrefix(family) {
+    var m = /^(ISA|ISRE|ISQM|ISRS|ISAE)\b/.exec(family || "");
+    return m ? m[1] + " " : "";
+  }
   // The intended workflow is PDF first (populates official text) then Excel (populates the WP
   // extract) — a paragraph can still exist with no official text yet (e.g. created by an Excel
   // row that left that column blank), so show this instead of a blank space, pointing at the fix.
@@ -3052,7 +3059,7 @@
     row.setAttribute("data-toggle-para", p.id);
     row.innerHTML =
       treeToggleHtml +
-      '<span class="para-ref no-case">' + escapeHtml((std.family === "ISAE 3000" ? "ISAE " : "") + formatParaNumber(p.number)) + "</span>" +
+      '<span class="para-ref no-case">' + escapeHtml(paraRefFamilyPrefix(std.family) + formatParaNumber(p.number)) + "</span>" +
       '<span class="para-row-spacer"></span>' +
       sourceBadgeHtml +
       inDevBadgeHtml +
