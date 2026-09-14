@@ -3052,7 +3052,7 @@
     row.setAttribute("data-toggle-para", p.id);
     row.innerHTML =
       treeToggleHtml +
-      '<span class="para-ref no-case">' + escapeHtml(formatParaNumber(p.number)) + "</span>" +
+      '<span class="para-ref no-case">' + escapeHtml((std.family === "ISAE 3000" ? "ISAE " : "") + formatParaNumber(p.number)) + "</span>" +
       '<span class="para-row-spacer"></span>' +
       sourceBadgeHtml +
       inDevBadgeHtml +
